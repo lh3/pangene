@@ -5,8 +5,66 @@
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 0x10000)
 
-static void pg_parse_cigar(pg_data_t *d, pg_hit_t *a, const char *cg)
+typedef struct {
+	int32_t n_exon, m_exon;
+	pg_exon_t *exon;
+} pg_exons_t;
+
+static inline void pg_add_exon(pg_exons_t *tmp, int32_t st)
 {
+	pg_exon_t *p;
+	if (tmp->n_exon == tmp->m_exon) {
+		tmp->m_exon += (tmp->m_exon>>1) + 16;
+		tmp->exon = PG_REALLOC(pg_exon_t, tmp->exon, tmp->m_exon);
+	}
+	p = &tmp->exon[tmp->n_exon++];
+	p->ost = p->oen = st;
+}
+
+static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons_t *tmp, const char *cg)
+{
+	const char *p = cg;
+	char *r;
+	int64_t x = 0;
+	int32_t i, n_fs = 0;
+	pg_exon_t *t;
+	tmp->n_exon = 0;
+	pg_add_exon(tmp, 0);
+	while (p) {
+		int64_t l;
+		l = strtol(p, &r, 10);
+		if (*r == 'N' || *r == 'U' || *r == 'V') {
+			int64_t st, en;
+			if (*r == 'N') st = x, en = x + l;
+			else if (*r == 'U') st = x + 1, en = x + l - 2;
+			else st = x + 2, en = x + l - 1;
+			tmp->exon[tmp->n_exon - 1].oen = st;
+			tmp->exon[tmp->n_exon - 1].n_fs = n_fs;
+			pg_add_exon(tmp, en);
+			x += l, n_fs = 0;
+		} else if (*r == 'M' || *r == 'X' || *r == '=' || *r == 'D') {
+			x += l * 3;
+		} else if (*r == 'F' || *r == 'G') {
+			x += l, ++n_fs;
+		}
+	}
+	assert(x == hit->ce - hit->cs);
+	if (g->n_exon + tmp->n_exon > g->m_exon) {
+		g->m_exon = g->n_exon + tmp->n_exon;
+		g->m_exon += (g->m_exon>>1) + 16;
+		g->exon = PG_REALLOC(pg_exon_t, g->exon, g->m_exon);
+	}
+	t = &g->exon[g->n_exon];
+	if (!hit->rev) {
+		memcpy(t, tmp->exon, tmp->n_exon * sizeof(pg_exon_t));
+	} else {
+		for (i = tmp->n_exon - 1; i >= 0; --i, ++t) {
+			t->ost = x - tmp->exon[i].oen;
+			t->oen = x - tmp->exon[i].ost;
+			t->n_fs = tmp->exon[i].n_fs;
+		}
+	}
+	g->n_exon += tmp->n_exon;
 }
 
 int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
@@ -17,6 +75,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	int32_t dret, absent;
 	pg_dict_t *d_ctg;
 	pg_genome_t *g;
+	pg_exons_t buf = {0,0,0};
 
 	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(0, "r");
 	if (fp == 0) return -1;
@@ -93,7 +152,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					if (strncmp(q, "ms:i:", 5) == 0) {
 						hit.score = strtol(q + 5, &r, 10);
 					} else if (strncmp(q, "cg:Z:", 5) == 0) {
-						pg_parse_cigar(d, &hit, q + 5);
+						pg_parse_cigar(d, g, &hit, &buf, q + 5);
 					}
 				}
 				q = p + 1, ++i;

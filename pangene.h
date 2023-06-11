@@ -7,7 +7,7 @@ struct pg_dict_s;
 typedef struct pg_dict_s pg_dict_t;
 
 typedef struct {
-	int32_t ost, oen;
+	int32_t ost, oen, n_fs;
 } pg_exon_t;
 
 typedef struct {
