@@ -17,6 +17,13 @@ typedef struct __kstring_t {
 #define PG_CALLOC(type, cnt)       ((type*)calloc((cnt), sizeof(type)))
 #define PG_REALLOC(type, ptr, cnt) ((type*)realloc((ptr), (cnt) * sizeof(type)))
 
+#define PG_EXTEND(type, ptr, __i, __m) do { \
+		if ((__i) >= (__m)) { \
+			(__m) += ((__m)>>1) + 16; \
+			(ptr) = PG_REALLOC(type, ptr, (__m)); \
+		} \
+	} while (0)
+
 #ifndef kroundup64
 #define kroundup64(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, (x)|=(x)>>32, ++(x))
 #endif

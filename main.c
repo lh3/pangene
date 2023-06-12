@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	pg_realtime();
 	d = pg_data_init();
 	for (i = o.ind; i < argc; ++i) {
 		pg_read_paf(d, argv[i], gene_sep);

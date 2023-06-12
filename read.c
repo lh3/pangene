@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <zlib.h>
+#include <stdio.h>
 #include "pgpriv.h"
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 0x10000)
@@ -9,7 +10,12 @@ int pg_verbose = 3;
 
 pg_data_t *pg_data_init(void)
 {
-	return PG_CALLOC(pg_data_t, 1);
+	pg_data_t *d;
+	d = PG_CALLOC(pg_data_t, 1);
+	d->d_ctg = pg_dict_init();
+	d->d_gene = pg_dict_init();
+	d->d_prot = pg_dict_init();
+	return d;
 }
 
 void pg_data_destroy(pg_data_t *d)
@@ -33,10 +39,7 @@ typedef struct {
 static inline void pg_add_exon(pg_exons_t *tmp, int32_t st)
 {
 	pg_exon_t *p;
-	if (tmp->n_exon == tmp->m_exon) {
-		tmp->m_exon += (tmp->m_exon>>1) + 16;
-		tmp->exon = PG_REALLOC(pg_exon_t, tmp->exon, tmp->m_exon);
-	}
+	PG_EXTEND(pg_exon_t, tmp->exon, tmp->n_exon, tmp->m_exon);
 	p = &tmp->exon[tmp->n_exon++];
 	p->ost = p->oen = st;
 }
@@ -50,7 +53,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 	pg_exon_t *t;
 	tmp->n_exon = 0;
 	pg_add_exon(tmp, 0);
-	while (p) {
+	while (*p) {
 		int64_t l;
 		l = strtol(p, &r, 10);
 		if (*r == 'N' || *r == 'U' || *r == 'V') {
@@ -67,6 +70,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 		} else if (*r == 'F' || *r == 'G') {
 			x += l, ++n_fs;
 		}
+		p = r + 1;
 	}
 	tmp->exon[tmp->n_exon - 1].oen = x;
 	tmp->exon[tmp->n_exon - 1].n_fs = n_fs;
@@ -103,12 +107,9 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	if (fp == 0) return -1;
 
 	d_ctg = pg_dict_init();
-	if (d->n_genome == d->m_genome) {
-		d->m_genome += (d->m_genome>>1) + 16;
-		d->genome = PG_REALLOC(pg_genome_t, d->genome, d->m_genome);
-	}
+	PG_EXTEND(pg_genome_t, d->genome, d->n_genome, d->m_genome);
 	g = &d->genome[d->n_genome++];
-	memcpy(g, 0, sizeof(*g));
+	memset(g, 0, sizeof(*g));
 
 	ks = ks_init(fp);
 	while (ks_getuntil(ks, KS_SEP_LINE, &str, &dret) >= 0) {
@@ -132,8 +133,8 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					}
 					tmp = pg_dict_put(d->d_prot, q, &pid, &absent);
 					if (absent) { // protein is new
-						d->m_prot = (d->m_prot>>1) + 16;
-						d->prot = PG_REALLOC(pg_prot_t, d->prot, d->m_prot);
+						d->n_prot++;
+						PG_EXTEND(pg_prot_t, d->prot, pid, d->m_prot);
 					}
 					assert(pid < d->m_prot);
 					d->prot[pid].name = tmp;
@@ -152,10 +153,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					int32_t cid;
 					pg_dict_put(d_ctg, q, &cid, &absent);
 					if (absent) {
-						if (g->n_ctg == g->m_ctg) {
-							g->m_ctg = (g->m_ctg>>1) + 16;
-							g->ctg = PG_REALLOC(pg_ctg_t, g->ctg, g->m_ctg);
-						}
+						PG_EXTEND(pg_ctg_t, g->ctg, g->n_ctg, g->m_ctg);
 						g->ctg[g->n_ctg++].name = pg_dict_put(d->d_ctg, q, 0, 0);
 					}
 					assert(cid < g->m_ctg);
