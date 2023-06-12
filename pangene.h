@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r9-dirty"
+#define PG_VERSION "0.0-r10-dirty"
 
 struct pg_dict_s;
 typedef struct pg_dict_s pg_dict_t;

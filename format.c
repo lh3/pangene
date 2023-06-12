@@ -85,13 +85,14 @@ void pg_write_bed1(kstring_t *out, const pg_data_t *d, int32_t aid, int32_t hid)
 	for (i = 0; i < a->n_exon; ++i)
 		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].oen - g->exon[a->off_exon + i].ost);
 	pg_sprintf_lite(out, "\t");
-	for (i = 0; i < a->n_exon; ++i)
+	for (i = 0; i < a->n_exon; ++i) {
 		#if 1
 		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].ost);
 		#else
 		pg_sprintf_lite(out, "%ld,", a->cs + g->exon[a->off_exon + i].ost); // for debugging only
 		#endif
-	pg_sprintf_lite(out, "\n");
+	}
+	pg_sprintf_lite(out, "\trk:i:%d\n", a->rank);
 }
 
 void pg_write_bed(const pg_data_t *d, int32_t aid)

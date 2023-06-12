@@ -97,13 +97,14 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	kstream_t *ks;
 	kstring_t str = {0,0,0};
 	int32_t dret, absent;
-	void *d_ctg;
+	void *d_ctg, *hit_rank;
 	pg_genome_t *g;
 	pg_exons_t buf = {0,0,0};
 
 	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(0, "r");
 	if (fp == 0) return -1;
 
+	hit_rank = pg_sdict_init();
 	d_ctg = pg_sdict_init();
 	PG_EXTEND(pg_genome_t, d->genome, d->n_genome, d->m_genome);
 	g = &d->genome[d->n_genome++];
@@ -138,6 +139,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					d->prot[pid].name = tmp;
 					d->prot[pid].gid = gid;
 					hit.pid = pid;
+					hit.rank = pg_sdict_inc(hit_rank, d->prot[pid].name, 0);
 				} else if (i == 1) {
 					d->prot[hit.pid].len = strtol(q, &r, 10);
 				} else if (i == 2) {
@@ -186,6 +188,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 		}
 	}
 	pg_sdict_destroy(d_ctg);
+	pg_sdict_destroy(hit_rank);
 	ks_destroy(ks);
 	gzclose(fp);
 	return 0;
