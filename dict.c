@@ -41,10 +41,7 @@ const char *pg_dict_put(pg_dict_t *d, const char *s, int32_t *id, int32_t *absen
 	khint_t k;
 	k = pg_sh_put(d->h, s, &absent);
 	if (absent) {
-		if (d->n_str == d->m_str) {
-			d->m_str += (d->m_str>>1) + 16;
-			d->str = PG_REALLOC(char*, d->str, d->m_str);
-		}
+		PG_EXTEND(char*, d->str, d->n_str, d->m_str);
 		kh_key(d->h, k) = d->str[d->n_str] = pg_strdup(s);
 		kh_val(d->h, k) = d->n_str++;
 	}
