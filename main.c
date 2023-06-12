@@ -2,13 +2,19 @@
 #include "pgpriv.h"
 #include "ketopt.h"
 
+static ko_longopt_t long_options[] = {
+	{ "bed",             ko_no_argument,       301 },
+	{ 0, 0, 0 }
+};
+
 int main(int argc, char *argv[])
 {
 	ketopt_t o = KETOPT_INIT;
-	int32_t i, c, gene_sep = ':';
+	int32_t i, c, gene_sep = ':', bed_out = 0;
 	pg_data_t *d;
 
-	while ((c = ketopt(&o, argc, argv, 1, "d:", 0)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:", long_options)) >= 0) {
+		if (c == 301) bed_out = 1;
 	}
 	if (argc - o.ind < 1) {
 		fprintf(stderr, "Usage: pangene [options] <in.paf> [...]\n");
@@ -21,6 +27,10 @@ int main(int argc, char *argv[])
 		pg_read_paf(d, argv[i], gene_sep);
 		if (pg_verbose >= 3)
 			fprintf(stderr, "[M::%s::%.3f*%.2f] read file '%s'\n", __func__, pg_realtime(), pg_percent_cpu(), argv[i]);
+	}
+	if (bed_out) {
+		for (i = 0; i < d->n_genome; ++i)
+			pg_write_bed(d, i);
 	}
 	pg_data_destroy(d);
 

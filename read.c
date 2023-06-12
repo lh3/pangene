@@ -118,6 +118,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 		for (p = q = str.s, i = 0;; ++p) {
 			if (*p == '\t' || *p == 0) {
 				int32_t c = *p;
+				*p = 0;
 				if (i == 0) { // query name
 					int32_t gid, pid;
 					const char *tmp;
