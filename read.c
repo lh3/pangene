@@ -62,9 +62,8 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 			else if (*r == 'U') st = x + 1, en = x + l - 2;
 			else st = x + 2, en = x + l - 1;
 			tmp->exon[tmp->n_exon - 1].oen = st;
-			tmp->exon[tmp->n_exon - 1].n_fs = n_fs;
 			pg_add_exon(tmp, en);
-			x += l, n_fs = 0;
+			x += l;
 		} else if (*r == 'M' || *r == 'X' || *r == '=' || *r == 'D') {
 			x += l * 3;
 		} else if (*r == 'F' || *r == 'G') {
@@ -73,7 +72,6 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 		p = r + 1;
 	}
 	tmp->exon[tmp->n_exon - 1].oen = x;
-	tmp->exon[tmp->n_exon - 1].n_fs = n_fs;
 	assert(x == hit->ce - hit->cs);
 	PG_EXTEND(pg_exon_t, g->exon, g->n_exon + tmp->n_exon - 1, g->m_exon);
 	t = &g->exon[g->n_exon];
@@ -83,11 +81,11 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 		for (i = tmp->n_exon - 1; i >= 0; --i, ++t) {
 			t->ost = x - tmp->exon[i].oen;
 			t->oen = x - tmp->exon[i].ost;
-			t->n_fs = tmp->exon[i].n_fs;
 		}
 	}
 	hit->n_exon = tmp->n_exon;
 	hit->off_exon = g->n_exon;
+	hit->fs = n_fs;
 	g->n_exon += tmp->n_exon;
 }
 

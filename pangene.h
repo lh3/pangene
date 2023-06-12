@@ -3,13 +3,13 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r10-dirty"
+#define PG_VERSION "0.0-r11-dirty"
 
 struct pg_dict_s;
 typedef struct pg_dict_s pg_dict_t;
 
 typedef struct {
-	int32_t ost, oen, n_fs;
+	int32_t ost, oen;
 } pg_exon_t;
 
 typedef struct {
@@ -22,7 +22,7 @@ typedef struct {
 	uint32_t pid:31, rev:1; // protein ID
 	int32_t qs, qe;
 	int32_t cid; // contig ID
-	int32_t mlen, blen;
+	int32_t mlen, blen, fs;
 	int32_t score, rank;
 	int32_t n_exon, off_exon;
 	int64_t cs, ce;
