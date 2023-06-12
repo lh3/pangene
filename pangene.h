@@ -24,9 +24,8 @@ typedef struct {
 	int32_t cid; // contig ID
 	int32_t mlen, blen;
 	int32_t score;
-	int32_t n_exon;
+	int32_t n_exon, off_exon;
 	int64_t cs, ce;
-	int64_t off_exon;
 } pg_hit_t;
 
 typedef struct {

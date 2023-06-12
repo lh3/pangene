@@ -19,6 +19,7 @@ typedef struct __kstring_t {
 
 #define PG_EXTEND(type, ptr, __i, __m) do { \
 		if ((__i) >= (__m)) { \
+			(__m) = (__i) + 1; \
 			(__m) += ((__m)>>1) + 16; \
 			(ptr) = PG_REALLOC(type, ptr, (__m)); \
 		} \
@@ -43,5 +44,6 @@ void pg_sprintf_lite(kstring_t *s, const char *fmt, ...);
 double pg_cputime(void);
 long pg_peakrss(void);
 double pg_realtime(void);
+double pg_percent_cpu(void);
 
 #endif

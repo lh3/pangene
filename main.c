@@ -19,6 +19,8 @@ int main(int argc, char *argv[])
 	d = pg_data_init();
 	for (i = o.ind; i < argc; ++i) {
 		pg_read_paf(d, argv[i], gene_sep);
+		if (pg_verbose >= 3)
+			fprintf(stderr, "[M::%s::%.3f*%.2f] read file '%s'\n", __func__, pg_realtime(), pg_percent_cpu(), argv[i]);
 	}
 	pg_data_destroy(d);
 

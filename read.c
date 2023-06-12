@@ -75,11 +75,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 	tmp->exon[tmp->n_exon - 1].oen = x;
 	tmp->exon[tmp->n_exon - 1].n_fs = n_fs;
 	assert(x == hit->ce - hit->cs);
-	if (g->n_exon + tmp->n_exon > g->m_exon) {
-		g->m_exon = g->n_exon + tmp->n_exon;
-		g->m_exon += (g->m_exon>>1) + 16;
-		g->exon = PG_REALLOC(pg_exon_t, g->exon, g->m_exon);
-	}
+	PG_EXTEND(pg_exon_t, g->exon, g->n_exon + tmp->n_exon - 1, g->m_exon);
 	t = &g->exon[g->n_exon];
 	if (!hit->rev) {
 		memcpy(t, tmp->exon, tmp->n_exon * sizeof(pg_exon_t));
@@ -90,6 +86,8 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 			t->n_fs = tmp->exon[i].n_fs;
 		}
 	}
+	hit->n_exon = tmp->n_exon;
+	hit->off_exon = g->n_exon;
 	g->n_exon += tmp->n_exon;
 }
 
@@ -116,7 +114,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 		char *p, *q, *r;
 		int32_t i;
 		pg_hit_t hit;
-		hit.pid = hit.cid = -1;
+		hit.pid = hit.cid = hit.off_exon = hit.n_exon = -1;
 		for (p = q = str.s, i = 0;; ++p) {
 			if (*p == '\t' || *p == 0) {
 				int32_t c = *p;
@@ -178,6 +176,10 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 				q = p + 1, ++i;
 				if (c == 0) break;
 			}
+		}
+		if (hit.n_exon >= 1) {
+			PG_EXTEND(pg_hit_t, g->hit, g->n_hit, g->m_hit);
+			g->hit[g->n_hit++] = hit;
 		}
 	}
 	pg_dict_destroy(d_ctg);
