@@ -97,14 +97,14 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	kstream_t *ks;
 	kstring_t str = {0,0,0};
 	int32_t dret, absent;
-	pg_dict_t *d_ctg;
+	void *d_ctg;
 	pg_genome_t *g;
 	pg_exons_t buf = {0,0,0};
 
 	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(0, "r");
 	if (fp == 0) return -1;
 
-	d_ctg = pg_dict_init();
+	d_ctg = pg_sdict_init();
 	PG_EXTEND(pg_genome_t, d->genome, d->n_genome, d->m_genome);
 	g = &d->genome[d->n_genome++];
 	memset(g, 0, sizeof(*g));
@@ -135,7 +135,6 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 						d->n_prot++;
 						PG_EXTEND(pg_prot_t, d->prot, pid, d->m_prot);
 					}
-					assert(pid < d->m_prot);
 					d->prot[pid].name = tmp;
 					d->prot[pid].gid = gid;
 					hit.pid = pid;
@@ -150,10 +149,13 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					hit.rev = *q == '+'? 0 : 1;
 				} else if (i == 5) {
 					int32_t cid;
-					pg_dict_put(d_ctg, q, &cid, &absent);
+					char **ret;
+					ret = pg_sdict_set(d_ctg, q, pg_sdict_size(d_ctg), &cid, &absent);
 					if (absent) {
+						const char *name;
 						PG_EXTEND(pg_ctg_t, g->ctg, g->n_ctg, g->m_ctg);
-						g->ctg[g->n_ctg++].name = pg_dict_put(d->d_ctg, q, 0, 0);
+						name = pg_dict_put(d->d_ctg, q, 0, 0);
+						g->ctg[g->n_ctg++].name = *ret = (char*)name;
 					}
 					assert(cid < g->m_ctg);
 					hit.cid = cid;
@@ -183,7 +185,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 			g->hit[g->n_hit++] = hit;
 		}
 	}
-	pg_dict_destroy(d_ctg);
+	pg_sdict_destroy(d_ctg);
 	ks_destroy(ks);
 	gzclose(fp);
 	return 0;

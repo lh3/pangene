@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r7-dirty"
+#define PG_VERSION "0.0-r8-dirty"
 
 struct pg_dict_s;
 typedef struct pg_dict_s pg_dict_t;
@@ -23,7 +23,7 @@ typedef struct {
 	int32_t qs, qe;
 	int32_t cid; // contig ID
 	int32_t mlen, blen;
-	int32_t score;
+	int32_t score, rank;
 	int32_t n_exon, off_exon;
 	int64_t cs, ce;
 } pg_hit_t;
