@@ -42,7 +42,7 @@ void pg_dict_destroy(pg_dict_t *d);
 
 void *pg_sdict_init(void);
 void pg_sdict_destroy(void *h);
-char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_);
+const char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_);
 int32_t pg_sdict_size(void *h);
 
 void pg_sprintf_lite(kstring_t *s, const char *fmt, ...);

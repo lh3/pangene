@@ -84,7 +84,7 @@ void pg_sdict_destroy(void *h)
 	pg_sh_destroy((pg_strhash_t*)h);
 }
 
-char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_)
+const char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_)
 {
 	pg_strhash_t *h = (pg_strhash_t*)h_;
 	int absent;
@@ -93,7 +93,7 @@ char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *a
 	if (absent) kh_key(h, k) = s, kh_val(h, k) = v0;
 	if (absent_) *absent_ = absent;
 	if (v1) *v1 = kh_val(h, k);
-	return (char**)&kh_key(h, k);
+	return &kh_key(h, k);
 }
 
 int32_t pg_sdict_size(void *h)

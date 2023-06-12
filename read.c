@@ -149,13 +149,13 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					hit.rev = *q == '+'? 0 : 1;
 				} else if (i == 5) {
 					int32_t cid;
-					char **ret;
+					const char **ret;
 					ret = pg_sdict_set(d_ctg, q, pg_sdict_size(d_ctg), &cid, &absent);
-					if (absent) {
+					if (absent) { // a new contig not seen in this PAF file
 						const char *name;
 						PG_EXTEND(pg_ctg_t, g->ctg, g->n_ctg, g->m_ctg);
 						name = pg_dict_put(d->d_ctg, q, 0, 0);
-						g->ctg[g->n_ctg++].name = *ret = (char*)name;
+						g->ctg[g->n_ctg++].name = *ret = name;
 					}
 					assert(cid < g->m_ctg);
 					hit.cid = cid;
