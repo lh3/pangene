@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define PG_VERSION "0.0.0"
+
 struct pg_dict_s;
 typedef struct pg_dict_s pg_dict_t;
 
@@ -48,5 +50,11 @@ typedef struct {
 	int32_t n_prot, m_prot;
 	pg_prot_t *prot;
 } pg_data_t;
+
+extern int pg_verbose;
+
+pg_data_t *pg_data_init(void);
+void pg_data_destroy(pg_data_t *d);
+int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t gene_sep);
 
 #endif

@@ -5,6 +5,26 @@
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 0x10000)
 
+int pg_verbose = 3;
+
+pg_data_t *pg_data_init(void)
+{
+	return PG_CALLOC(pg_data_t, 1);
+}
+
+void pg_data_destroy(pg_data_t *d)
+{
+	int32_t i;
+	for (i = 0; i < d->n_genome; ++i) {
+		pg_genome_t *g = &d->genome[i];
+		free(g->ctg); free(g->hit); free(g->exon);
+	}
+	free(d->genome); free(d->prot);
+	pg_dict_destroy(d->d_ctg);
+	pg_dict_destroy(d->d_gene);
+	pg_dict_destroy(d->d_prot);
+}
+
 typedef struct {
 	int32_t n_exon, m_exon;
 	pg_exon_t *exon;
@@ -48,6 +68,8 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 			x += l, ++n_fs;
 		}
 	}
+	tmp->exon[tmp->n_exon - 1].oen = x;
+	tmp->exon[tmp->n_exon - 1].n_fs = n_fs;
 	assert(x == hit->ce - hit->cs);
 	if (g->n_exon + tmp->n_exon > g->m_exon) {
 		g->m_exon = g->n_exon + tmp->n_exon;

@@ -4,7 +4,7 @@ CFLAGS=		-std=c99 -g -Wall -O3
 CXXFLAGS=	$(CFLAGS)
 CPPFLAGS=
 INCLUDES=
-OBJS=		dict.o format.o read.o
+OBJS=		sys.o dict.o format.o read.o
 PROG=		pangene
 LIBS=		-lpthread -lz -lm
 
@@ -37,4 +37,6 @@ depend:
 
 dict.o: pgpriv.h pangene.h khashl.h
 format.o: pgpriv.h pangene.h
+main.o: pgpriv.h pangene.h ketopt.h
 read.o: pgpriv.h pangene.h kseq.h
+sys.o: pgpriv.h pangene.h

@@ -33,4 +33,8 @@ void pg_dict_destroy(pg_dict_t *d);
 
 void pg_sprintf_lite(kstring_t *s, const char *fmt, ...);
 
+double pg_cputime(void);
+long pg_peakrss(void);
+double pg_realtime(void);
+
 #endif
