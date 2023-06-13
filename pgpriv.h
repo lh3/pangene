@@ -33,17 +33,12 @@ typedef struct __kstring_t {
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 #endif
 
-pg_dict_t *pg_dict_init(void);
-const char *pg_dict_put(pg_dict_t *d, const char *s, int32_t *id, int32_t *absent);
-const char *pg_dict_get(const pg_dict_t *d, const char *s, int32_t *id);
-int32_t pg_dict_size(const pg_dict_t *d);
-void pg_dict_destroy(pg_dict_t *d);
-
-void *pg_sdict_init(void);
-void pg_sdict_destroy(void *h);
-const char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_);
-int32_t pg_sdict_inc(void *h_, const char *s, int32_t v0);
-int32_t pg_sdict_size(void *h);
+void *pg_dict_init(void);
+void pg_dict_destroy(void *h_);
+void pg_dict_destroy_copy(void *h_);
+int32_t pg_dict_size(const void *h_);
+const char **pg_dict_put(void *h_, const char *s, int32_t v0, int32_t do_copy, int32_t *v1, int32_t *absent_);
+int32_t pg_dict_inc(void *h_, const char *s, int32_t v0);
 
 void pg_sprintf_lite(kstring_t *s, const char *fmt, ...);
 

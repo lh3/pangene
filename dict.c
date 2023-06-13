@@ -2,20 +2,6 @@
 #include "khashl.h"
 KHASHL_CMAP_INIT(KH_LOCAL, pg_strhash_t, pg_sh, const char*, int32_t, kh_hash_str, kh_eq_str)
 
-struct pg_dict_s {
-	int32_t n_str, m_str;
-	char **str;
-	pg_strhash_t *h;
-};
-
-pg_dict_t *pg_dict_init(void)
-{
-	pg_dict_t *d;
-	d = PG_CALLOC(pg_dict_t, 1);
-	d->h = pg_sh_init();
-	return d;
-}
-
 char *pg_strdup(const char *src)
 {
 	int32_t len;
@@ -35,68 +21,47 @@ char *pg_strndup(const char *src, size_t n)
 	return dst;
 }
 
-const char *pg_dict_put(pg_dict_t *d, const char *s, int32_t *id, int32_t *absent_)
-{
-	int absent;
-	khint_t k;
-	k = pg_sh_put(d->h, s, &absent);
-	if (absent) {
-		PG_EXTEND(char*, d->str, d->n_str, d->m_str);
-		kh_key(d->h, k) = d->str[d->n_str] = pg_strdup(s);
-		kh_val(d->h, k) = d->n_str++;
-	}
-	if (absent_) *absent_ = absent;
-	if (id) *id = kh_val(d->h, k);
-	return kh_key(d->h, k);
-}
-
-const char *pg_dict_get(const pg_dict_t *d, const char *s, int32_t *id)
-{
-	khint_t k;
-	k = pg_sh_get(d->h, s);
-	if (id) *id = k == kh_end(d->h)? -1 : kh_val(d->h, k);
-	return k == kh_end(d->h)? 0 : kh_key(d->h, k);
-}
-
-int32_t pg_dict_size(const pg_dict_t *d)
-{
-	return d->n_str;
-}
-
-void pg_dict_destroy(pg_dict_t *d)
-{
-	int32_t i;
-	if (d == 0) return;
-	pg_sh_destroy(d->h);
-	for (i = 0; i < d->n_str; ++i)
-		free(d->str[i]);
-	free(d->str);
-	free(d);
-}
-
-void *pg_sdict_init(void)
+void *pg_dict_init(void)
 {
 	return pg_sh_init();
 }
 
-void pg_sdict_destroy(void *h)
+void pg_dict_destroy(void *h_)
 {
-	pg_sh_destroy((pg_strhash_t*)h);
+	pg_sh_destroy((pg_strhash_t*)h_);
 }
 
-const char **pg_sdict_set(void *h_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_)
+void pg_dict_destroy_copy(void *h_)
+{
+	pg_strhash_t *h = (pg_strhash_t*)h_;
+	khint_t k;
+	for (k = 0; k < kh_end(h); ++k)
+		if (kh_exist(h, k))
+			free((char*)kh_key(h, k));
+	pg_sh_destroy(h);
+}
+
+int32_t pg_dict_size(const void *h_)
+{
+	return kh_size((pg_strhash_t*)h_);
+}
+
+const char **pg_dict_put(void *h_, const char *s, int32_t v0, int32_t do_copy, int32_t *v1, int32_t *absent_)
 {
 	pg_strhash_t *h = (pg_strhash_t*)h_;
 	int absent;
 	khint_t k;
 	k = pg_sh_put(h, s, &absent);
-	if (absent) kh_key(h, k) = s, kh_val(h, k) = v0;
+	if (absent) {
+		kh_key(h, k) = do_copy? pg_strdup(s) : s;
+		kh_val(h, k) = v0;
+	}
 	if (absent_) *absent_ = absent;
 	if (v1) *v1 = kh_val(h, k);
 	return &kh_key(h, k);
 }
 
-int32_t pg_sdict_inc(void *h_, const char *s, int32_t v0)
+int32_t pg_dict_inc(void *h_, const char *s, int32_t v0)
 {
 	pg_strhash_t *h = (pg_strhash_t*)h_;
 	int absent;
@@ -105,9 +70,4 @@ int32_t pg_sdict_inc(void *h_, const char *s, int32_t v0)
 	if (absent) kh_key(h, k) = s, kh_val(h, k) = v0;
 	else ++kh_val(h, k);
 	return kh_val(h, k);
-}
-
-int32_t pg_sdict_size(void *h)
-{
-	return kh_size((pg_strhash_t*)h);
 }

@@ -5,9 +5,6 @@
 
 #define PG_VERSION "0.0-r11-dirty"
 
-struct pg_dict_s;
-typedef struct pg_dict_s pg_dict_t;
-
 typedef struct {
 	int32_t ost, oen;
 } pg_exon_t;
@@ -43,7 +40,7 @@ typedef struct {
 } pg_genome_t;
 
 typedef struct {
-	pg_dict_t *d_ctg, *d_gene, *d_prot;
+	void *d_ctg, *d_gene, *d_prot;
 	int32_t n_genome, m_genome;
 	pg_genome_t *genome;
 	int32_t n_prot, m_prot;
