@@ -25,7 +25,7 @@ void pg_data_destroy(pg_data_t *d)
 		pg_genome_t *g = &d->genome[i];
 		free(g->ctg); free(g->hit); free(g->exon);
 	}
-	free(d->genome); free(d->prot);
+	free(d->genome); free(d->gene); free(d->prot);
 	pg_dict_destroy(d->d_ctg);
 	pg_dict_destroy(d->d_gene);
 	pg_dict_destroy(d->d_prot);
@@ -122,13 +122,20 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					int32_t gid, pid;
 					const char *tmp;
 					for (r = q; r < p && *r != sep; ++r) {}
+					// add gene
 					if (*r == sep) {
 						*r = 0;
-						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, 0);
+						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
 						*r = sep;
 					} else {
-						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, 0);
+						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
 					}
+					if (absent) {
+						d->n_gene++;
+						PG_EXTEND(pg_gene_t, d->gene, gid, d->m_gene);
+					}
+					d->gene[gid].name = tmp;
+					// add protein
 					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), &pid, &absent);
 					if (absent) { // protein is new
 						d->n_prot++;
@@ -138,16 +145,16 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					d->prot[pid].gid = gid;
 					hit.pid = pid;
 					hit.rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
-				} else if (i == 1) {
+				} else if (i == 1) { // query length
 					d->prot[hit.pid].len = strtol(q, &r, 10);
-				} else if (i == 2) {
+				} else if (i == 2) { // query start
 					hit.qs = strtol(q, &r, 10);
-				} else if (i == 3) {
+				} else if (i == 3) { // query end
 					hit.qe = strtol(q, &r, 10);
-				} else if (i == 4) {
+				} else if (i == 4) { // strand
 					if (*q != '+' && *q != '-') break;
 					hit.rev = *q == '+'? 0 : 1;
-				} else if (i == 5) {
+				} else if (i == 5) { // contig name
 					int32_t cid;
 					const char **ret;
 					ret = pg_dict_put(d_ctg, q, pg_dict_size(d_ctg), &cid, &absent);
@@ -159,20 +166,20 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					}
 					assert(cid < g->m_ctg);
 					hit.cid = cid;
-				} else if (i == 6) {
+				} else if (i == 6) { // contig length
 					g->ctg[hit.cid].len = strtol(q, &r, 10);
-				} else if (i == 7) {
+				} else if (i == 7) { // contig start
 					hit.cs = strtol(q, &r, 10);
-				} else if (i == 8) {
+				} else if (i == 8) { // contig end
 					hit.ce = strtol(q, &r, 10);
-				} else if (i == 9)  {
+				} else if (i == 9)  { // matching length
 					hit.mlen = strtol(q, &r, 10);
-				} else if (i == 10) {
+				} else if (i == 10) { // block length
 					hit.blen = strtol(q, &r, 10);
-				} else if (i >= 12) {
-					if (strncmp(q, "ms:i:", 5) == 0) {
+				} else if (i >= 12) { // tags
+					if (strncmp(q, "ms:i:", 5) == 0) { // score
 						hit.score = strtol(q + 5, &r, 10);
-					} else if (strncmp(q, "cg:Z:", 5) == 0) {
+					} else if (strncmp(q, "cg:Z:", 5) == 0) { // CIGAR
 						pg_parse_cigar(d, g, &hit, &buf, q + 5);
 					}
 				}

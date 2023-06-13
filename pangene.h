@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r14-dirty"
+#define PG_VERSION "0.0-r15-dirty"
 
 typedef struct {
 	int32_t ost, oen;
@@ -14,6 +14,10 @@ typedef struct {
 	int32_t len;
 	int32_t gid;
 } pg_prot_t;
+
+typedef struct {
+	const char *name;
+} pg_gene_t;
 
 typedef struct {
 	uint32_t pid:31, rev:1; // protein ID
@@ -43,6 +47,8 @@ typedef struct {
 	void *d_ctg, *d_gene, *d_prot;
 	int32_t n_genome, m_genome;
 	pg_genome_t *genome;
+	int32_t n_gene, m_gene;
+	pg_gene_t *gene;
 	int32_t n_prot, m_prot;
 	pg_prot_t *prot;
 } pg_data_t;
