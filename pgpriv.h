@@ -36,7 +36,6 @@ typedef struct __kstring_t {
 pg_dict_t *pg_dict_init(void);
 const char *pg_dict_put(pg_dict_t *d, const char *s, int32_t *id, int32_t *absent);
 const char *pg_dict_get(const pg_dict_t *d, const char *s, int32_t *id);
-int32_t pg_dict_set(pg_dict_t *d, const char *s, int32_t v);
 int32_t pg_dict_size(const pg_dict_t *d);
 void pg_dict_destroy(pg_dict_t *d);
 
