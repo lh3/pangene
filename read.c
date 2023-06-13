@@ -12,9 +12,9 @@ pg_data_t *pg_data_init(void)
 {
 	pg_data_t *d;
 	d = PG_CALLOC(pg_data_t, 1);
-	d->d_ctg = pg_dict_init();
-	d->d_gene = pg_dict_init();
-	d->d_prot = pg_dict_init();
+	d->d_ctg = pg_dict_init(1);
+	d->d_gene = pg_dict_init(1);
+	d->d_prot = pg_dict_init(1);
 	return d;
 }
 
@@ -26,9 +26,9 @@ void pg_data_destroy(pg_data_t *d)
 		free(g->ctg); free(g->hit); free(g->exon);
 	}
 	free(d->genome); free(d->prot);
-	pg_dict_destroy_copy(d->d_ctg);
-	pg_dict_destroy_copy(d->d_gene);
-	pg_dict_destroy_copy(d->d_prot);
+	pg_dict_destroy(d->d_ctg);
+	pg_dict_destroy(d->d_gene);
+	pg_dict_destroy(d->d_prot);
 }
 
 typedef struct {
@@ -102,8 +102,8 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(0, "r");
 	if (fp == 0) return -1;
 
-	hit_rank = pg_dict_init();
-	d_ctg = pg_dict_init();
+	hit_rank = pg_dict_init(0);
+	d_ctg = pg_dict_init(0);
 	PG_EXTEND(pg_genome_t, d->genome, d->n_genome, d->m_genome);
 	g = &d->genome[d->n_genome++];
 	memset(g, 0, sizeof(*g));
@@ -124,12 +124,12 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					for (r = q; r < p && *r != sep; ++r) {}
 					if (*r == sep) {
 						*r = 0;
-						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), 1, &gid, 0);
+						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, 0);
 						*r = sep;
 					} else {
-						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), 1, &gid, 0);
+						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, 0);
 					}
-					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), 1, &pid, &absent);
+					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), &pid, &absent);
 					if (absent) { // protein is new
 						d->n_prot++;
 						PG_EXTEND(pg_prot_t, d->prot, pid, d->m_prot);
@@ -150,11 +150,11 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 				} else if (i == 5) {
 					int32_t cid;
 					const char **ret;
-					ret = pg_dict_put(d_ctg, q, pg_dict_size(d_ctg), 0, &cid, &absent);
+					ret = pg_dict_put(d_ctg, q, pg_dict_size(d_ctg), &cid, &absent);
 					if (absent) { // a new contig not seen in this PAF file
 						const char *name;
 						PG_EXTEND(pg_ctg_t, g->ctg, g->n_ctg, g->m_ctg);
-						name = *pg_dict_put(d->d_ctg, q, pg_dict_size(d->d_ctg), 1, 0, 0);
+						name = *pg_dict_put(d->d_ctg, q, pg_dict_size(d->d_ctg), 0, 0);
 						g->ctg[g->n_ctg++].name = *ret = name;
 					}
 					assert(cid < g->m_ctg);
