@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r15-dirty"
+#define PG_VERSION "0.0-r16-dirty"
 
 typedef struct {
 	int32_t ost, oen;
@@ -26,7 +26,7 @@ typedef struct {
 	int32_t mlen, blen, fs;
 	int32_t score, rank;
 	int32_t n_exon, off_exon;
-	int64_t cs, ce;
+	int64_t cs, cm, ce;
 } pg_hit_t;
 
 typedef struct {

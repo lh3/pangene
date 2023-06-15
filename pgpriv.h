@@ -13,6 +13,10 @@ typedef struct __kstring_t {
 } kstring_t;
 #endif
 
+typedef struct {
+	uint64_t x, y;
+} pg128_t;
+
 #define PG_MALLOC(type, cnt)       ((type*)malloc((cnt) * sizeof(type)))
 #define PG_CALLOC(type, cnt)       ((type*)calloc((cnt), sizeof(type)))
 #define PG_REALLOC(type, ptr, cnt) ((type*)realloc((ptr), (cnt) * sizeof(type)))
@@ -45,5 +49,8 @@ double pg_cputime(void);
 long pg_peakrss(void);
 double pg_realtime(void);
 double pg_percent_cpu(void);
+
+int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e);
+void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm);
 
 #endif

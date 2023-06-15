@@ -92,7 +92,7 @@ void pg_write_bed1(kstring_t *out, const pg_data_t *d, int32_t aid, int32_t hid)
 		pg_sprintf_lite(out, "%ld,", a->cs + g->exon[a->off_exon + i].ost); // for debugging only
 		#endif
 	}
-	pg_sprintf_lite(out, "\trk:i:%d\tfs:i:%d\n", a->rank, a->fs);
+	pg_sprintf_lite(out, "\trk:i:%d\tfs:i:%d\tcm:i:%ld\n", a->rank, a->fs, a->cm);
 }
 
 void pg_write_bed(const pg_data_t *d, int32_t aid)

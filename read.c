@@ -189,6 +189,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 		}
 		if (hit.n_exon >= 1) {
 			PG_EXTEND(pg_hit_t, g->hit, g->n_hit, g->m_hit);
+			hit.cm = pg_hit_cal_cm(&hit, &g->exon[hit.off_exon]);
 			g->hit[g->n_hit++] = hit;
 		}
 	}
@@ -196,5 +197,6 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	pg_dict_destroy(hit_rank);
 	ks_destroy(ks);
 	gzclose(fp);
+	pg_hit_sort(0, g, 0);
 	return 0;
 }
