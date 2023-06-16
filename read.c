@@ -41,7 +41,7 @@ static inline void pg_add_exon(pg_exons_t *tmp, int32_t st)
 	pg_exon_t *p;
 	PG_EXTEND(pg_exon_t, tmp->exon, tmp->n_exon, tmp->m_exon);
 	p = &tmp->exon[tmp->n_exon++];
-	p->ost = p->oen = st;
+	p->os = p->oe = st;
 }
 
 static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons_t *tmp, const char *cg)
@@ -61,7 +61,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 			if (*r == 'N') st = x, en = x + l;
 			else if (*r == 'U') st = x + 1, en = x + l - 2;
 			else st = x + 2, en = x + l - 1;
-			tmp->exon[tmp->n_exon - 1].oen = st;
+			tmp->exon[tmp->n_exon - 1].oe = st;
 			pg_add_exon(tmp, en);
 			x += l;
 		} else if (*r == 'M' || *r == 'X' || *r == '=' || *r == 'D') {
@@ -71,7 +71,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 		}
 		p = r + 1;
 	}
-	tmp->exon[tmp->n_exon - 1].oen = x;
+	tmp->exon[tmp->n_exon - 1].oe = x;
 	assert(x == hit->ce - hit->cs);
 	PG_EXTEND(pg_exon_t, g->exon, g->n_exon + tmp->n_exon - 1, g->m_exon);
 	t = &g->exon[g->n_exon];
@@ -79,8 +79,8 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 		memcpy(t, tmp->exon, tmp->n_exon * sizeof(pg_exon_t));
 	} else {
 		for (i = tmp->n_exon - 1; i >= 0; --i, ++t) {
-			t->ost = x - tmp->exon[i].oen;
-			t->oen = x - tmp->exon[i].ost;
+			t->os = x - tmp->exon[i].oe;
+			t->oe = x - tmp->exon[i].os;
 		}
 	}
 	hit->n_exon = tmp->n_exon;

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "pgpriv.h"
 #include "kalloc.h"
 #include "ksort.h"
@@ -9,12 +10,12 @@ int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e)
 {
 	int32_t i, len, half;
 	for (i = 0, len = 0; i < a->n_exon; ++i)
-		len += e[i].oen - e[i].ost;
+		len += e[i].oe - e[i].os;
 	half = len>>1;
 	for (i = 0, len = 0; i < a->n_exon; ++i) {
-		if (len <= half && half < len + e[i].oen - e[i].ost)
-			return a->cs + e[i].ost + half - len;
-		len += e[i].oen - e[i].ost;
+		if (len <= half && half < len + e[i].oe - e[i].os)
+			return a->cs + e[i].os + half - len;
+		len += e[i].oe - e[i].os;
 	}
 	abort();
 	return -1;
@@ -55,4 +56,39 @@ void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm)
 	kfree(km, tmp);
 	free(g->hit);
 	g->hit = a;
+}
+
+uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab)
+{
+	int32_t l_inter = 0, l_union = 0, x;
+	int64_t z = 0;
+	const pg_hit_t *a[2];
+	const pg_exon_t *e[2], *ee[2];
+	if (aa->cid != ab->cid || !(aa->cs < ab->ce && aa->ce > ab->cs)) return 0;
+	assert(aa->n_exon > 0 && ab->n_exon > 0);
+	a[0] = aa, a[1] = ab;
+	e[0] = &g->exon[a[0]->off_exon], e[1] = &g->exon[a[1]->off_exon];
+	ee[0] = e[0] + a[0]->n_exon, ee[1] = e[1] + a[1]->n_exon;
+	while (e[0] < ee[0] && e[1] < ee[1]) {
+		int32_t x = a[0]->cs + e[0]->os < a[1]->cs + e[1]->os? 0 : 1, y = !x;
+		z = z > a[x]->cs + e[x]->os? z : a[x]->cs + e[x]->os;
+		if (a[x]->cs + e[x]->oe < a[y]->cs + e[y]->oe) { // x ends earlier
+			int64_t o = (a[x]->cs + e[x]->oe) - (a[y]->cs + e[y]->os);
+			l_inter += o > 0? o : 0;
+			l_union += a[x]->cs + e[x]->oe - z;
+			z = a[x]->cs + e[x]->oe;
+			++e[x];
+		} else { // y contained in x
+			l_inter += e[y]->oe - e[y]->os;
+			l_union += a[y]->cs + e[y]->oe - z;
+			z = a[y]->cs + e[y]->oe;
+			++e[y];
+		}
+	}
+	x = e[0] < ee[0]? 0 : 1;
+	while (e[x] < ee[x]) {
+		z = z > a[x]->cs + e[x]->os? z : a[x]->cs + e[x]->os;
+		l_union += e[x]->oe - z;
+	}
+	return (uint64_t)l_inter<<33 | (uint64_t)l_union<<2;
 }

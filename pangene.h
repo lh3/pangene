@@ -3,10 +3,10 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r16-dirty"
+#define PG_VERSION "0.0-r17-dirty"
 
 typedef struct {
-	int32_t ost, oen;
+	int32_t os, oe;
 } pg_exon_t;
 
 typedef struct {

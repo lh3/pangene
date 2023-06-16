@@ -83,13 +83,13 @@ void pg_write_bed1(kstring_t *out, const pg_data_t *d, int32_t aid, int32_t hid)
 	pg_sprintf_lite(out, "%s\t%ld\t%ld\t%s\t%d\t%c\t", g->ctg[a->cid].name, a->cs, a->ce, d->prot[a->pid].name, a->score, "+-"[a->rev]);
 	pg_sprintf_lite(out, "%ld\t%ld\t0\t%d\t", a->cs, a->ce, a->n_exon);
 	for (i = 0; i < a->n_exon; ++i)
-		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].oen - g->exon[a->off_exon + i].ost);
+		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].oe - g->exon[a->off_exon + i].os);
 	pg_sprintf_lite(out, "\t");
 	for (i = 0; i < a->n_exon; ++i) {
 		#if 1
-		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].ost);
+		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].os);
 		#else
-		pg_sprintf_lite(out, "%ld,", a->cs + g->exon[a->off_exon + i].ost); // for debugging only
+		pg_sprintf_lite(out, "%ld,", a->cs + g->exon[a->off_exon + i].os); // for debugging only
 		#endif
 	}
 	pg_sprintf_lite(out, "\trk:i:%d\tfs:i:%d\tcm:i:%ld\n", a->rank, a->fs, a->cm);
