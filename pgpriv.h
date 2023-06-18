@@ -52,5 +52,6 @@ double pg_percent_cpu(void);
 
 int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e);
 void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm);
+uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab);
 
 #endif

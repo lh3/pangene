@@ -3,7 +3,12 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r17-dirty"
+#define PG_VERSION "0.0-r18-dirty"
+
+typedef struct {
+	double min_prot_ratio;
+	double min_ov_ratio;
+} pg_opt_t;
 
 typedef struct {
 	int32_t os, oe;
@@ -55,9 +60,11 @@ typedef struct {
 
 extern int pg_verbose;
 
+void pg_opt_init(pg_opt_t *opt);
+
 pg_data_t *pg_data_init(void);
 void pg_data_destroy(pg_data_t *d);
-int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t gene_sep);
+int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t gene_sep);
 
 void pg_write_bed(const pg_data_t *d, int32_t aid);
 

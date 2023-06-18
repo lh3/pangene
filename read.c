@@ -6,8 +6,6 @@
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 0x10000)
 
-int pg_verbose = 3;
-
 pg_data_t *pg_data_init(void)
 {
 	pg_data_t *d;
@@ -89,12 +87,12 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 	g->n_exon += tmp->n_exon;
 }
 
-int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
+int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t sep)
 {
 	gzFile fp;
 	kstream_t *ks;
 	kstring_t str = {0,0,0};
-	int32_t dret, absent;
+	int32_t dret, absent, n_tot = 0;
 	void *d_ctg, *hit_rank;
 	pg_genome_t *g;
 	pg_exons_t buf = {0,0,0};
@@ -113,6 +111,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 		char *p, *q, *r;
 		int32_t i;
 		pg_hit_t hit;
+		++n_tot;
 		hit.pid = hit.cid = hit.off_exon = hit.n_exon = -1;
 		for (p = q = str.s, i = 0;; ++p) {
 			if (*p == '\t' || *p == 0) {
@@ -146,11 +145,13 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 					hit.pid = pid;
 					hit.rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
 				} else if (i == 1) { // query length
-					d->prot[hit.pid].len = strtol(q, &r, 10);
+					d->prot[hit.pid].len = strtol(q, &r, 10); // TODO: test if length consistent
 				} else if (i == 2) { // query start
 					hit.qs = strtol(q, &r, 10);
 				} else if (i == 3) { // query end
 					hit.qe = strtol(q, &r, 10);
+					if (hit.qe - hit.qs < d->prot[hit.pid].len * opt->min_prot_ratio)
+						break;
 				} else if (i == 4) { // strand
 					if (*q != '+' && *q != '-') break;
 					hit.rev = *q == '+'? 0 : 1;
@@ -198,5 +199,7 @@ int32_t pg_read_paf(pg_data_t *d, const char *fn, int32_t sep)
 	ks_destroy(ks);
 	gzclose(fp);
 	pg_hit_sort(0, g, 0);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%.3f*%.2f] read %d alignments and retained %d of them\n", __func__, pg_realtime(), pg_percent_cpu(), n_tot, g->n_hit);
 	return 0;
 }

@@ -90,5 +90,6 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 		z = z > a[x]->cs + e[x]->os? z : a[x]->cs + e[x]->os;
 		l_union += e[x]->oe - z;
 	}
-	return (uint64_t)l_inter<<33 | (uint64_t)l_union<<2;
+	assert(l_inter <= l_union);
+	return (uint64_t)l_inter<<32 | l_union;
 }

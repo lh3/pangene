@@ -11,8 +11,10 @@ int main(int argc, char *argv[])
 {
 	ketopt_t o = KETOPT_INIT;
 	int32_t i, c, gene_sep = ':', bed_out = 0;
+	pg_opt_t opt;
 	pg_data_t *d;
 
+	pg_opt_init(&opt);
 	while ((c = ketopt(&o, argc, argv, 1, "d:", long_options)) >= 0) {
 		if (c == 301) bed_out = 1;
 	}
@@ -24,9 +26,9 @@ int main(int argc, char *argv[])
 	pg_realtime();
 	d = pg_data_init();
 	for (i = o.ind; i < argc; ++i) {
-		pg_read_paf(d, argv[i], gene_sep);
 		if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s::%.3f*%.2f] read file '%s'\n", __func__, pg_realtime(), pg_percent_cpu(), argv[i]);
+			fprintf(stderr, "[M::%s] reading file '%s'\n", __func__, argv[i]);
+		pg_read_paf(&opt, d, argv[i], gene_sep);
 	}
 	if (bed_out) {
 		for (i = 0; i < d->n_genome; ++i)
