@@ -89,7 +89,8 @@ void pg_gs_choose1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t ai
 {
 	int32_t i0, i, j, off, n_ov;
 	uint64_t *ov, *idx, *sc;
-	int8_t *flt;
+	int8_t *flag;
+	const pg_genome_t *g = &d->genome[aid];
 
 	ov = pg_gs_overlap(km, opt, d, aid, &n_ov);
 	idx = Kcalloc(km, uint64_t, d->n_gene);
@@ -109,16 +110,19 @@ void pg_gs_choose1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t ai
 	for (i = 0; i < d->n_gene; ++i)
 		sc[i] = sc[i]<<32 | i;
 	radix_sort_pg64(sc, sc + d->n_gene);
-	flt = Kcalloc(km, int8_t, d->n_gene);
+	flag = Kcalloc(km, int8_t, d->n_gene);
+	for (i = 0; i < g->n_hit; ++i)
+		flag[d->prot[g->hit[i].pid].gid] |= 1;
 	for (i = d->n_gene - 1; i >= 0; --i) {
-		if (!flt[i]) {
+		if (!(flag[i] & 1)) continue; // no alignment; then don't count
+		if (!(flag[i] & 2)) {
 			int32_t off = idx[i]>>32, c = (int32_t)idx[i];
 			cnt[i] += 1ULL<<32;
 			for (j = 0; j < c; ++j)
-				flt[(int32_t)ov[off + j]] = 1;
+				flag[(int32_t)ov[off + j]] |= 2;
 		} else cnt[i] += 1ULL;
 	}
-	kfree(km, flt);
+	kfree(km, flag);
 
 	kfree(km, sc);
 	kfree(km, idx);
