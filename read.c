@@ -200,6 +200,6 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 	gzclose(fp);
 	pg_hit_sort(0, g, 0);
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%.3f*%.2f] parsed %d alignments and kept %d of them\n", __func__, pg_realtime(), pg_percent_cpu(), n_tot, g->n_hit);
+		fprintf(stderr, "[M::%s::%.3f*%.2f] genome %d: parsed %d alignments and kept %d of them\n", __func__, pg_realtime(), pg_percent_cpu(), d->n_genome-1, n_tot, g->n_hit);
 	return 0;
 }

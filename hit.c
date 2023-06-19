@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include "pgpriv.h"
 #include "kalloc.h"
 #include "ksort.h"
@@ -91,8 +92,10 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 	x = e[0] < ee[0]? 0 : 1;
 	while (e[x] < ee[x]) {
 		z = z > a[x]->cs + e[x]->os? z : a[x]->cs + e[x]->os;
-		l_union += e[x]->oe - z;
+		l_union += a[x]->cs + e[x]->oe - z;
+		++e[x];
 	}
 	assert(l_inter <= l_union);
+	//fprintf(stderr, "%d,%c%c: [%ld,%ld) <=> [%ld,%ld): %d,%d\n", aa->cid, "+-"[aa->rev], "+-"[ab->rev], (long)aa->cs, (long)aa->ce, (long)ab->cs, (long)ab->ce, l_inter, l_union);
 	return (uint64_t)l_inter<<32 | l_union;
 }

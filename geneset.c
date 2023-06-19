@@ -21,7 +21,7 @@ uint64_t *pg_gs_overlap(void *km, const pg_opt_t *opt, const pg_data_t *d, int32
 	uint64_t *ret;
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		while (i0 < i) {
-			if (g->hit[i0].ce > g->hit[i].cs)
+			if (g->hit[i0].cid == g->hit[i].cid && g->hit[i0].ce > g->hit[i].cs)
 				break;
 			++i0;
 		}
@@ -61,7 +61,7 @@ uint64_t *pg_gs_overlap(void *km, const pg_opt_t *opt, const pg_data_t *d, int32
 	ret = Kmalloc(km, uint64_t, k * 2);
 	for (i = 0, j = 0; i < k; ++i) {
 		ret[j++] = pairs[i].x;
-		ret[j] = pairs[i].x<<32 | pairs[i].x>>32;
+		ret[j++] = pairs[i].x<<32 | pairs[i].x>>32;
 	}
 	kfree(km, pairs);
 	radix_sort_pg64(ret, ret + k * 2);
@@ -93,9 +93,13 @@ void pg_gs_choose1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t ai
 
 	ov = pg_gs_overlap(km, opt, d, aid, &n_ov);
 	idx = Kcalloc(km, uint64_t, d->n_gene);
-	for (i = 1, i0 = 0; i <= n_ov; ++i)
-		if (i == n_ov || ov[i]>>32 != ov[i0]>>32)
-			idx[ov[i0]>>32] = i - i0, i0 = i;
+	for (i = 1, i0 = 0; i <= n_ov; ++i) {
+		if (i == n_ov || ov[i]>>32 != ov[i0]>>32) {
+			assert(ov[i0]>>32 < d->n_gene && (int32_t)ov[i0] < d->n_gene);
+			idx[ov[i0]>>32] = i - i0;
+			i0 = i;
+		}
+	}
 	for (i = 0, off = 0; i < d->n_gene; ++i) {
 		idx[i] = (uint64_t)off<<32 | idx[i];
 		off += (int32_t)idx[i];
@@ -140,5 +144,5 @@ void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g)
 	}
 	free(cnt);
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%.3f*%.2f] %d vertices out of %d genes\n", __func__, pg_realtime(), pg_percent_cpu(), g->n_v, g->d->n_gene);
+		fprintf(stderr, "[M::%s::%.3f*%.2f] selected %d vertices out of %d genes\n", __func__, pg_realtime(), pg_percent_cpu(), g->n_v, g->d->n_gene);
 }
