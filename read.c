@@ -109,7 +109,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 	ks = ks_init(fp);
 	while (ks_getuntil(ks, KS_SEP_LINE, &str, &dret) >= 0) {
 		char *p, *q, *r;
-		int32_t i;
+		int32_t i, pid, gid;
 		pg_hit_t hit;
 		++n_tot;
 		hit.pid = hit.cid = hit.off_exon = hit.n_exon = -1;
@@ -118,7 +118,6 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 				int32_t c = *p;
 				*p = 0;
 				if (i == 0) { // query name
-					int32_t gid, pid;
 					const char *tmp;
 					for (r = q; r < p && *r != sep; ++r) {}
 					// add gene
@@ -134,6 +133,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 						PG_EXTEND(pg_gene_t, d->gene, gid, d->m_gene);
 					}
 					d->gene[gid].name = tmp;
+					d->gene[gid].len = 0;
 					// add protein
 					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), &pid, &absent);
 					if (absent) { // protein is new
@@ -142,10 +142,15 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 					}
 					d->prot[pid].name = tmp;
 					d->prot[pid].gid = gid;
+					d->prot[pid].len = 0;
 					hit.pid = pid;
 					hit.rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
 				} else if (i == 1) { // query length
-					d->prot[hit.pid].len = strtol(q, &r, 10); // TODO: test if length consistent
+					int32_t len;
+					len = strtol(q, &r, 10);
+					assert(d->prot[pid].len == 0 || d->prot[pid].len == len);
+					d->prot[pid].len = len;
+					d->gene[gid].len = d->gene[gid].len > len? d->gene[gid].len : len;
 				} else if (i == 2) { // query start
 					hit.qs = strtol(q, &r, 10);
 				} else if (i == 3) { // query end

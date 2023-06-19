@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r20-dirty"
+#define PG_VERSION "0.0-r21-dirty"
 
 typedef struct {
 	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned
@@ -23,6 +23,7 @@ typedef struct {
 
 typedef struct {
 	const char *name;
+	int32_t len; // longest ORF
 } pg_gene_t;
 
 typedef struct {
@@ -81,5 +82,6 @@ pg_graph_t *pg_graph_init(const pg_data_t *d);
 void pg_graph_destroy(pg_graph_t *g);
 
 void pg_write_bed(const pg_data_t *d, int32_t aid);
+void pg_write_vertex(const pg_graph_t *g);
 
 #endif

@@ -109,3 +109,17 @@ void pg_write_bed(const pg_data_t *d, int32_t aid)
 	}
 	free(out.s);
 }
+
+void pg_write_vertex(const pg_graph_t *g)
+{
+	const pg_data_t *d = g->d;
+	kstring_t out = {0,0,0};
+	int32_t i;
+	for (i = 0; i < g->n_v; ++i) {
+		int32_t gid = g->v[i].gid;
+		out.l = 0;
+		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, g->v[i].pri, g->v[i].sec);
+		fwrite(out.s, 1, out.l, stdout);
+	}
+	free(out.s);
+}

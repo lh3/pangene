@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
 	}
 	g = pg_graph_init(d);
 	pg_gen_vertex(&opt, g);
+	pg_write_vertex(g);
 	pg_graph_destroy(g);
 	pg_data_destroy(d);
 
