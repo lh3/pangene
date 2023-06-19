@@ -37,6 +37,9 @@ typedef struct {
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 #endif
 
+void radix_sort_pg128x(pg128_t *st, pg128_t *en);
+void radix_sort_pg64(uint64_t *st, uint64_t *en);
+
 void *pg_dict_init(int32_t do_copy);
 void pg_dict_destroy(void *h_);
 int32_t pg_dict_size(const void *h_);

@@ -6,8 +6,9 @@
 #define PG_VERSION "0.0-r18-dirty"
 
 typedef struct {
-	double min_prot_ratio;
-	double min_ov_ratio;
+	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned
+	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
+	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
 } pg_opt_t;
 
 typedef struct {
@@ -58,6 +59,16 @@ typedef struct {
 	pg_prot_t *prot;
 } pg_data_t;
 
+typedef struct {
+	int32_t gid, pri, sec;
+} pg_vertex_t;
+
+typedef struct {
+	const pg_data_t *d;
+	int32_t n_v, m_v;
+	pg_vertex_t *v;
+} pg_graph_t;
+
 extern int pg_verbose;
 
 void pg_opt_init(pg_opt_t *opt);
@@ -65,6 +76,9 @@ void pg_opt_init(pg_opt_t *opt);
 pg_data_t *pg_data_init(void);
 void pg_data_destroy(pg_data_t *d);
 int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t gene_sep);
+
+pg_graph_t *pg_graph_init(const pg_data_t *d);
+void pg_graph_destroy(pg_graph_t *g);
 
 void pg_write_bed(const pg_data_t *d, int32_t aid);
 

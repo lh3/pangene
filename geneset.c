@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <stdio.h>
+#include <math.h>
 #include "pgpriv.h"
 #include "kalloc.h"
 
@@ -10,12 +12,13 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-void pg_gs_build1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t aid)
+uint64_t *pg_gs_overlap(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t aid, int32_t *n_ov)
 {
 	const pg_genome_t *g = &d->genome[aid];
 	int32_t i0, i, j;
-	int32_t np = 0, mp = 0;
+	int32_t np = 0, mp = 0, k;
 	pg128_t *pairs = 0;
+	uint64_t *ret;
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		while (i0 < i) {
 			if (g->hit[i0].ce > g->hit[i].cs)
@@ -26,6 +29,8 @@ void pg_gs_build1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t aid
 			uint64_t x;
 			int32_t li, lj, gi, gj;
 			double cov_short;
+			pg128_t *p;
+			if (g->hit[i].rank > 0 || g->hit[j].rank > 0) continue; // only consider the top hit
 			if (g->hit[j].ce <= g->hit[i].cs) continue;
 			gi = d->prot[g->hit[j].pid].gid;
 			gj = d->prot[g->hit[i].pid].gid;
@@ -36,6 +41,104 @@ void pg_gs_build1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t aid
 			cov_short = (double)(x>>32) / (li < lj? li : lj);
 			assert(cov_short <= 1.0);
 			if (cov_short < opt->min_ov_ratio) continue; // overlap too short
+			Kexpand(km, pg128_t, pairs, np, mp);
+			p = &pairs[np++];
+			p->x = (uint64_t)(gi < gj? gi : gj) << 32 | (gi < gj? gj : gi);
+			p->y = x;
 		}
 	}
+	radix_sort_pg128x(pairs, pairs + np);
+	for (i = 1, i0 = 0, k = 0; i <= np; ++i) {
+		if (i == np || pairs[i].x != pairs[i0].x) {
+			uint64_t max = 0;
+			for (j = i0; j < i; ++j)
+				max = max > pairs[j].y? max : pairs[j].y;
+			pairs[k].x = pairs[i0].x;
+			pairs[k++].y = max;
+			i0 = i;
+		}
+	}
+	ret = Kmalloc(km, uint64_t, k * 2);
+	for (i = 0, j = 0; i < k; ++i) {
+		ret[j++] = pairs[i].x;
+		ret[j] = pairs[i].x<<32 | pairs[i].x>>32;
+	}
+	kfree(km, pairs);
+	radix_sort_pg64(ret, ret + k * 2);
+	*n_ov = k * 2;
+	return ret;
+}
+
+uint64_t *pg_gs_gene_score(void *km, const pg_data_t *d, int32_t aid)
+{
+	const pg_genome_t *g = &d->genome[aid];
+	int32_t i;
+	uint64_t *sc;
+	sc = Kcalloc(km, uint64_t, d->n_gene);
+	for (i = 0; i < g->n_hit; ++i) {
+		const pg_hit_t *a = &g->hit[i];
+		int32_t score, gid;
+		score = (int32_t)(pow(a->score, (double)a->mlen / a->blen) + 1.0); // then score is at least 1
+		gid = d->prot[a->pid].gid;
+		sc[gid] = sc[gid] > score? sc[gid] : score;
+	}
+	return sc;
+}
+
+void pg_gs_choose1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t aid, uint64_t *cnt)
+{
+	int32_t i0, i, j, off, n_ov;
+	uint64_t *ov, *idx, *sc;
+	int8_t *flt;
+
+	ov = pg_gs_overlap(km, opt, d, aid, &n_ov);
+	idx = Kcalloc(km, uint64_t, d->n_gene);
+	for (i = 1, i0 = 0; i <= n_ov; ++i)
+		if (i == n_ov || ov[i]>>32 != ov[i0]>>32)
+			idx[ov[i0]>>32] = i - i0, i0 = i;
+	for (i = 0, off = 0; i < d->n_gene; ++i) {
+		idx[i] = (uint64_t)off<<32 | idx[i];
+		off += (int32_t)idx[i];
+	}
+
+	sc = pg_gs_gene_score(km, d, aid);
+	for (i = 0; i < d->n_gene; ++i)
+		sc[i] = sc[i]<<32 | i;
+	radix_sort_pg64(sc, sc + d->n_gene);
+	flt = Kcalloc(km, int8_t, d->n_gene);
+	for (i = d->n_gene - 1; i >= 0; --i) {
+		if (!flt[i]) {
+			int32_t off = idx[i]>>32, c = (int32_t)idx[i];
+			cnt[i] += 1ULL<<32;
+			for (j = 0; j < c; ++j)
+				flt[(int32_t)ov[off + j]] = 1;
+		} else cnt[i] += 1ULL;
+	}
+	kfree(km, flt);
+
+	kfree(km, sc);
+	kfree(km, idx);
+	kfree(km, ov);
+}
+
+void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g)
+{
+	const pg_data_t *d = g->d;
+	int32_t i;
+	uint64_t *cnt;
+	cnt = PG_CALLOC(uint64_t, d->n_gene);
+	for (i = 0; i < d->n_genome; ++i)
+		pg_gs_choose1(0, opt, d, i, cnt);
+	for (i = 0; i < d->n_gene; ++i) {
+		int32_t pri = cnt[i]>>32, sec = (int32_t)cnt[i];
+		if (pri >= d->n_genome * opt->min_vertex_ratio) {
+			pg_vertex_t *p;
+			PG_EXTEND(pg_vertex_t, g->v, g->n_v, g->m_v);
+			p = &g->v[g->n_v++];
+			p->gid = i, p->pri = pri, p->sec = sec;
+		}
+	}
+	free(cnt);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%.3f*%.2f] %d vertices out of %d genes\n", __func__, pg_realtime(), pg_percent_cpu(), g->n_v, g->d->n_gene);
 }

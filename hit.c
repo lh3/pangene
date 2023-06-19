@@ -6,6 +6,9 @@
 #define sort_key_128x(a) ((a).x)
 KRADIX_SORT_INIT(pg128x, pg128_t, sort_key_128x, 8) 
 
+#define sort_key_generic(a) (a)
+KRADIX_SORT_INIT(pg64, uint64_t, sort_key_generic, 8) 
+
 int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e)
 {
 	int32_t i, len, half;
