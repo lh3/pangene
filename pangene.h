@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r22-dirty"
+#define PG_VERSION "0.0-r24-dirty"
 
 typedef struct {
 	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned

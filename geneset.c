@@ -114,13 +114,14 @@ void pg_gs_choose1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t ai
 	for (i = 0; i < g->n_hit; ++i)
 		flag[d->prot[g->hit[i].pid].gid] |= 1;
 	for (i = d->n_gene - 1; i >= 0; --i) {
-		if (!(flag[i] & 1)) continue; // no alignment; then don't count
-		if (!(flag[i] & 2)) {
-			int32_t off = idx[i]>>32, c = (int32_t)idx[i];
-			cnt[i] += 1ULL<<32;
+		int32_t gid = (int32_t)sc[i];
+		if (!(flag[gid] & 1)) continue; // no alignment; then don't count
+		if (!(flag[gid] & 2)) {
+			int32_t off = idx[gid]>>32, c = (int32_t)idx[gid];
+			cnt[gid] += 1ULL<<32;
 			for (j = 0; j < c; ++j)
 				flag[(int32_t)ov[off + j]] |= 2;
-		} else cnt[i] += 1ULL;
+		} else cnt[gid] += 1ULL;
 	}
 	kfree(km, flag);
 
