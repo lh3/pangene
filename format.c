@@ -80,6 +80,7 @@ void pg_write_bed1(kstring_t *out, const pg_data_t *d, int32_t aid, int32_t hid)
 	const pg_genome_t *g = &d->genome[aid];
 	const pg_hit_t *a = &g->hit[hid];
 	int32_t i;
+	char buf[16];
 	pg_sprintf_lite(out, "%s\t%ld\t%ld\t%s\t%d\t%c\t", g->ctg[a->cid].name, a->cs, a->ce, d->prot[a->pid].name, a->score, "+-"[a->rev]);
 	pg_sprintf_lite(out, "%ld\t%ld\t0\t%d\t", a->cs, a->ce, a->n_exon);
 	for (i = 0; i < a->n_exon; ++i)
@@ -92,7 +93,8 @@ void pg_write_bed1(kstring_t *out, const pg_data_t *d, int32_t aid, int32_t hid)
 		pg_sprintf_lite(out, "%ld,", a->cs + g->exon[a->off_exon + i].os); // for debugging only
 		#endif
 	}
-	pg_sprintf_lite(out, "\trk:i:%d\tfs:i:%d\tcm:i:%ld\n", a->rank, a->fs, a->cm);
+	snprintf(buf, 15, "%.4f", (double)a->mlen / a->blen);
+	pg_sprintf_lite(out, "\trk:i:%d\tfs:i:%d\tcm:i:%ld\tdv:f:%s\n", a->rank, a->fs, a->cm, buf);
 }
 
 void pg_write_bed(const pg_data_t *d, int32_t aid)
@@ -118,7 +120,7 @@ void pg_write_vertex(const pg_graph_t *g)
 	for (i = 0; i < g->n_v; ++i) {
 		int32_t gid = g->v[i].gid;
 		out.l = 0;
-		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, g->v[i].pri, g->v[i].sec);
+		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tid:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, gid, g->v[i].pri, g->v[i].sec);
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);
