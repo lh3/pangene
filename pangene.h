@@ -3,7 +3,11 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r24-dirty"
+#define PG_VERSION "0.0-r25-dirty"
+
+typedef struct {
+	uint64_t x, y;
+} pg128_t;
 
 typedef struct {
 	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned
@@ -27,12 +31,13 @@ typedef struct {
 } pg_gene_t;
 
 typedef struct {
-	uint32_t pid:31, rev:1; // protein ID
+	int32_t pid; // protein ID
 	int32_t qs, qe;
 	int32_t cid; // contig ID
 	int32_t mlen, blen, fs;
 	int32_t score, rank;
 	int32_t n_exon, off_exon;
+	uint32_t rev:1, pseudo:1, vtx:1, dummy:29;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 
@@ -65,9 +70,12 @@ typedef struct {
 } pg_vertex_t;
 
 typedef struct {
-	const pg_data_t *d;
+	pg_data_t *d;
+	int32_t *g2v;
 	int32_t n_v, m_v;
 	pg_vertex_t *v;
+	int32_t n_a, m_a;
+	pg128_t *a;
 } pg_graph_t;
 
 extern int pg_verbose;
@@ -78,7 +86,7 @@ pg_data_t *pg_data_init(void);
 void pg_data_destroy(pg_data_t *d);
 int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t gene_sep);
 
-pg_graph_t *pg_graph_init(const pg_data_t *d);
+pg_graph_t *pg_graph_init(pg_data_t *d);
 void pg_graph_destroy(pg_graph_t *g);
 
 void pg_write_bed(const pg_data_t *d, int32_t aid);

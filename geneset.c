@@ -130,9 +130,9 @@ void pg_gs_choose1(void *km, const pg_opt_t *opt, const pg_data_t *d, int32_t ai
 	kfree(km, ov);
 }
 
-void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g)
+void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *q)
 {
-	const pg_data_t *d = g->d;
+	const pg_data_t *d = q->d;
 	int32_t i;
 	uint64_t *cnt;
 	cnt = PG_CALLOC(uint64_t, d->n_gene);
@@ -142,12 +142,17 @@ void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g)
 		int32_t pri = cnt[i]>>32, sec = (int32_t)cnt[i];
 		if (pri >= d->n_genome * opt->min_vertex_ratio) {
 			pg_vertex_t *p;
-			PG_EXTEND(pg_vertex_t, g->v, g->n_v, g->m_v);
-			p = &g->v[g->n_v++];
+			PG_EXTEND(pg_vertex_t, q->v, q->n_v, q->m_v);
+			p = &q->v[q->n_v++];
 			p->gid = i, p->pri = pri, p->sec = sec;
 		}
 	}
 	free(cnt);
+	q->g2v = PG_MALLOC(int32_t, d->n_gene);
+	for (i = 0; i < d->n_gene; ++i)
+		q->g2v[i] = -1;
+	for (i = 0; i < q->n_v; ++i)
+		q->g2v[q->v[i].gid] = i;
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%.3f*%.2f] selected %d vertices out of %d genes\n", __func__, pg_realtime(), pg_percent_cpu(), g->n_v, g->d->n_gene);
+		fprintf(stderr, "[M::%s::%.3f*%.2f] selected %d vertices out of %d genes\n", __func__, pg_realtime(), pg_percent_cpu(), q->n_v, q->d->n_gene);
 }

@@ -13,10 +13,6 @@ typedef struct __kstring_t {
 } kstring_t;
 #endif
 
-typedef struct {
-	uint64_t x, y;
-} pg128_t;
-
 #define PG_MALLOC(type, cnt)       ((type*)malloc((cnt) * sizeof(type)))
 #define PG_CALLOC(type, cnt)       ((type*)calloc((cnt), sizeof(type)))
 #define PG_REALLOC(type, ptr, cnt) ((type*)realloc((ptr), (cnt) * sizeof(type)))
@@ -56,6 +52,7 @@ double pg_percent_cpu(void);
 int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e);
 void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm);
 uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab);
+int32_t pg_hit_mark_pseudo(void *km, const pg_data_t *d, pg_genome_t *g);
 
 void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g);
 

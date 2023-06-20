@@ -99,3 +99,34 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 	//fprintf(stderr, "%d,%c%c: [%ld,%ld) <=> [%ld,%ld): %d,%d\n", aa->cid, "+-"[aa->rev], "+-"[ab->rev], (long)aa->cs, (long)aa->ce, (long)ab->cs, (long)ab->ce, l_inter, l_union);
 	return (uint64_t)l_inter<<32 | l_union;
 }
+
+int32_t pg_hit_mark_pseudo(void *km, const pg_data_t *d, pg_genome_t *g)
+{
+	int32_t i, i0, j, n_pseudo = 0;
+	pg128_t *a;
+	a = Kmalloc(km, pg128_t, g->n_hit);
+	for (i = 0; i < g->n_hit; ++i) {
+		a[i].x = (uint64_t)g->hit[i].pid<<32 | g->hit[i].rank;
+		a[i].y = i;
+	}
+	radix_sort_pg128x(a, a + g->n_hit);
+	for (i = 1, i0 = 0; i <= g->n_hit; ++i) {
+		if (i == g->n_hit || a[i].x>>32 != a[i0].x>>32) {
+			int32_t n_multi = 0;
+			if (i - i0 > 1) {
+				for (j = i0; j < i; ++j)
+					if (g->hit[a[j].y].n_exon > 1)
+						++n_multi;
+			}
+			if (n_multi > 0 && i - i0 - n_multi > 0) {
+				//printf("%s\t%d\n", d->prot[g->hit[a[i0].y].pid].name, i - i0);
+				for (j = i0; j < i; ++j)
+					if (g->hit[a[j].y].n_exon == 1)
+						g->hit[a[j].y].pseudo = 1, ++n_pseudo;
+			}
+			i0 = i;
+		}
+	}
+	kfree(km, a);
+	return n_pseudo;
+}
