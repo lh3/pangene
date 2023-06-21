@@ -52,8 +52,8 @@ double pg_percent_cpu(void);
 int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e);
 void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm);
 uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab);
-int32_t pg_hit_mark_pseudo(void *km, const pg_data_t *d, pg_genome_t *g);
-int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e);
+int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g);
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx);
 
 void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g);
 

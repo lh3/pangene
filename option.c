@@ -9,5 +9,4 @@ void pg_opt_init(pg_opt_t *opt)
 	opt->min_prot_ratio = 0.5;
 	opt->min_ov_ratio = 0.5;
 	opt->min_vertex_ratio = 0.33;
-	opt->max_score2_ratio = 0.5;
 }

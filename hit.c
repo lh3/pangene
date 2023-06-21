@@ -100,7 +100,7 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 	return (uint64_t)l_inter<<32 | l_union;
 }
 
-int32_t pg_hit_mark_pseudo(void *km, const pg_data_t *d, pg_genome_t *g)
+int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, i0, j, n_pseudo = 0;
 	pg128_t *a;
@@ -129,4 +129,73 @@ int32_t pg_hit_mark_pseudo(void *km, const pg_data_t *d, pg_genome_t *g)
 	}
 	kfree(km, a);
 	return n_pseudo;
+}
+
+static inline uint32_t kh_hash_uint32(uint32_t key)
+{
+	key += ~(key << 15);
+	key ^=  (key >> 10);
+	key +=  (key << 3);
+	key ^=  (key >> 6);
+	key += ~(key << 11);
+	key ^=  (key >> 16);
+	return key;
+}
+
+static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
+{
+	int32_t i, len = 0;
+	for (i = 0; i < a->n_exon; ++i)
+		len += e[a->off_exon + i].oe - e[a->off_exon + i].os;
+	return len;
+}
+
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx)
+{
+	int32_t i, i0, n_shadow = 0;
+	for (i = 0; i < g->n_hit; ++i) {
+		pg_hit_t *ai = &g->hit[i];
+		if (check_vtx && ai->vtx == 0) continue;
+		ai->overlap = ai->shadow = 0;
+	}
+	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
+		pg_hit_t *ai = &g->hit[i];
+		int32_t j, li, gi;
+		uint32_t hi;
+		if (check_vtx && ai->vtx == 0) continue;
+		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
+			++i0;
+		gi = prot[ai->pid].gid;
+		hi = kh_hash_uint32(gi);
+		li = pg_cds_len(ai, g->exon);
+		for (j = i0; j < i; ++j) {
+			uint64_t x;
+			int32_t lj, gj;
+			double cov_short;
+			uint32_t hj;
+			uint64_t si, sj;
+			pg_hit_t *aj = &g->hit[j];
+			if (check_vtx && aj->vtx == 0) continue;
+			if (aj->ce <= ai->cs) continue; // no overlap
+			gj = prot[aj->pid].gid;
+			hj = kh_hash_uint32(gj);
+			if (gi == gj) continue; // ignore iso-forms of the same gene
+			x = pg_hit_overlap(g, aj, ai);
+			lj = pg_cds_len(aj, g->exon);
+			cov_short = (double)(x>>32) / (li < lj? li : lj);
+			assert(cov_short <= 1.0);
+			if (cov_short < opt->min_ov_ratio) continue; // overlap too short
+			si = (uint64_t)ai->score2<<32 | hi;
+			sj = (uint64_t)aj->score2<<32 | hj;
+			ai->overlap = aj->overlap = 1;
+			if (si < sj) ai->shadow = 1;
+			else aj->shadow = 1;
+		}
+	}
+	for (i = 0; i < g->n_hit; ++i) {
+		pg_hit_t *ai = &g->hit[i];
+		if (check_vtx && ai->vtx == 0) continue;
+		if (ai->shadow) ++n_shadow;
+	}
+	return n_shadow;
 }
