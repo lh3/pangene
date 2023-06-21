@@ -88,7 +88,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 	g->n_exon += tmp->n_exon;
 }
 
-int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t sep)
+int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 {
 	gzFile fp;
 	kstream_t *ks;
@@ -121,12 +121,12 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 				if (i == 0) { // query name
 					int32_t rank;
 					const char *tmp;
-					for (r = q; r < p && *r != sep; ++r) {}
+					for (r = q; r < p && *r != opt->gene_delim; ++r) {}
 					// add gene
-					if (*r == sep) {
+					if (*r == opt->gene_delim) {
 						*r = 0;
 						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
-						*r = sep;
+						*r = opt->gene_delim;
 					} else {
 						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
 					}

@@ -10,6 +10,7 @@ typedef struct {
 } pg128_t;
 
 typedef struct {
+	int32_t gene_delim;
 	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned
 	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
 	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
@@ -84,7 +85,7 @@ void pg_opt_init(pg_opt_t *opt);
 
 pg_data_t *pg_data_init(void);
 void pg_data_destroy(pg_data_t *d);
-int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t gene_sep);
+int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn);
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d);
 
 pg_graph_t *pg_graph_init(pg_data_t *d);

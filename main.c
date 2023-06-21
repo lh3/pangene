@@ -4,31 +4,51 @@
 
 static ko_longopt_t long_options[] = {
 	{ "bed",             ko_no_argument,       301 },
+	{ "version",         ko_no_argument,       401 },
 	{ 0, 0, 0 }
 };
+
+static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
+{
+	fprintf(fp, "Usage: pangene [options] <in.paf> [...]\n");
+	fprintf(fp, "Options:\n");
+	fprintf(fp, "  -d CHAR       gene name delimiter [%c]\n", opt->gene_delim);
+	fprintf(fp, "  -l FLOAT      min protein alignment fraction [%g]\n", opt->min_prot_ratio);
+	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
+	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
+	fprintf(fp, "  --bed         output BED12 (mainly for debugging)\n");
+	fprintf(fp, "  --version     print version number\n");
+	return fp == stdout? 0 : 1;
+}
 
 int main(int argc, char *argv[])
 {
 	ketopt_t o = KETOPT_INIT;
-	int32_t i, c, gene_sep = ':', bed_out = 0;
+	int32_t i, c, bed_out = 0;
 	pg_opt_t opt;
 	pg_data_t *d;
 	pg_graph_t *g;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:", long_options)) >= 0) {
-		if (c == 'd') gene_sep = *o.arg;
+	while ((c = ketopt(&o, argc, argv, 1, "d:l:f:p:v:", long_options)) >= 0) {
+		if (c == 'd') opt.gene_delim = *o.arg;
+		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
+		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
+		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);
+		else if (c == 'v') pg_verbose = atoi(o.arg);
 		else if (c == 301) bed_out = 1;
+		else if (c == 401) {
+			puts(PG_VERSION);
+			return 0;
+		}
 	}
-	if (argc - o.ind < 1) {
-		fprintf(stderr, "Usage: pangene [options] <in.paf> [...]\n");
-		return 1;
-	}
+	if (argc - o.ind < 1)
+		return pg_usage(stderr, &opt);
 
 	pg_realtime();
 	d = pg_data_init();
 	for (i = o.ind; i < argc; ++i)
-		pg_read_paf(&opt, d, argv[i], gene_sep);
+		pg_read_paf(&opt, d, argv[i]);
 	pg_post_process(&opt, d);
 	if (bed_out) {
 		for (i = 0; i < d->n_genome; ++i)
