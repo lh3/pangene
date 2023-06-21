@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <stdio.h>
 #include "pgpriv.h"
 
 #if defined(WIN32) || defined(_WIN32)
@@ -124,4 +126,13 @@ double pg_realtime(void)
 double pg_percent_cpu(void)
 {
 	return (pg_cputime() + 1e-6) / (pg_realtime() + 1e-6);
+}
+
+const char *pg_timestamp(void)
+{
+	static char buf[256];
+	int32_t ret;
+	ret = snprintf(buf, 255, "%.3f*%.2f", pg_realtime(), pg_percent_cpu());
+	assert(ret < 255);
+	return buf;
 }

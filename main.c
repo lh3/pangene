@@ -29,8 +29,7 @@ int main(int argc, char *argv[])
 	d = pg_data_init();
 	for (i = o.ind; i < argc; ++i)
 		pg_read_paf(&opt, d, argv[i], gene_sep);
-	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s] found %d genes and %d proteins\n", __func__, d->n_gene, d->n_prot);
+	pg_post_process(&opt, d);
 	if (bed_out) {
 		for (i = 0; i < d->n_genome; ++i)
 			pg_write_bed(d, i);

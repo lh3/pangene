@@ -93,7 +93,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 	gzFile fp;
 	kstream_t *ks;
 	kstring_t str = {0,0,0};
-	int32_t dret, absent, n_tot = 0, n_pseudo = 0, n_shadow = 0;
+	int32_t dret, absent, n_tot = 0;
 	void *d_ctg, *hit_rank;
 	pg_genome_t *g;
 	pg_exons_t buf = {0,0,0};
@@ -208,10 +208,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 	pg_dict_destroy(hit_rank);
 	ks_destroy(ks);
 	gzclose(fp);
-	n_pseudo = pg_flag_pseudo(0, d->prot, g); // TODO: hoist pg_flag_pseudo() and pg_flag_pseudo() to a separate post-processing function
-	n_shadow = pg_flag_shadow(opt, d->prot, g, 0);
-	pg_hit_sort(0, g, 0);
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%.3f*%.2f] genome %d: %d alignments parsed, %d kept; %d pseudo, %d shadow\n", __func__, pg_realtime(), pg_percent_cpu(), d->n_genome-1, n_tot, g->n_hit, n_pseudo, n_shadow);
+		fprintf(stderr, "[M::%s::%s] genome %d: %d alignments parsed, %d kept\n", __func__, pg_timestamp(), d->n_genome-1, n_tot, g->n_hit);
 	return 0;
 }

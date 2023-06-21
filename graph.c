@@ -3,6 +3,22 @@
 #include "pgpriv.h"
 #include "kalloc.h"
 
+void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
+{
+	int32_t i;
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
+	for (i = 0; i < d->n_genome; ++i) {
+		pg_genome_t *g = &d->genome[i];
+		int32_t n_pseudo, n_shadow;
+		n_pseudo = pg_flag_pseudo(0, d->prot, g);
+		n_shadow = pg_flag_shadow(opt, d->prot, g, 0);
+		pg_hit_sort(0, g, 0);
+		if (pg_verbose >= 3)
+			fprintf(stderr, "[M::%s::%s] genome %d: %d pseudo, %d shadow\n", __func__, pg_timestamp(), i, n_pseudo, n_shadow);
+	}
+}
+
 pg_graph_t *pg_graph_init(pg_data_t *d)
 {
 	pg_graph_t *g;
@@ -62,7 +78,7 @@ void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *q)
 	for (i = 0; i < q->n_v; ++i)
 		q->g2v[q->v[i].gid] = i;
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%.3f*%.2f] selected %d vertices out of %d genes\n", __func__, pg_realtime(), pg_percent_cpu(), q->n_v, q->d->n_gene);
+		fprintf(stderr, "[M::%s::%s] selected %d vertices out of %d genes\n", __func__, pg_timestamp(), q->n_v, q->d->n_gene);
 }
 
 void pg_graph_flag_vtx(pg_graph_t *q)

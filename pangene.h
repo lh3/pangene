@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r27-dirty"
+#define PG_VERSION "0.0-r28-dirty"
 
 typedef struct {
 	uint64_t x, y;
@@ -85,6 +85,7 @@ void pg_opt_init(pg_opt_t *opt);
 pg_data_t *pg_data_init(void);
 void pg_data_destroy(pg_data_t *d);
 int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t gene_sep);
+void pg_post_process(const pg_opt_t *opt, pg_data_t *d);
 
 pg_graph_t *pg_graph_init(pg_data_t *d);
 void pg_graph_destroy(pg_graph_t *g);

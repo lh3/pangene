@@ -48,6 +48,7 @@ double pg_cputime(void);
 long pg_peakrss(void);
 double pg_realtime(void);
 double pg_percent_cpu(void);
+const char *pg_timestamp(void);
 
 int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e);
 void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm);
