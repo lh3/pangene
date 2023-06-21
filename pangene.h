@@ -13,6 +13,7 @@ typedef struct {
 	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned
 	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
 	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
+	double max_score2_ratio; // filter an alignment if its score2 is lower than 50% of the score2 of another aln
 } pg_opt_t;
 
 typedef struct {
@@ -35,9 +36,9 @@ typedef struct {
 	int32_t qs, qe;
 	int32_t cid; // contig ID
 	int32_t mlen, blen, fs;
-	int32_t score, rank;
+	int32_t score, score2;
 	int32_t n_exon, off_exon;
-	uint32_t rev:1, pseudo:1, vtx:1, dummy:29;
+	uint32_t rank:20, rev:1, pseudo:1, vtx:1, shadow:1, dummy:8;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 

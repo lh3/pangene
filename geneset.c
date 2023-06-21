@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdio.h>
-#include <math.h>
 #include "pgpriv.h"
 #include "kalloc.h"
 
@@ -77,10 +76,8 @@ uint64_t *pg_gs_gene_score(void *km, const pg_data_t *d, int32_t aid)
 	sc = Kcalloc(km, uint64_t, d->n_gene);
 	for (i = 0; i < g->n_hit; ++i) {
 		const pg_hit_t *a = &g->hit[i];
-		int32_t score, gid;
-		score = (int32_t)(pow(a->score, (double)a->mlen / a->blen) + 1.0); // then score is at least 1
-		gid = d->prot[a->pid].gid;
-		sc[gid] = sc[gid] > score? sc[gid] : score;
+		int32_t gid = d->prot[a->pid].gid;
+		sc[gid] = sc[gid] > a->score2? sc[gid] : a->score2;
 	}
 	return sc;
 }

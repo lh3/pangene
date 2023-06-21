@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <assert.h>
-#include <zlib.h>
 #include <stdio.h>
+#include <math.h>
+#include <zlib.h>
 #include "pgpriv.h"
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 0x10000)
@@ -118,6 +119,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 				int32_t c = *p;
 				*p = 0;
 				if (i == 0) { // query name
+					int32_t rank;
 					const char *tmp;
 					for (r = q; r < p && *r != sep; ++r) {}
 					// add gene
@@ -144,7 +146,9 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 					d->prot[pid].gid = gid;
 					d->prot[pid].len = 0;
 					hit.pid = pid;
-					hit.rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
+					rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
+					assert(rank < 0x10000);
+					hit.rank = rank;
 				} else if (i == 1) { // query length
 					int32_t len;
 					len = strtol(q, &r, 10);
@@ -196,6 +200,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn, int32_t s
 		if (hit.n_exon >= 1) {
 			PG_EXTEND(pg_hit_t, g->hit, g->n_hit, g->m_hit);
 			hit.cm = pg_hit_cal_cm(&hit, &g->exon[hit.off_exon]);
+			hit.score2 = (int32_t)(pow(hit.score, (double)hit.mlen / hit.blen) + 1.0);
 			g->hit[g->n_hit++] = hit;
 		}
 	}
