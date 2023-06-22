@@ -13,8 +13,8 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		pg_genome_t *g = &d->genome[i];
 		int32_t n_pseudo, n_shadow;
 		n_pseudo = pg_flag_pseudo(0, d->prot, g);
-		n_shadow = pg_flag_shadow(opt, d->prot, g, 0);
 		pg_hit_sort(0, g, 0);
+		n_shadow = pg_flag_shadow(opt, d->prot, g, 0);
 		if (pg_verbose >= 3)
 			fprintf(stderr, "[M::%s::%s] genome %d: %d pseudo, %d shadow\n", __func__, pg_timestamp(), i, n_pseudo, n_shadow);
 	}

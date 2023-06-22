@@ -96,7 +96,7 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 		++e[x];
 	}
 	assert(l_inter <= l_union);
-	//fprintf(stderr, "%d,%c%c: [%ld,%ld) <=> [%ld,%ld): %d,%d\n", aa->cid, "+-"[aa->rev], "+-"[ab->rev], (long)aa->cs, (long)aa->ce, (long)ab->cs, (long)ab->ce, l_inter, l_union);
+	//fprintf(stderr, "%d,%c%c - %d:[%ld,%ld) <=> %d:[%ld,%ld): %d,%d\n", aa->cid, "+-"[aa->rev], "+-"[ab->rev], aa->pid, (long)aa->cs, (long)aa->ce, ab->pid, (long)ab->cs, (long)ab->ce, l_inter, l_union);
 	return (uint64_t)l_inter<<32 | l_union;
 }
 
