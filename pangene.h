@@ -93,6 +93,6 @@ pg_graph_t *pg_graph_init(pg_data_t *d);
 void pg_graph_destroy(pg_graph_t *g);
 
 void pg_write_bed(const pg_data_t *d, int32_t aid);
-void pg_write_vertex(const pg_graph_t *g);
+void pg_graph_write(const pg_graph_t *g);
 
 #endif

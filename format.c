@@ -112,7 +112,7 @@ void pg_write_bed(const pg_data_t *d, int32_t aid)
 	free(out.s);
 }
 
-void pg_write_vertex(const pg_graph_t *g)
+void pg_write_vtx(const pg_graph_t *g)
 {
 	const pg_data_t *d = g->d;
 	kstring_t out = {0,0,0};
@@ -124,4 +124,26 @@ void pg_write_vertex(const pg_graph_t *g)
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);
+}
+
+void pg_write_arc(const pg_graph_t *g)
+{
+	const pg_data_t *d = g->d;
+	kstring_t out = {0,0,0};
+	int32_t i;
+	for (i = 0; i < g->n_a; ++i) {
+		pg128_t *a = &g->a[i];
+		//if (a->x>>32 > (uint32_t)a->x) continue;
+		out.l = 0;
+		pg_sprintf_lite(&out, "L\t%s\t%c\t%s\t%c\t0M\t", d->gene[a->x>>32>>1].name, "+-"[a->x>>32&1], d->gene[(uint32_t)a->x>>1].name, "+-"[a->x&1]);
+		pg_sprintf_lite(&out, "cn:i:%d\tdt:i:%d\n", (uint32_t)(a->y>>32), (uint32_t)a->y);
+		fwrite(out.s, 1, out.l, stdout);
+	}
+	free(out.s);
+}
+
+void pg_graph_write(const pg_graph_t *g)
+{
+	pg_write_vtx(g);
+	pg_write_arc(g);
 }

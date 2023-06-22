@@ -150,12 +150,13 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx)
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri)
 {
 	int32_t i, i0, n_shadow = 0;
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		if (check_vtx && ai->vtx == 0) continue;
+		if (check_pri && ai->pri == 0) continue;
 		ai->overlap = ai->shadow = 0;
 	}
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
@@ -163,6 +164,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		int32_t j, li, gi;
 		uint32_t hi;
 		if (check_vtx && ai->vtx == 0) continue;
+		if (check_pri && ai->pri == 0) continue;
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
 		gi = prot[ai->pid].gid;
@@ -195,6 +197,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		if (check_vtx && ai->vtx == 0) continue;
+		if (check_pri && ai->pri == 0) continue;
 		if (ai->shadow) ++n_shadow;
 	}
 	return n_shadow;
