@@ -8,6 +8,7 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 	int32_t i;
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
+	pg_flag_primary(d);
 	for (i = 0; i < d->n_genome; ++i) {
 		pg_genome_t *g = &d->genome[i];
 		int32_t n_pseudo, n_shadow;

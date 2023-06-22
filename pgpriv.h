@@ -25,6 +25,16 @@ typedef struct __kstring_t {
 		} \
 	} while (0)
 
+#define PG_EXTEND0(type, ptr, __i, __m) do { \
+		if ((__i) >= (__m)) { \
+			size_t old_m = (__m); \
+			(__m) = (__i) + 1; \
+			(__m) += ((__m)>>1) + 16; \
+			(ptr) = PG_REALLOC(type, ptr, (__m)); \
+			memset((ptr) + old_m, 0, ((__m) - old_m) * sizeof(type)); \
+		} \
+	} while (0)
+
 #ifndef kroundup64
 #define kroundup64(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, (x)|=(x)>>32, ++(x))
 #endif
@@ -55,6 +65,7 @@ void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm);
 uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab);
 int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx);
+void pg_flag_primary(pg_data_t *d);
 
 void pg_gen_vertex(const pg_opt_t *opt, pg_graph_t *g);
 

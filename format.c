@@ -94,7 +94,7 @@ void pg_write_bed1(kstring_t *out, const pg_data_t *d, int32_t aid, int32_t hid)
 		#endif
 	}
 	snprintf(buf, 15, "%.4f", (double)a->mlen / a->blen);
-	pg_sprintf_lite(out, "\trk:i:%d\tfs:i:%d\tcm:i:%ld\tdv:f:%s\n", a->rank, a->fs, a->cm, buf);
+	pg_sprintf_lite(out, "\trk:i:%d\tpr:i:%d\tsd:i:%d\tfs:i:%d\tcm:i:%ld\tdv:f:%s\n", a->rank, a->pri,a->shadow, a->fs, a->cm, buf);
 }
 
 void pg_write_bed(const pg_data_t *d, int32_t aid)

@@ -199,3 +199,36 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	}
 	return n_shadow;
 }
+
+void pg_flag_primary(pg_data_t *d)
+{
+	pg128_t *z;
+	int32_t i, j;
+	z = PG_CALLOC(pg128_t, d->n_prot);
+	for (i = 0; i < d->n_gene; ++i) d->gene[i].pri_pid = -1;
+	for (i = 0; i < d->n_prot; ++i) z[i].y = i, d->prot[i].pri = 0;
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			if (g->hit[i].rank == 0)
+				z[g->hit[i].pid].x += 1ULL<<32 | g->hit[i].score2; // NB: assuming each protein has only one rank=0 hit
+			g->hit[i].pri = 0;
+		}
+	}
+	radix_sort_pg128x(z, z + d->n_prot);
+	for (i = d->n_prot - 1; i >= 0; --i) {
+		int32_t pid = z[i].y;
+		int32_t gid = d->prot[pid].gid;
+		if (d->gene[gid].pri_pid < 0) {
+			d->gene[gid].pri_pid = pid;
+			d->prot[pid].pri = 1;
+		}
+	}
+	free(z);
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i)
+			if (d->prot[g->hit[i].pid].pri)
+				g->hit[i].pri = 1;
+	}
+}

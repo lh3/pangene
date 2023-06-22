@@ -17,18 +17,19 @@ typedef struct {
 } pg_opt_t;
 
 typedef struct {
-	int32_t os, oe;
+	int32_t os, oe; // start and end relative to pg_hit_t::cs
 } pg_exon_t;
 
 typedef struct {
 	const char *name;
 	int32_t len;
-	int32_t gid;
+	uint32_t gid:31, pri:1;
 } pg_prot_t;
 
 typedef struct {
 	const char *name;
 	int32_t len; // longest ORF
+	int32_t pri_pid; // primary protein
 } pg_gene_t;
 
 typedef struct {
@@ -38,7 +39,7 @@ typedef struct {
 	int32_t mlen, blen, fs;
 	int32_t score, score2;
 	int32_t n_exon, off_exon;
-	uint32_t rank:20, rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, dummy:7;
+	uint32_t rank:20, rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, pri:1, dummy:6;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 

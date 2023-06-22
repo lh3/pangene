@@ -103,7 +103,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 
 	hit_rank = pg_dict_init(0);
 	d_ctg = pg_dict_init(0);
-	PG_EXTEND(pg_genome_t, d->genome, d->n_genome, d->m_genome);
+	PG_EXTEND0(pg_genome_t, d->genome, d->n_genome, d->m_genome);
 	g = &d->genome[d->n_genome++];
 	memset(g, 0, sizeof(*g));
 
@@ -132,7 +132,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					}
 					if (absent) {
 						d->n_gene++;
-						PG_EXTEND(pg_gene_t, d->gene, gid, d->m_gene);
+						PG_EXTEND0(pg_gene_t, d->gene, gid, d->m_gene);
 					}
 					d->gene[gid].name = tmp;
 					d->gene[gid].len = 0;
@@ -140,14 +140,14 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), &pid, &absent);
 					if (absent) { // protein is new
 						d->n_prot++;
-						PG_EXTEND(pg_prot_t, d->prot, pid, d->m_prot);
+						PG_EXTEND0(pg_prot_t, d->prot, pid, d->m_prot);
 					}
 					d->prot[pid].name = tmp;
 					d->prot[pid].gid = gid;
 					d->prot[pid].len = 0;
 					hit.pid = pid;
 					rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
-					assert(rank < 0x10000);
+					assert(rank < 0x100000);
 					hit.rank = rank;
 				} else if (i == 1) { // query length
 					int32_t len;
@@ -170,7 +170,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					ret = pg_dict_put(d_ctg, q, pg_dict_size(d_ctg), &cid, &absent);
 					if (absent) { // a new contig not seen in this PAF file
 						const char *name;
-						PG_EXTEND(pg_ctg_t, g->ctg, g->n_ctg, g->m_ctg);
+						PG_EXTEND0(pg_ctg_t, g->ctg, g->n_ctg, g->m_ctg);
 						name = *pg_dict_put(d->d_ctg, q, pg_dict_size(d->d_ctg), 0, 0);
 						g->ctg[g->n_ctg++].name = *ret = name;
 					}
@@ -198,7 +198,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 			}
 		}
 		if (hit.n_exon >= 1) {
-			PG_EXTEND(pg_hit_t, g->hit, g->n_hit, g->m_hit);
+			PG_EXTEND0(pg_hit_t, g->hit, g->n_hit, g->m_hit);
 			hit.cm = pg_hit_cal_cm(&hit, &g->exon[hit.off_exon]);
 			hit.score2 = (int32_t)(pow(hit.score, (double)hit.mlen / hit.blen) + 1.0);
 			g->hit[g->n_hit++] = hit;
