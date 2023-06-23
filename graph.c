@@ -103,11 +103,14 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		pg_genome_t *g = &q->d->genome[j];
 		uint32_t w, v = (uint32_t)-1;
 		int64_t vpos = -1;
+		int32_t vcid = -1;
 		pg_flag_shadow(opt, q->d->prot, g, 1, 1);
+		pg_hit_sort(0, g, 1);
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			if (!a->pri || a->shadow || !a->vtx) continue;
 			w = (uint32_t)q->d->prot[a->pid].gid<<1 | a->rev;
+			if (a->cid != vcid) v = (uint32_t)-1, vpos = -1;
 			if (v != (uint32_t)-1) {
 				pg128_t *p;
 				PG_EXTEND0(pg128_t, arc, n_arc, m_arc);
@@ -115,8 +118,9 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 				PG_EXTEND0(pg128_t, arc, n_arc, m_arc);
 				p = &arc[n_arc++], p->x = (uint64_t)(w^1)<<32|(v^1), p->y = a->cm - vpos;
 			}
-			v = w, vpos = a->cm;
+			v = w, vpos = a->cm, vcid = a->cid;
 		}
+		pg_hit_sort(0, g, 0);
 	}
 	assert(n_arc <= INT32_MAX);
 	radix_sort_pg128x(arc, arc + n_arc);
@@ -128,6 +132,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 			for (j = i0; j < i; ++j)
 				dist += arc[j].y;
 			dist = (int64_t)((double)dist / (i - i0) + .499);
+			assert(dist >= 0);
 			PG_EXTEND(pg128_t, q->a, q->n_a, q->m_a);
 			p = &q->a[q->n_a++];
 			p->x = arc[i0].x, p->y = (uint64_t)(i - i0)<<32 | dist;
