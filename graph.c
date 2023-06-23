@@ -68,7 +68,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		int32_t pri = cnt[i]>>32, sec = (int32_t)cnt[i];
 		if (pri >= d->n_genome * opt->min_vertex_ratio) {
 			pg_seg_t *p;
-			PG_EXTEND(pg_seg_t, q->seg, q->n_seg, q->m_seg);
+			PG_EXTEND0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
 			p = &q->seg[q->n_seg++];
 			p->gid = i, p->pri = pri, p->sec = sec;
 		}
@@ -96,9 +96,13 @@ void pg_graph_flag_vtx(pg_graph_t *q)
 
 void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 {
-	int32_t j, i, i0;
+	int32_t j, i, i0, *seg_cnt = 0;
 	int64_t n_arc = 0, m_arc = 0, n_arc1 = 0, m_arc1 = 0;
 	pg128_t *p, *arc = 0, *arc1 = 0;
+
+	seg_cnt = PG_MALLOC(int32_t, q->n_seg);
+	for (i = 0; i < q->n_seg; ++i)
+		q->seg[i].n_genome = q->seg[i].tot_cnt = 0;
 	for (j = 0; j < q->d->n_genome; ++j) {
 		pg_genome_t *g = &q->d->genome[j];
 		uint32_t w, v = (uint32_t)-1;
@@ -107,10 +111,14 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		pg_flag_shadow(opt, q->d->prot, g, 1, 1); // this requires sorting by pg_hit_t::cs
 		pg_hit_sort(0, g, 1); // sort by pg_hit_t::cm
 		n_arc1 = 0;
+		memset(seg_cnt, 0, q->n_seg * sizeof(int32_t));
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
+			uint32_t sid;
 			if (!a->pri || a->shadow || !a->vtx) continue;
-			w = (uint32_t)q->g2s[q->d->prot[a->pid].gid]<<1 | a->rev;
+			sid = q->g2s[q->d->prot[a->pid].gid];
+			w = (uint32_t)sid<<1 | a->rev;
+			++seg_cnt[sid];
 			if (a->cid != vcid) v = (uint32_t)-1, vpos = -1;
 			if (v != (uint32_t)-1) {
 				PG_EXTEND0(pg128_t, arc1, n_arc1, m_arc1);
@@ -122,6 +130,8 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		}
 		pg_hit_sort(0, g, 0); // sort by pg_hit_t::cs
 		assert(n_arc1 <= INT32_MAX);
+		for (i = 0; i < q->n_seg; ++i)
+			q->seg[i].n_genome += (seg_cnt[i] > 0), q->seg[i].tot_cnt += seg_cnt[i];
 		radix_sort_pg128x(arc1, arc1 + n_arc1);
 		for (i = 1, i0 = 0; i <= n_arc1; ++i) {
 			if (i == n_arc1 || arc1[i0].x != arc1[i].x) {
@@ -138,6 +148,8 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		}
 	}
 	free(arc1);
+	free(seg_cnt);
+
 	assert(n_arc <= INT32_MAX);
 	radix_sort_pg128x(arc, arc + n_arc);
 	q->n_arc = 0;

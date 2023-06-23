@@ -70,6 +70,8 @@ typedef struct {
 
 typedef struct {
 	int32_t gid, pri, sec;
+	int32_t n_genome;
+	int32_t tot_cnt;
 } pg_seg_t;
 
 typedef struct {

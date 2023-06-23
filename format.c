@@ -118,9 +118,10 @@ void pg_write_vtx(const pg_graph_t *g)
 	kstring_t out = {0,0,0};
 	int32_t i;
 	for (i = 0; i < g->n_seg; ++i) {
-		int32_t gid = g->seg[i].gid;
+		const pg_seg_t *s = &g->seg[i];
+		int32_t gid = s->gid;
 		out.l = 0;
-		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, g->seg[i].pri, g->seg[i].sec);
+		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tng:i:%d\tnc:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, s->n_genome, s->tot_cnt, s->pri, s->sec);
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);
