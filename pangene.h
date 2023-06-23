@@ -70,15 +70,22 @@ typedef struct {
 
 typedef struct {
 	int32_t gid, pri, sec;
-} pg_vertex_t;
+} pg_vtx_t;
+
+typedef struct {
+	uint64_t x; // v<<32|w
+	int32_t n_genome;
+	int32_t tot_cnt;
+	int32_t avg_dist;
+} pg_arc_t;
 
 typedef struct {
 	pg_data_t *d;
 	int32_t *g2v;
-	int32_t n_v, m_v;
-	pg_vertex_t *v;
-	int32_t n_a, m_a;
-	pg128_t *a;
+	int32_t n_vtx, m_vtx;
+	pg_vtx_t *vtx;
+	int32_t n_arc, m_arc;
+	pg_arc_t *arc;
 } pg_graph_t;
 
 extern int pg_verbose;
