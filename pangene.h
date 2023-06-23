@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r33-dirty"
+#define PG_VERSION "0.0-r36-dirty"
 
 typedef struct {
 	uint64_t x, y;
@@ -70,7 +70,7 @@ typedef struct {
 
 typedef struct {
 	int32_t gid, pri, sec;
-} pg_vtx_t;
+} pg_seg_t;
 
 typedef struct {
 	uint64_t x; // v<<32|w
@@ -81,9 +81,9 @@ typedef struct {
 
 typedef struct {
 	pg_data_t *d;
-	int32_t *g2v;
-	int32_t n_vtx, m_vtx;
-	pg_vtx_t *vtx;
+	int32_t *g2s;
+	int32_t n_seg, m_seg;
+	pg_seg_t *seg;
 	int32_t n_arc, m_arc;
 	pg_arc_t *arc;
 } pg_graph_t;

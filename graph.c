@@ -26,13 +26,13 @@ pg_graph_t *pg_graph_init(pg_data_t *d)
 	pg_graph_t *g;
 	g = PG_CALLOC(pg_graph_t, 1);
 	g->d = d;
-	g->vtx = PG_CALLOC(pg_vtx_t, d->n_gene);
+	g->seg = PG_CALLOC(pg_seg_t, d->n_gene);
 	return g;
 }
 
 void pg_graph_destroy(pg_graph_t *q)
 {
-	free(q->g2v); free(q->vtx); free(q->arc);
+	free(q->g2s); free(q->seg); free(q->arc);
 	free(q);
 }
 
@@ -67,20 +67,20 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 	for (i = 0; i < d->n_gene; ++i) {
 		int32_t pri = cnt[i]>>32, sec = (int32_t)cnt[i];
 		if (pri >= d->n_genome * opt->min_vertex_ratio) {
-			pg_vtx_t *p;
-			PG_EXTEND(pg_vtx_t, q->vtx, q->n_vtx, q->m_vtx);
-			p = &q->vtx[q->n_vtx++];
+			pg_seg_t *p;
+			PG_EXTEND(pg_seg_t, q->seg, q->n_seg, q->m_seg);
+			p = &q->seg[q->n_seg++];
 			p->gid = i, p->pri = pri, p->sec = sec;
 		}
 	}
 	free(cnt);
-	q->g2v = PG_MALLOC(int32_t, d->n_gene);
+	q->g2s = PG_MALLOC(int32_t, d->n_gene);
 	for (i = 0; i < d->n_gene; ++i)
-		q->g2v[i] = -1;
-	for (i = 0; i < q->n_vtx; ++i)
-		q->g2v[q->vtx[i].gid] = i;
+		q->g2s[i] = -1;
+	for (i = 0; i < q->n_seg; ++i)
+		q->g2s[q->seg[i].gid] = i;
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%s] selected %d vertices out of %d genes\n", __func__, pg_timestamp(), q->n_vtx, q->d->n_gene);
+		fprintf(stderr, "[M::%s::%s] selected %d vertices out of %d genes\n", __func__, pg_timestamp(), q->n_seg, q->d->n_gene);
 }
 
 void pg_graph_flag_vtx(pg_graph_t *q)
@@ -89,7 +89,7 @@ void pg_graph_flag_vtx(pg_graph_t *q)
 	for (j = 0; j < q->d->n_genome; ++j) {
 		pg_genome_t *g = &q->d->genome[j];
 		for (i = 0; i < g->n_hit; ++i)
-			if (q->g2v[q->d->prot[g->hit[i].pid].gid] >= 0)
+			if (q->g2s[q->d->prot[g->hit[i].pid].gid] >= 0)
 				g->hit[i].vtx = 1;
 	}
 }
@@ -110,7 +110,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			if (!a->pri || a->shadow || !a->vtx) continue;
-			w = (uint32_t)q->d->prot[a->pid].gid<<1 | a->rev;
+			w = (uint32_t)q->g2s[q->d->prot[a->pid].gid]<<1 | a->rev;
 			if (a->cid != vcid) v = (uint32_t)-1, vpos = -1;
 			if (v != (uint32_t)-1) {
 				PG_EXTEND0(pg128_t, arc1, n_arc1, m_arc1);
@@ -147,8 +147,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 			int32_t n = 0;
 			pg_arc_t *p;
 			for (j = i0; j < i; ++j)
-				n += arc[j].y>>32, dist += ((int32_t)arc[j].y) * (arc[j].y>>32);
-			assert(dist >= 0);
+				n += arc[j].y>>32, dist += (arc[j].y<<32>>32) * (arc[j].y>>32);
 			PG_EXTEND0(pg_arc_t, q->arc, q->n_arc, q->m_arc);
 			p = &q->arc[q->n_arc++];
 			p->x = arc[i0].x;

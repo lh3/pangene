@@ -117,10 +117,10 @@ void pg_write_vtx(const pg_graph_t *g)
 	const pg_data_t *d = g->d;
 	kstring_t out = {0,0,0};
 	int32_t i;
-	for (i = 0; i < g->n_vtx; ++i) {
-		int32_t gid = g->vtx[i].gid;
+	for (i = 0; i < g->n_seg; ++i) {
+		int32_t gid = g->seg[i].gid;
 		out.l = 0;
-		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, g->vtx[i].pri, g->vtx[i].sec);
+		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tc1:i:%d\tc2:i:%d\n", d->gene[gid].name, d->gene[gid].len, g->seg[i].pri, g->seg[i].sec);
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);
@@ -133,9 +133,9 @@ void pg_write_arc(const pg_graph_t *g)
 	int32_t i;
 	for (i = 0; i < g->n_arc; ++i) {
 		pg_arc_t *a = &g->arc[i];
-		//if (a->x>>32 > (uint32_t)a->x) continue;
+		uint32_t v = a->x>>32, w = (uint32_t)a->x;
 		out.l = 0;
-		pg_sprintf_lite(&out, "L\t%s\t%c\t%s\t%c\t0M\t", d->gene[a->x>>32>>1].name, "+-"[a->x>>32&1], d->gene[(uint32_t)a->x>>1].name, "+-"[a->x&1]);
+		pg_sprintf_lite(&out, "L\t%s\t%c\t%s\t%c\t0M\t", d->gene[g->seg[v>>1].gid].name, "+-"[v&1], d->gene[g->seg[w>>1].gid].name, "+-"[w&1]);
 		pg_sprintf_lite(&out, "ng:i:%d\tnc:i:%d\tad:i:%d\n", a->n_genome, a->tot_cnt, a->avg_dist);
 		fwrite(out.s, 1, out.l, stdout);
 	}
