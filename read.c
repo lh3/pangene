@@ -159,7 +159,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					hit.qs = strtol(q, &r, 10);
 				} else if (i == 3) { // query end
 					hit.qe = strtol(q, &r, 10);
-					if (hit.qe - hit.qs < d->prot[hit.pid].len * opt->min_prot_ratio)
+					if (hit.qe - hit.qs < d->prot[hit.pid].len * opt->min_prot_ratio) // alignment fraction too low
 						break;
 				} else if (i == 4) { // strand
 					if (*q != '+' && *q != '-') break;
@@ -186,6 +186,8 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					hit.mlen = strtol(q, &r, 10);
 				} else if (i == 10) { // block length
 					hit.blen = strtol(q, &r, 10);
+					if (hit.mlen < hit.blen * opt->min_prot_iden) // identity too low
+						break;
 				} else if (i >= 12) { // tags
 					if (strncmp(q, "ms:i:", 5) == 0) { // score
 						hit.score = strtol(q + 5, &r, 10);

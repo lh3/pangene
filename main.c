@@ -13,6 +13,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "Usage: pangene [options] <in.paf> [...]\n");
 	fprintf(fp, "Options:\n");
 	fprintf(fp, "  -d CHAR       gene name delimiter [%c]\n", opt->gene_delim);
+	fprintf(fp, "  -e FLOAT      min protein identity [%g]\n", opt->min_prot_iden);
 	fprintf(fp, "  -l FLOAT      min protein alignment fraction [%g]\n", opt->min_prot_ratio);
 	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
@@ -30,8 +31,9 @@ int main(int argc, char *argv[])
 	pg_graph_t *g;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:l:f:p:v:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:v:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
+		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
 		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);

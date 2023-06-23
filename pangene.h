@@ -11,7 +11,8 @@ typedef struct {
 
 typedef struct {
 	int32_t gene_delim;
-	double min_prot_ratio; // filter out a protein if less than 50% of proteins are aligned
+	double min_prot_ratio; // filter out a protein if less than 50% of the protein is aligned
+	double min_prot_iden; // filter out a protein if identity below 20%
 	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
 	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
 } pg_opt_t;
