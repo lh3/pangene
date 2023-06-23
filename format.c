@@ -112,7 +112,7 @@ void pg_write_bed(const pg_data_t *d, int32_t aid)
 	free(out.s);
 }
 
-void pg_write_vtx(const pg_graph_t *g)
+static void pg_write_seg(const pg_graph_t *g)
 {
 	const pg_data_t *d = g->d;
 	kstring_t out = {0,0,0};
@@ -127,7 +127,7 @@ void pg_write_vtx(const pg_graph_t *g)
 	free(out.s);
 }
 
-void pg_write_arc(const pg_graph_t *g)
+static void pg_write_arc(const pg_graph_t *g)
 {
 	const pg_data_t *d = g->d;
 	kstring_t out = {0,0,0};
@@ -145,6 +145,6 @@ void pg_write_arc(const pg_graph_t *g)
 
 void pg_graph_write(const pg_graph_t *g)
 {
-	pg_write_vtx(g);
+	pg_write_seg(g);
 	pg_write_arc(g);
 }
