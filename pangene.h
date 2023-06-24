@@ -15,6 +15,7 @@ typedef struct {
 	double min_prot_iden; // filter out a protein if identity below 20%
 	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
 	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
+	int32_t max_avg_occ;
 } pg_opt_t;
 
 typedef struct {
@@ -72,6 +73,7 @@ typedef struct {
 	int32_t gid, pri, sec;
 	int32_t n_genome;
 	int32_t tot_cnt;
+	uint32_t del:1, dummy:31;
 } pg_seg_t;
 
 typedef struct {
@@ -79,6 +81,7 @@ typedef struct {
 	int32_t n_genome;
 	int32_t tot_cnt;
 	int32_t avg_dist;
+	uint32_t del:1, dummy:31;
 } pg_arc_t;
 
 typedef struct {
@@ -100,6 +103,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn);
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d);
 
 pg_graph_t *pg_graph_init(pg_data_t *d);
+void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q);
 void pg_graph_destroy(pg_graph_t *g);
 
 void pg_write_bed(const pg_data_t *d, int32_t aid);

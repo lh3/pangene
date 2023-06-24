@@ -172,9 +172,31 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 	free(arc);
 }
 
+void pg_graph_rm_del(pg_graph_t *q)
+{
+	int32_t i, k;
+	for (i = 0, k = 0; i < q->n_arc; ++i) {
+		pg_arc_t *a = &q->arc[i];
+		uint32_t v = a->x>>32, w = (uint32_t)a->x;
+		if (!(a->del || q->seg[v>>1].del || q->seg[w>>1].del))
+			q->arc[k++] = q->arc[i];
+	}
+	q->n_arc = k;
+}
+
+void pg_graph_flt(const pg_opt_t *opt, pg_graph_t *q)
+{
+	int32_t i;
+	for (i = 0; i < q->n_seg; ++i)
+		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
+			q->seg[i].del = 1;
+	pg_graph_rm_del(q);
+}
+
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 {
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
 	pg_gen_arc(opt, q);
+	pg_graph_flt(opt, q);
 }

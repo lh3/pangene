@@ -67,6 +67,4 @@ int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri);
 void pg_flag_primary(pg_data_t *d);
 
-void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *g);
-
 #endif

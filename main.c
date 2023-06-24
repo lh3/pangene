@@ -17,6 +17,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -l FLOAT      min protein alignment fraction [%g]\n", opt->min_prot_ratio);
 	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
+	fprintf(fp, "  -c            max number of average occurrence [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "  --bed         output BED12 (mainly for debugging)\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
