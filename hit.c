@@ -119,10 +119,19 @@ int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g)
 						++n_multi;
 			}
 			if (n_multi > 0 && i - i0 - n_multi > 0) {
-				//printf("%s\t%d\n", d->prot[g->hit[a[i0].y].pid].name, i - i0);
-				for (j = i0; j < i; ++j)
+				int32_t j1 = -1;
+				for (j = i0; j < i; ++j) {
 					if (g->hit[a[j].y].n_exon == 1)
 						g->hit[a[j].y].pseudo = 1, ++n_pseudo;
+					else if (j1 < 0)
+						j1 = j;
+				}
+				assert(j1 >= 0);
+				if (g->hit[a[j1].y].rank > 0) { // promote the first multi-exon hit to rank 0
+					for (j = i0; j < j1; ++j)
+						g->hit[a[j].y].rank++;
+					g->hit[a[j1].y].rank = 0;
+				}
 			}
 			i0 = i;
 		}
