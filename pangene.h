@@ -3,13 +3,17 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r43-dirty"
+#define PG_VERSION "0.0-r45-dirty"
+
+#define PG_F_WRITE_BED      0x1
+#define PG_F_WRITE_WALK     0x2
 
 typedef struct {
 	uint64_t x, y;
 } pg128_t;
 
 typedef struct {
+	uint32_t flag;
 	int32_t gene_delim;
 	double min_prot_ratio; // filter out a protein if less than 50% of the protein is aligned
 	double min_prot_iden; // filter out a protein if identity below 20%
@@ -107,7 +111,8 @@ pg_graph_t *pg_graph_init(pg_data_t *d);
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q);
 void pg_graph_destroy(pg_graph_t *g);
 
-void pg_write_bed(const pg_data_t *d, int32_t aid);
-void pg_graph_write(const pg_graph_t *g);
+void pg_write_bed(const pg_data_t *d);
+void pg_write_graph(const pg_graph_t *g);
+void pg_write_walk(pg_graph_t *g);
 
 #endif

@@ -115,7 +115,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			uint32_t sid;
-			if (!a->pri || a->shadow || !a->vtx || a->pseudo) continue;
+			if (!pg_hit_arc(a)) continue;
 			sid = q->g2s[q->d->prot[a->pid].gid];
 			w = (uint32_t)sid<<1 | a->rev;
 			++seg_cnt[sid];

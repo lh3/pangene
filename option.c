@@ -6,6 +6,7 @@ int pg_verbose = 3;
 void pg_opt_init(pg_opt_t *opt)
 {
 	memset(opt, 0, sizeof(*opt));
+	opt->flag = 0;
 	opt->gene_delim = ':';
 	opt->min_prot_iden = 0.2;
 	opt->min_prot_ratio = 0.5;

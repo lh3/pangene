@@ -4,6 +4,7 @@
 
 static ko_longopt_t long_options[] = {
 	{ "bed",             ko_no_argument,       301 },
+	{ "walk",            ko_no_argument,       302 },
 	{ "version",         ko_no_argument,       401 },
 	{ 0, 0, 0 }
 };
@@ -20,6 +21,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -c            max number of average occurrence [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "  -a            min genome count on arcs [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  --bed         output BED12 (mainly for debugging)\n");
+	fprintf(fp, "  --walk        output walks\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
 }
@@ -27,7 +29,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 int main(int argc, char *argv[])
 {
 	ketopt_t o = KETOPT_INIT;
-	int32_t i, c, bed_out = 0;
+	int32_t i, c;
 	pg_opt_t opt;
 	pg_data_t *d;
 	pg_graph_t *g;
@@ -42,7 +44,8 @@ int main(int argc, char *argv[])
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
 		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
 		else if (c == 'v') pg_verbose = atoi(o.arg);
-		else if (c == 301) bed_out = 1;
+		else if (c == 301) opt.flag |= PG_F_WRITE_BED;
+		else if (c == 302) opt.flag |= PG_F_WRITE_WALK;
 		else if (c == 401) {
 			puts(PG_VERSION);
 			return 0;
@@ -56,14 +59,15 @@ int main(int argc, char *argv[])
 	for (i = o.ind; i < argc; ++i)
 		pg_read_paf(&opt, d, argv[i]);
 	pg_post_process(&opt, d);
-	if (bed_out) {
-		for (i = 0; i < d->n_genome; ++i)
-			pg_write_bed(d, i);
+	if (opt.flag & PG_F_WRITE_BED) {
+		pg_write_bed(d);
 		return 0; // TODO: deallocate
 	}
 	g = pg_graph_init(d);
 	pg_graph_gen(&opt, g);
-	pg_graph_write(g);
+	pg_write_graph(g);
+	if (opt.flag & PG_F_WRITE_WALK)
+		pg_write_walk(g);
 	pg_graph_destroy(g);
 	pg_data_destroy(d);
 
