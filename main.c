@@ -18,6 +18,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
 	fprintf(fp, "  -c            max number of average occurrence [%d]\n", opt->max_avg_occ);
+	fprintf(fp, "  -a            min genome count on arcs [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  --bed         output BED12 (mainly for debugging)\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
@@ -32,13 +33,14 @@ int main(int argc, char *argv[])
 	pg_graph_t *g;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:c:v:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:c:a:v:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
 		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
+		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
 		else if (c == 'v') pg_verbose = atoi(o.arg);
 		else if (c == 301) bed_out = 1;
 		else if (c == 401) {

@@ -190,6 +190,9 @@ void pg_graph_flt(const pg_opt_t *opt, pg_graph_t *q)
 	for (i = 0; i < q->n_seg; ++i)
 		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
 			q->seg[i].del = 1;
+	for (i = 0; i < q->n_arc; ++i)
+		if (q->arc[i].n_genome < opt->min_arc_cnt)
+			q->arc[i].del = 1;
 	pg_graph_rm_del(q);
 }
 

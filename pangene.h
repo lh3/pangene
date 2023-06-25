@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r36-dirty"
+#define PG_VERSION "0.0-r41-dirty"
 
 typedef struct {
 	uint64_t x, y;
@@ -16,6 +16,7 @@ typedef struct {
 	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
 	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
 	int32_t max_avg_occ;
+	int32_t min_arc_cnt;
 } pg_opt_t;
 
 typedef struct {
