@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r41-dirty"
+#define PG_VERSION "0.0-r43-dirty"
 
 typedef struct {
 	uint64_t x, y;

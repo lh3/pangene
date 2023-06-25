@@ -120,9 +120,10 @@ static void pg_write_seg(const pg_graph_t *g)
 	for (i = 0; i < g->n_seg; ++i) {
 		const pg_seg_t *s = &g->seg[i];
 		int32_t gid = s->gid;
+		int32_t pid = g->d->gene[gid].pri_pid;
 		out.l = 0;
-		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tng:i:%d\tnc:i:%d\tc1:i:%d\tc2:i:%d\tpp:Z:%s\n",
-			d->gene[gid].name, d->gene[gid].len, s->n_genome, s->tot_cnt, s->pri, s->sec, g->d->prot[g->d->gene[gid].pri_pid].name);
+		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tng:i:%d\tnc:i:%d\tc1:i:%d\tc2:i:%d\tpp:Z:%s\t%d\n",
+			d->gene[gid].name, d->prot[pid].len, s->n_genome, s->tot_cnt, s->pri, s->sec, d->prot[pid].name, d->gene[gid].len);
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);

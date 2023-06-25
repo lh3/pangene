@@ -135,7 +135,6 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 						PG_EXTEND0(pg_gene_t, d->gene, gid, d->m_gene);
 					}
 					d->gene[gid].name = tmp;
-					d->gene[gid].len = 0;
 					// add protein
 					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), &pid, &absent);
 					if (absent) { // protein is new
