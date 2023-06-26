@@ -3,8 +3,7 @@
 #include "ketopt.h"
 
 static ko_longopt_t long_options[] = {
-	{ "bed",             ko_no_argument,       301 },
-	{ "walk",            ko_no_argument,       302 },
+	{ "bed",             ko_optional_argument, 301 },
 	{ "version",         ko_no_argument,       401 },
 	{ 0, 0, 0 }
 };
@@ -20,8 +19,8 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
 	fprintf(fp, "  -c            max number of average occurrence [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "  -a            min genome count on arcs [%d]\n", opt->min_arc_cnt);
-	fprintf(fp, "  --bed         output BED12 (mainly for debugging)\n");
-	fprintf(fp, "  --walk        output walks\n");
+	fprintf(fp, "  -w            output walk lines\n");
+	fprintf(fp, "  --bed[=STR]   output BED12, raw or walk [walk]\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
 }
@@ -32,10 +31,9 @@ int main(int argc, char *argv[])
 	int32_t i, c;
 	pg_opt_t opt;
 	pg_data_t *d;
-	pg_graph_t *g;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:c:a:v:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:c:a:wv:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -43,10 +41,16 @@ int main(int argc, char *argv[])
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
 		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
+		else if (c == 'w') opt.flag |= PG_F_WRITE_WALK;
 		else if (c == 'v') pg_verbose = atoi(o.arg);
-		else if (c == 301) opt.flag |= PG_F_WRITE_BED;
-		else if (c == 302) opt.flag |= PG_F_WRITE_WALK;
-		else if (c == 401) {
+		else if (c == 301) {
+			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
+			else if (strcmp(o.arg, "raw") == 0) opt.flag |= PG_F_WRITE_BED_RAW;
+			else {
+				fprintf(stderr, "ERROR: unrecognized --bed argument. Should be 'raw' or 'walk'.\n");
+				return 1;
+			}
+		} else if (c == 401) {
 			puts(PG_VERSION);
 			return 0;
 		}
@@ -59,16 +63,21 @@ int main(int argc, char *argv[])
 	for (i = o.ind; i < argc; ++i)
 		pg_read_paf(&opt, d, argv[i]);
 	pg_post_process(&opt, d);
-	if (opt.flag & PG_F_WRITE_BED) {
-		pg_write_bed(d);
-		return 0; // TODO: deallocate
+	if (opt.flag & PG_F_WRITE_BED_RAW) {
+		pg_write_bed(d, 0);
+	} else {
+		pg_graph_t *g;
+		g = pg_graph_init(d);
+		pg_graph_gen(&opt, g);
+		if (opt.flag & PG_F_WRITE_BED_WALK) {
+			pg_write_bed(d, 1);
+		} else {
+			pg_write_graph(g);
+			if (opt.flag & PG_F_WRITE_WALK)
+				pg_write_walk(g);
+		}
+		pg_graph_destroy(g);
 	}
-	g = pg_graph_init(d);
-	pg_graph_gen(&opt, g);
-	pg_write_graph(g);
-	if (opt.flag & PG_F_WRITE_WALK)
-		pg_write_walk(g);
-	pg_graph_destroy(g);
 	pg_data_destroy(d);
 
 	if (pg_verbose >= 3) {

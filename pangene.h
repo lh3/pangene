@@ -3,10 +3,11 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r46-dirty"
+#define PG_VERSION "0.0-r47-dirty"
 
-#define PG_F_WRITE_BED      0x1
-#define PG_F_WRITE_WALK     0x2
+#define PG_F_WRITE_BED_RAW      0x1
+#define PG_F_WRITE_BED_WALK     0x2
+#define PG_F_WRITE_WALK         0x4
 
 typedef struct {
 	uint64_t x, y;
@@ -111,7 +112,7 @@ pg_graph_t *pg_graph_init(pg_data_t *d);
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q);
 void pg_graph_destroy(pg_graph_t *g);
 
-void pg_write_bed(const pg_data_t *d);
+void pg_write_bed(const pg_data_t *d, int32_t is_walk);
 void pg_write_graph(const pg_graph_t *g);
 void pg_write_walk(pg_graph_t *g);
 
