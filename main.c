@@ -17,10 +17,10 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -l FLOAT      min protein alignment fraction [%g]\n", opt->min_prot_ratio);
 	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
-	fprintf(fp, "  -c            max number of average occurrence [%d]\n", opt->max_avg_occ);
-	fprintf(fp, "  -a            min genome count on arcs [%d]\n", opt->min_arc_cnt);
+	fprintf(fp, "  -c INT        max number of average occurrence [%d]\n", opt->max_avg_occ);
+	fprintf(fp, "  -a INT        min genome count on arcs [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  -w            output walk lines\n");
-	fprintf(fp, "  --bed[=STR]   output BED12, raw or walk [walk]\n");
+	fprintf(fp, "  --bed[=STR]   output BED12 where STR is walk or raw [walk]\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
 }
