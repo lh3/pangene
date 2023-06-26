@@ -88,7 +88,7 @@ static inline void pg_write_bed_hit(kstring_t *out, const pg_data_t *d, int32_t 
 	for (i = 0; i < a->n_exon; ++i)
 		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].os);
 	snprintf(buf, 15, "%.4f", (double)a->mlen / a->blen);
-	pg_sprintf_lite(out, "\trk:i:%d\tpr:i:%d\tsd:i:%d\tfs:i:%d\tcm:i:%ld\tdv:f:%s\n", a->rank, a->pri,a->shadow, a->fs, a->cm, buf);
+	pg_sprintf_lite(out, "\trk:i:%d\tpr:i:%d\tsd:i:%d\tvt:i:%d\tps:i:%d\tcm:i:%ld\tdv:f:%s\n", a->rank, a->pri,a->shadow, a->vtx, a->pseudo, a->cm, buf);
 }
 
 static void pg_write_bed_genome(const pg_data_t *d, int32_t aid, int32_t is_walk)
