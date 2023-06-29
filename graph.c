@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "pgpriv.h"
 #include "kalloc.h"
+#include "ksort.h"
 
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 {
@@ -94,11 +95,20 @@ void pg_graph_flag_vtx(pg_graph_t *q)
 	}
 }
 
+typedef struct {
+	uint64_t x;
+	int32_t n, dist;
+	int32_t s1, s2;
+} pg_tmparc_t;
+
+#define sort_key_x(a) ((a).x)
+KRADIX_SORT_INIT(pg_tmparc, pg_tmparc_t, sort_key_x, 8)
+
 void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 {
 	int32_t j, i, i0, *seg_cnt = 0;
 	int64_t n_arc = 0, m_arc = 0, n_arc1 = 0, m_arc1 = 0;
-	pg128_t *p, *arc = 0, *arc1 = 0;
+	pg_tmparc_t *p, *arc = 0, *arc1 = 0;
 
 	seg_cnt = PG_MALLOC(int32_t, q->n_seg);
 	for (i = 0; i < q->n_seg; ++i)
@@ -107,7 +117,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		pg_genome_t *g = &q->d->genome[j];
 		uint32_t w, v = (uint32_t)-1;
 		int64_t vpos = -1;
-		int32_t vcid = -1;
+		int32_t vcid = -1, si = -1;
 		pg_flag_shadow(opt, q->d->prot, g, 1, 1); // this requires sorting by pg_hit_t::cs
 		pg_hit_sort(0, g, 1); // sort by pg_hit_t::cm
 		n_arc1 = 0;
@@ -121,28 +131,33 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 			++seg_cnt[sid];
 			if (a->cid != vcid) v = (uint32_t)-1, vpos = -1;
 			if (v != (uint32_t)-1) {
-				PG_EXTEND0(pg128_t, arc1, n_arc1, m_arc1);
-				p = &arc1[n_arc1++], p->x = (uint64_t)v<<32|w, p->y = a->cm - vpos;
-				PG_EXTEND0(pg128_t, arc1, n_arc1, m_arc1);
-				p = &arc1[n_arc1++], p->x = (uint64_t)(w^1)<<32|(v^1), p->y = a->cm - vpos;
+				PG_EXTEND0(pg_tmparc_t, arc1, n_arc1, m_arc1);
+				p = &arc1[n_arc1++], p->x = (uint64_t)v<<32|w, p->dist = a->cm - vpos, p->s1 = si, p->s2 = a->score;
+				PG_EXTEND0(pg_tmparc_t, arc1, n_arc1, m_arc1);
+				p = &arc1[n_arc1++], p->x = (uint64_t)(w^1)<<32|(v^1), p->dist = a->cm - vpos, p->s1 = a->score, p->s2 = si;
 			}
-			v = w, vpos = a->cm, vcid = a->cid;
+			v = w, vpos = a->cm, vcid = a->cid, si = a->score;
 		}
 		pg_hit_sort(0, g, 0); // sort by pg_hit_t::cs
 		assert(n_arc1 <= INT32_MAX);
 		for (i = 0; i < q->n_seg; ++i)
 			q->seg[i].n_genome += (seg_cnt[i] > 0), q->seg[i].tot_cnt += seg_cnt[i];
-		radix_sort_pg128x(arc1, arc1 + n_arc1);
+		radix_sort_pg_tmparc(arc1, arc1 + n_arc1);
 		for (i = 1, i0 = 0; i <= n_arc1; ++i) {
 			if (i == n_arc1 || arc1[i0].x != arc1[i].x) {
-				int32_t j;
+				int32_t j, max_s1 = 0, max_s2 = 0;
 				uint64_t dist = 0;
-				for (j = i0; j < i; ++j)
-					dist += arc1[j].y;
-				PG_EXTEND0(pg128_t, arc, n_arc, m_arc);
+				for (j = i0; j < i; ++j) {
+					dist += arc1[j].dist;
+					max_s1 = max_s1 > arc1[j].s1? max_s1 : arc1[j].s1;
+					max_s2 = max_s2 > arc1[j].s2? max_s2 : arc1[j].s2;
+				}
+				PG_EXTEND0(pg_tmparc_t, arc, n_arc, m_arc);
 				p = &arc[n_arc++];
 				p->x = arc1[i0].x;
-				p->y = (uint64_t)(i - i0) << 32 | (uint64_t)((double)dist / (i - i0) + .499);
+				p->n = i - i0;
+				p->dist = (int32_t)((double)dist / (i - i0) + .499);
+				p->s1 = max_s1, p->s2 = max_s2;
 				i0 = i;
 			}
 		}
@@ -151,21 +166,27 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 	free(seg_cnt);
 
 	assert(n_arc <= INT32_MAX);
-	radix_sort_pg128x(arc, arc + n_arc);
+	radix_sort_pg_tmparc(arc, arc + n_arc);
 	q->n_arc = 0;
 	for (i0 = 0, i = 1; i <= n_arc; ++i) {
 		if (i == n_arc || arc[i].x != arc[i0].x) {
-			int64_t dist = 0;
+			int64_t dist = 0, s1 = 0, s2 = 0;
 			int32_t n = 0;
 			pg_arc_t *p;
-			for (j = i0; j < i; ++j)
-				n += arc[j].y>>32, dist += (arc[j].y<<32>>32) * (arc[j].y>>32);
+			for (j = i0; j < i; ++j) {
+				n += arc[j].n;
+				dist += (uint64_t)arc[j].dist * arc[j].n;
+				s1 += arc[j].s1;
+				s2 += arc[j].s2;
+			}
 			PG_EXTEND0(pg_arc_t, q->arc, q->n_arc, q->m_arc);
 			p = &q->arc[q->n_arc++];
 			p->x = arc[i0].x;
 			p->n_genome = i - i0;
 			p->tot_cnt = n;
 			p->avg_dist = (int64_t)((double)dist / n + .499);
+			p->s1 = (int32_t)((double)s1 / (i - i0) + .499);
+			p->s2 = (int32_t)((double)s2 / (i - i0) + .499);
 			i0 = i;
 		}
 	}

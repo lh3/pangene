@@ -142,7 +142,7 @@ static void pg_write_arc(const pg_graph_t *g)
 		uint32_t v = a->x>>32, w = (uint32_t)a->x;
 		out.l = 0;
 		pg_sprintf_lite(&out, "L\t%s\t%c\t%s\t%c\t0M\t", d->gene[g->seg[v>>1].gid].name, "+-"[v&1], d->gene[g->seg[w>>1].gid].name, "+-"[w&1]);
-		pg_sprintf_lite(&out, "ng:i:%d\tnc:i:%d\tad:i:%d\n", a->n_genome, a->tot_cnt, a->avg_dist);
+		pg_sprintf_lite(&out, "ng:i:%d\tnc:i:%d\tad:i:%d\ts1:i:%d\ts2:i:%d\n", a->n_genome, a->tot_cnt, a->avg_dist, a->s1, a->s2);
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);

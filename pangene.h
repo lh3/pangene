@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r49-dirty"
+#define PG_VERSION "0.0-r50-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -87,6 +87,7 @@ typedef struct {
 	int32_t n_genome;
 	int32_t tot_cnt;
 	int32_t avg_dist;
+	int32_t s1, s2;
 	uint32_t del:1, dummy:31;
 } pg_arc_t;
 
