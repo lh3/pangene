@@ -37,7 +37,7 @@ depend:
 
 dict.o: pgpriv.h pangene.h khashl.h
 format.o: pgpriv.h pangene.h
-graph.o: pgpriv.h pangene.h kalloc.h
+graph.o: pgpriv.h pangene.h kalloc.h ksort.h
 hit.o: pgpriv.h pangene.h kalloc.h ksort.h
 kalloc.o: kalloc.h
 main.o: pgpriv.h pangene.h ketopt.h
