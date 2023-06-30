@@ -159,23 +159,27 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
+static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32_t check_pri)
+{
+	if (check_vtx && a->vtx == 0) return 0;
+	if (check_pri && a->pri == 0) return 0;
+	if (a->branch_flt) return 0;
+	return 1;
+}
+
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri)
 {
 	int32_t i, i0, n_shadow = 0;
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
-		if (check_vtx && ai->vtx == 0) continue;
-		if (check_pri && ai->pri == 0) continue;
-		if (ai->branch_flt) continue;
+		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 		ai->overlap = ai->shadow = 0;
 	}
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		int32_t j, li, gi;
 		uint32_t hi;
-		if (check_vtx && ai->vtx == 0) continue;
-		if (check_pri && ai->pri == 0) continue;
-		if (ai->branch_flt) continue;
+		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
 		gi = prot[ai->pid].gid;
@@ -188,7 +192,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			uint32_t hj;
 			uint64_t si, sj;
 			pg_hit_t *aj = &g->hit[j];
-			if (check_vtx && aj->vtx == 0) continue;
+			if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 			if (aj->ce <= ai->cs) continue; // no overlap
 			gj = prot[aj->pid].gid;
 			hj = kh_hash_uint32(gj);
@@ -207,9 +211,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
-		if (check_vtx && ai->vtx == 0) continue;
-		if (check_pri && ai->pri == 0) continue;
-		if (ai->branch_flt) continue;
+		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 		if (ai->shadow) ++n_shadow;
 	}
 	return n_shadow;
