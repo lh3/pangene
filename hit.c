@@ -161,10 +161,10 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 
 static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32_t check_pri)
 {
-	if (check_vtx && a->vtx == 0) return 0;
-	if (check_pri && a->pri == 0) return 0;
-	if (a->branch_flt) return 0;
-	return 1;
+	if (check_vtx && a->vtx == 0) return 1;
+	if (check_pri && a->pri == 0) return 1;
+	if (a->branch_flt) return 1;
+	return 0;
 }
 
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri)
@@ -192,8 +192,8 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			uint32_t hj;
 			uint64_t si, sj;
 			pg_hit_t *aj = &g->hit[j];
-			if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 			if (aj->ce <= ai->cs) continue; // no overlap
+			if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 			gj = prot[aj->pid].gid;
 			hj = kh_hash_uint32(gj);
 			if (gi == gj) continue; // ignore iso-forms of the same gene
