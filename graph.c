@@ -207,26 +207,91 @@ void pg_graph_rm_del(pg_graph_t *q)
 
 void pg_graph_flt(const pg_opt_t *opt, pg_graph_t *q)
 {
-	int32_t i;
+	int32_t i, n_sflt = 0, n_aflt = 0;
 	for (i = 0; i < q->n_seg; ++i)
 		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
-			q->seg[i].del = 1;
+			q->seg[i].del = 1, ++n_sflt;
 	for (i = 0; i < q->n_arc; ++i)
 		if (q->arc[i].n_genome < opt->min_arc_cnt)
-			q->arc[i].del = 1;
+			q->arc[i].del = 1, ++n_aflt;
 	pg_graph_rm_del(q);
+	if (pg_verbose >= 3) {
+		fprintf(stderr, "[M::%s::%s] filtered %d high-occurrence segments\n", __func__, pg_timestamp(), n_sflt);
+		fprintf(stderr, "[M::%s::%s] filtered %d low-occurrence arcs\n", __func__, pg_timestamp(), n_aflt);
+	}
 }
 
-uint64_t *pg_arc_idx(const pg_graph_t *q)
+static uint64_t *pg_arc_idx(const pg_graph_t *q)
 {
 	uint64_t *idx;
-	uint32_t n_vtx = q->n_seg * 2;
 	int32_t i, i0;
-	idx = PG_CALLOC(uint64_t, n_vtx);
+	idx = PG_CALLOC(uint64_t, q->n_seg * 2);
 	for (i0 = 0, i = 1; i <= q->n_arc; ++i)
 		if (i == q->n_arc || q->arc[i].x>>32 != q->arc[i0].x>>32)
-			idx[q->arc[i0].x>>32] = i - i0, i0 = i;
+			idx[q->arc[i0].x>>32] = (uint64_t)i0<<32 | (i - i0), i0 = i;
 	return idx;
+}
+
+static int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
+{
+	uint32_t v, n_vtx = q->n_seg * 2, n_flt = 0;
+	for (v = 0; v < n_vtx; ++v) {
+		int32_t i, max_s1 = 0, off = q->idx[v]>>32, n = (int32_t)q->idx[v];
+		for (i = 0; i < n; ++i)
+			max_s1 = max_s1 > q->arc[off + i].s1? max_s1 : q->arc[off + i].s1;
+		for (i = 0; i < n; ++i)
+			if (q->arc[off + i].s1 < max_s1 * (1.0 - opt->branch_diff))
+				q->arc[off + i].branch_flt = 1, ++n_flt;
+	}
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] marked %d diverged branches\n", __func__, pg_timestamp(), n_flt);
+	return n_flt;
+}
+
+static inline const pg_arc_t *pg_get_arc(const pg_graph_t *q, uint32_t v, uint32_t w)
+{
+	int32_t i, n = (int32_t)q->idx[v];
+	const pg_arc_t *a = &q->arc[q->idx[v]>>32];
+	for (i = 0; i < n; ++i)
+		if ((uint32_t)a[i].x == w)
+			return &a[i];
+	return 0;
+}
+
+static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q)
+{
+	pg_data_t *d = q->d;
+	int32_t i, j, n_flt = 0;
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		uint32_t v = (uint32_t)-1;
+		int32_t vcid = -1;
+		pg_flag_shadow(opt, q->d->prot, g, 1, 1); // this requires sorting by pg_hit_t::cs
+		pg_hit_sort(0, g, 1); // sort by pg_hit_t::cm
+		for (i = 0; i < g->n_hit; ++i) {
+			pg_hit_t *a = &g->hit[i];
+			const pg_arc_t *e;
+			uint32_t w;
+			int32_t sid;
+			if (!pg_hit_arc(a)) continue;
+			sid = q->g2s[q->d->prot[a->pid].gid];
+			if (a->cid != vcid) v = (uint32_t)-1;
+			w = (uint32_t)sid<<1 | a->rev;
+			if (v != (uint32_t)-1) {
+				int32_t ori_flt = a->branch_flt;
+				e = pg_get_arc(q, v, w);
+				if (e && e->branch_flt) a->branch_flt = 1;
+				e = pg_get_arc(q, w^1, v^1);
+				if (e && e->branch_flt) a->branch_flt = 1;
+				if (a->branch_flt != ori_flt) ++n_flt;
+			}
+			v = w, vcid = a->cid;
+		}
+		pg_hit_sort(0, g, 0); // sort by pg_hit_t::cs
+	}
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] marked %d diverged hits\n", __func__, pg_timestamp(), n_flt);
+	return n_flt;
 }
 
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
@@ -234,6 +299,12 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
 	pg_gen_arc(opt, q);
+	q->idx = pg_arc_idx(q);
+	pg_mark_branch_flt_arc(opt, q);
+	pg_mark_branch_flt_hit(opt, q);
+	q->n_arc = 0;
+	pg_gen_arc(opt, q);
 	pg_graph_flt(opt, q);
+	free(q->idx);
 	q->idx = pg_arc_idx(q);
 }

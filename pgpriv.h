@@ -69,7 +69,7 @@ void pg_flag_primary(pg_data_t *d);
 
 static inline int32_t pg_hit_arc(const pg_hit_t *a)
 {
-	return (a->pri && a->vtx && !a->shadow && !a->pseudo);
+	return (a->pri && a->vtx && !a->shadow && !a->pseudo && !a->branch_flt);
 }
 
 #endif

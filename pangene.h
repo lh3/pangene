@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r51-dirty"
+#define PG_VERSION "0.0-r52-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -22,6 +22,7 @@ typedef struct {
 	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
 	int32_t max_avg_occ;
 	int32_t min_arc_cnt;
+	double branch_diff;
 } pg_opt_t;
 
 typedef struct {
@@ -47,7 +48,7 @@ typedef struct {
 	int32_t mlen, blen, fs;
 	int32_t score, score2;
 	int32_t n_exon, off_exon;
-	uint32_t rank:20, rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, pri:1, dummy:6;
+	uint32_t rank:20, rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, pri:1, branch_flt:1, dummy:5;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 
@@ -88,7 +89,7 @@ typedef struct {
 	int32_t tot_cnt;
 	int32_t avg_dist;
 	int32_t s1, s2;
-	uint32_t del:1, dummy:31;
+	uint32_t del:1, branch_flt:1, dummy:30;
 } pg_arc_t;
 
 typedef struct {

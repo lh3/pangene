@@ -14,4 +14,5 @@ void pg_opt_init(pg_opt_t *opt)
 	opt->min_vertex_ratio = 0.05;
 	opt->max_avg_occ = 10;
 	opt->min_arc_cnt = 2;
+	opt->branch_diff = 0.03;
 }

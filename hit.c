@@ -166,6 +166,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		pg_hit_t *ai = &g->hit[i];
 		if (check_vtx && ai->vtx == 0) continue;
 		if (check_pri && ai->pri == 0) continue;
+		if (ai->branch_flt) continue;
 		ai->overlap = ai->shadow = 0;
 	}
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
@@ -174,6 +175,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		uint32_t hi;
 		if (check_vtx && ai->vtx == 0) continue;
 		if (check_pri && ai->pri == 0) continue;
+		if (ai->branch_flt) continue;
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
 		gi = prot[ai->pid].gid;
@@ -207,6 +209,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		pg_hit_t *ai = &g->hit[i];
 		if (check_vtx && ai->vtx == 0) continue;
 		if (check_pri && ai->pri == 0) continue;
+		if (ai->branch_flt) continue;
 		if (ai->shadow) ++n_shadow;
 	}
 	return n_shadow;
