@@ -33,7 +33,7 @@ pg_graph_t *pg_graph_init(pg_data_t *d)
 
 void pg_graph_destroy(pg_graph_t *q)
 {
-	free(q->g2s); free(q->seg); free(q->arc);
+	free(q->g2s); free(q->seg); free(q->arc); free(q->idx);
 	free(q);
 }
 
@@ -217,10 +217,23 @@ void pg_graph_flt(const pg_opt_t *opt, pg_graph_t *q)
 	pg_graph_rm_del(q);
 }
 
+uint64_t *pg_arc_idx(const pg_graph_t *q)
+{
+	uint64_t *idx;
+	uint32_t n_vtx = q->n_seg * 2;
+	int32_t i, i0;
+	idx = PG_CALLOC(uint64_t, n_vtx);
+	for (i0 = 0, i = 1; i <= q->n_arc; ++i)
+		if (i == q->n_arc || q->arc[i].x>>32 != q->arc[i0].x>>32)
+			idx[q->arc[i0].x>>32] = i - i0, i0 = i;
+	return idx;
+}
+
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 {
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
 	pg_gen_arc(opt, q);
 	pg_graph_flt(opt, q);
+	q->idx = pg_arc_idx(q);
 }

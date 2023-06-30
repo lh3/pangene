@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r50-dirty"
+#define PG_VERSION "0.0-r51-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -98,6 +98,7 @@ typedef struct {
 	pg_seg_t *seg;
 	int32_t n_arc, m_arc;
 	pg_arc_t *arc;
+	uint64_t *idx;
 } pg_graph_t;
 
 extern int pg_verbose;
