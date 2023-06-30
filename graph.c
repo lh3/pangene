@@ -265,8 +265,7 @@ static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q)
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		uint32_t v = (uint32_t)-1;
-		int32_t vcid = -1;
-		pg_flag_shadow(opt, q->d->prot, g, 1, 1); // this requires sorting by pg_hit_t::cs
+		int32_t vi = -1;
 		pg_hit_sort(0, g, 1); // sort by pg_hit_t::cm
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
@@ -275,18 +274,19 @@ static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q)
 			int32_t sid;
 			if (!pg_hit_arc(a)) continue;
 			sid = q->g2s[q->d->prot[a->pid].gid];
-			if (a->cid != vcid) v = (uint32_t)-1;
+			if (vi >= 0 && a->cid != g->hit[vi].cid) v = (uint32_t)-1;
 			w = (uint32_t)sid<<1 | a->rev;
 			if (v != (uint32_t)-1) {
-				int32_t ori_flt = a->branch_flt;
 				e = pg_get_arc(q, v, w);
-				if (e && e->branch_flt) a->branch_flt = 1;
+				if (e && e->branch_flt) g->hit[vi].branch_flt = 1;
 				e = pg_get_arc(q, w^1, v^1);
 				if (e && e->branch_flt) a->branch_flt = 1;
-				if (a->branch_flt != ori_flt) ++n_flt;
 			}
-			v = w, vcid = a->cid;
+			v = w, vi = i;
 		}
+		for (i = 0; i < g->n_hit; ++i)
+			if (g->hit[i].branch_flt)
+				++n_flt;
 		pg_hit_sort(0, g, 0); // sort by pg_hit_t::cs
 	}
 	if (pg_verbose >= 3)
