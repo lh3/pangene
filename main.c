@@ -12,17 +12,20 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 {
 	fprintf(fp, "Usage: pangene [options] <in.paf> [...]\n");
 	fprintf(fp, "Options:\n");
-	fprintf(fp, "  -d CHAR       gene name delimiter [%c]\n", opt->gene_delim);
-	fprintf(fp, "  -e FLOAT      min protein identity [%g]\n", opt->min_prot_iden);
-	fprintf(fp, "  -l FLOAT      min protein alignment fraction [%g]\n", opt->min_prot_ratio);
-	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
-	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
-	fprintf(fp, "  -b FLOAT      drop an arc if weaker than the best by FLOAT fraction [%g]\n", opt->branch_diff);
-	fprintf(fp, "  -c INT        max number of average occurrence [%d]\n", opt->max_avg_occ);
-	fprintf(fp, "  -a INT        min genome count on arcs [%d]\n", opt->min_arc_cnt);
-	fprintf(fp, "  -w            don't output walk lines\n");
-	fprintf(fp, "  --bed[=STR]   output BED12 where STR=walk,raw,flag [walk]\n");
-	fprintf(fp, "  --version     print version number\n");
+	fprintf(fp, "  Input preprocessing:\n");
+	fprintf(fp, "    -d CHAR       gene-protein delimiter [%c]\n", opt->gene_delim);
+	fprintf(fp, "    -e FLOAT      drop an alignment if its identity <FLOAT [%g]\n", opt->min_prot_iden);
+	fprintf(fp, "    -l FLOAT      drop an alignment if <FLOAT fraction of the protein aligned [%g]\n", opt->min_prot_ratio);
+	fprintf(fp, "  Graph construction:\n");
+	fprintf(fp, "    -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
+	fprintf(fp, "    -p FLOAT      gene considered if dominant in FLOAT fraction of genes [%g]\n", opt->min_vertex_ratio);
+	fprintf(fp, "    -a INT        prune an arc if it is supported by <INT genomes [%d]\n", opt->min_arc_cnt);
+	fprintf(fp, "    -b FLOAT      drop a branch if weaker than the best by FLOAT [%g]\n", opt->branch_diff);
+	fprintf(fp, "    -c INT        drop a gene if average occurrence is >INT [%d]\n", opt->max_avg_occ);
+	fprintf(fp, "  Output:\n");
+	fprintf(fp, "    -w            Suppress walk lines (W-lines)\n");
+	fprintf(fp, "    --bed[=STR]   output 12-column BED where STR is walk, raw or flag [walk]\n");
+	fprintf(fp, "    --version     print version number\n");
 	return fp == stdout? 0 : 1;
 }
 

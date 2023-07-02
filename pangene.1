@@ -1,0 +1,251 @@
+.TH pangene 1 "2 July 2023" "pangene-0.0 (r61)" "Bioinformatics tools"
+.SH NAME
+.PP
+pangene - building pangenome gene graphs
+.SH SYNOPSIS
+.TP 2
+*
+Align one set of proteins to multiple genomes with miniprot:
+.RS 4
+.B miniprot
+--outs=0.97 --no-cs -Iut16
+.I genome1.fna proteins.faa
+>
+.I genome1.paf
+.br
+.B miniprot
+--outs=0.97 --no-cs -Iut16
+.I genome2.fna proteins.faa
+>
+.I genome2.paf
+.RE
+.TP
+*
+Construct a pangenome gene graph:
+.RS 4
+.B pangene
+.RB [ -e
+.IR minIdentity ]
+.RB [ -b
+.IR branchingThres ]
+.RB [ -d
+.IR delimGene ]
+.RB [ -a
+.IR minArcCount ]
+.I genome1.paf genome2.paf
+>
+.I graph.gfa
+.RE
+.TP
+*
+Extract a subgraph around a gene:
+.RS 4
+.B gfatools
+view
+.B -wl
+.IR geneName1 , geneName2
+.RB [ -r
+.IR radius ]
+.I graph.gfa
+>
+.I subgraph.gfa
+.RE
+.SH DESCRIPTION
+.PP
+To construct a pangene graph, we need to prepare one set of proteins and
+multiple genomes. If a gene has multiple isoforms, it is recommended to name
+each isoform as
+.IR geneName : proteinID .
+Pangene will automatically select one protein as the primary isoform and use
+.I geneName
+in the GFA output. Pangene also identifies and filters out redundant proteins.
+The quality of input proteins will affect the quality of the output graph.
+.PP
+To prepare the input for pangene, align the same set of proteins to each genome
+individually and generate one alignment file per genome. Pangene then takes
+these alignment files and construct a gene graph. At present, pangene only
+works with
+.BR miniprot 's
+PAF output. Other formats might be supported later.
+.SH OPTIONS
+.SS Input preprocessing
+.TP 10
+.BI -d \ CHAR
+Gene-protein delimeter [:]. This option tells pangene how to identify the gene
+name in a protein identifier. If a gene has multiple isoforms, pangene will
+later choose one primary isoform per gene. If pangene cannot find the delimiter,
+it will use the protein name as the gene name.
+.TP
+.BI -e \ FLOAT
+Filter out an alignment if its identity below
+.I FLOAT
+[0.5]
+.TP
+.BI -l \ FLOAT
+Filter out an alignment if less than
+.I FLOAT
+fraction of the protein is aligned [0.5]
+.SS Graph construction
+.TP 10
+.BI -f \ FLOAT
+Two alignments are considered to overlap with each other if their intersection
+on the genome is at least
+.I FLOAT
+fraction of the shorter alignment [0.5]
+.TP
+.BI -p \ FLOAT
+A gene is considered a segment in the graph if it is
+.I dominant
+in at least
+.I FLOAT
+fraction of the genomes [0.05]. A gene is
+.I dominant
+if its best alignment is better than other overlapping genes.
+.TP
+.BI -a \ INT
+Prune an arc if it is supported by less than
+.I INT
+number of genomes [1]
+.TP
+.BI -b \ FLOAT
+Drop an arc if it is attached to a branching vertex and is weaker than the best
+branching arc by
+.I FLOAT
+fraction [0.03]
+.TP
+.BI -c \ INT
+Drop a gene if its average occurrence among input genomes is above
+.I INT
+[10].
+.SS Output
+.TP 10
+.B -w
+Suppress walk lines (W-lines)
+.TP
+.BI --bed[= STR ]
+Output BED12 format where
+.I STR
+can be
+.BR walk ,
+.B raw
+or
+.B flag
+[walk].
+This option is mostly debugging:
+.B raw
+for alignments before graph construction;
+.B flag
+for alignments after graph construction with filter tags;
+.B walk
+for alignments used on walk lines only.
+.TP
+.B --version
+Output version number
+.SH OUTPUT FORMAT
+.SS The GFA Format
+Pangene outputs graphs in the GFA format consisting of three line types with
+optional tags at the end. The follow table describes the dialect the pangene
+uses. Note that this is not a description of generic GFA.
+.TS
+center box;
+cb | cb | cb
+c | l | l .
+Line	Col	Description
+_
+S	1	Gene name
+	2	`*'
+_
+L	1	Gene 1
+	2	Orientation 1
+	3	Gene 2
+	4	Orientation 2
+	5	CIGAR [0M]
+_
+W	1	Index of input genome
+	2	`0'
+	3	Contig name
+	4	`*'
+	5	`*'
+	6	Walk: ([><]gene)+
+.TE
+
+.PP
+Pangene may output the following GFA tags:
+.TS
+center box;
+cb | cb | cb | cb
+c | c | c | l .
+Line	Tag	Type	Description
+_
+S	LN	i	Length of the primary protein
+	ng	i	# genomes haboring the gene
+	nc	i	Sum of occurrences
+	c1	i	# genomes where the gene is dominant
+	c2	i	# genomes where the gene is not dominant
+	pp	Z	protein sequence name of the primary isoform
+_
+L	ng	i	# genomes having the arc
+	nc	i	Sum of occurrences
+	ad	i	Average distance on genomes
+	s1	i	Average alignment score of the 1st gene
+	s2	i	Average alignment score of the 2nd gene
+.TE
+
+.SS The BED Format
+With option
+.BR --bed ,
+pangene may output the alignments in the 12-column BED format mostly for
+debugging purposes.
+.TS
+center box;
+cb | cb | cb
+r | l | l .
+Col	Type	Description
+_
+1	String	Contig name
+2	Integer	Contig start
+3	Integer	Contig end
+4	String	Protein sequence name
+5	Integer	Alignment score (ms in miniprot)
+6	Char	`+' or `-'
+7	Integer	Same as col 2
+8	Integer	Same as col 3
+9	String	`0'
+10	Integer	# exons
+11	String	Exon lengths
+12	String	Exon starts relative to col 2
+.TE
+
+.PP
+Pangene may output the following tags following the first 12 columns:
+.TS
+center box;
+cb | cb | cb
+c | c | l .
+Tag	Type	Description
+_
+rk	i	Rank in the input PAF
+dm	i	Dominant or not
+sd	i	Shadowed or not
+vt	i	Selected as a GFA segment or not
+ps	i	Pseudogene or not
+br	i	Filtered by branching or not
+cm	i	Position of the middle amino acid
+id	f	Protein identity
+.TE
+
+.SH LIMITATIONS
+.TP 2
+*
+In general, more testing needed.
+.TP
+*
+Pangene only works with
+.BR miniprot 's
+PAF output.
+.TP
+*
+In the output graph, arcs on W-lines may be absent from L-lines.
+.SH SEE ALSO
+.BR miniprot (1),
+.BR gfatools (1)
