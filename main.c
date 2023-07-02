@@ -20,7 +20,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -b FLOAT      drop an arc if weaker than the best by FLOAT fraction [%g]\n", opt->branch_diff);
 	fprintf(fp, "  -c INT        max number of average occurrence [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "  -a INT        min genome count on arcs [%d]\n", opt->min_arc_cnt);
-	fprintf(fp, "  -w            output walk lines\n");
+	fprintf(fp, "  -w            don't output walk lines\n");
 	fprintf(fp, "  --bed[=STR]   output BED12 where STR=walk,raw,flag [walk]\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 		else if (c == 'b') opt.branch_diff = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
 		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
-		else if (c == 'w') opt.flag |= PG_F_WRITE_WALK;
+		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
 		else if (c == 'v') pg_verbose = atoi(o.arg);
 		else if (c == 301) {
 			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 			pg_write_bed(d, 0);
 		} else {
 			pg_write_graph(g);
-			if (opt.flag & PG_F_WRITE_WALK)
+			if (!(opt.flag & PG_F_WRITE_NO_WALK))
 				pg_write_walk(g);
 		}
 		pg_graph_destroy(g);
