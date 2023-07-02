@@ -17,6 +17,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -l FLOAT      min protein alignment fraction [%g]\n", opt->min_prot_ratio);
 	fprintf(fp, "  -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "  -p FLOAT      min primary ratio to select a gene [%g]\n", opt->min_vertex_ratio);
+	fprintf(fp, "  -b FLOAT      drop an arc if weaker than the best by FLOAT fraction [%g]\n", opt->branch_diff);
 	fprintf(fp, "  -c INT        max number of average occurrence [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "  -a INT        min genome count on arcs [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  -w            output walk lines\n");
@@ -33,12 +34,13 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:c:a:wv:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:b:c:a:wv:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
 		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
+		else if (c == 'b') opt.branch_diff = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
 		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
 		else if (c == 'w') opt.flag |= PG_F_WRITE_WALK;
