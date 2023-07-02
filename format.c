@@ -154,19 +154,47 @@ void pg_write_graph(const pg_graph_t *g)
 	pg_write_arc(g);
 }
 
+static int32_t pg_parse_sample(kstring_t *buf, const char *name) // parse "sample#hap#name"
+{
+	const char *p, *q;
+	int32_t i, hap = 0;
+	buf->l = 0;
+	for (p = q = name, i = 0;; ++p) {
+		if (*p == 0 || *p == '#') {
+			if (i == 0) {
+				if (p - q == 0) return -1;
+				str_copy(buf, q, p);
+				buf->s[q - p] = 0;
+			} else if (i == 1) {
+				if (p - q == 1 && *q >= '0' && *q <= '9') // TODO: assuming one digit
+					hap = *q - '0';
+				else return -1;
+			}
+			q = p + 1, ++i;
+			if (*p == 0) break;
+		}
+	}
+	return i == 3? hap : -1;
+}
+
 void pg_write_walk(pg_graph_t *q)
 {
 	int32_t i, i0, j;
-	kstring_t out = {0,0,0};
+	kstring_t out = {0,0,0}, buf = {0,0,0};
 	pg_data_t *d = q->d;
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		pg_hit_sort(0, &d->genome[j], 1);
 		for (i0 = 0, i = 1; i <= g->n_hit; ++i) {
 			if (i == g->n_hit || g->hit[i].cid != g->hit[i0].cid) {
-				int32_t k, n, cid = g->hit[i0].cid;
+				int32_t k, n, hap, cid = g->hit[i0].cid;
+				hap = pg_parse_sample(&buf, g->ctg[cid].name);
 				out.l = 0;
-				pg_sprintf_lite(&out, "W\t%d\t0\t%s\t*\t*\t", j, g->ctg[cid].name);
+				if (hap >= 0)
+					pg_sprintf_lite(&out, "W\t%s\t%d", buf.s, hap);
+				else
+					pg_sprintf_lite(&out, "W\t%d\t0", j);
+				pg_sprintf_lite(&out, "\t%s\t*\t*\t", g->ctg[cid].name);
 				for (k = i0, n = 0; k < i; ++k) {
 					const pg_hit_t *a = &g->hit[k];
 					if (!pg_hit_arc(a)) continue;
@@ -179,5 +207,6 @@ void pg_write_walk(pg_graph_t *q)
 		}
 		pg_hit_sort(0, &d->genome[j], 0);
 	}
+	free(buf.s);
 	free(out.s);
 }
