@@ -3,11 +3,12 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r58-dirty"
+#define PG_VERSION "0.0-r59-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
-#define PG_F_WRITE_WALK         0x4
+#define PG_F_WRITE_BED_FLAG     0x4
+#define PG_F_WRITE_WALK         0x8
 
 typedef struct {
 	uint64_t x, y;

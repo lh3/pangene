@@ -20,7 +20,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  -c INT        max number of average occurrence [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "  -a INT        min genome count on arcs [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  -w            output walk lines\n");
-	fprintf(fp, "  --bed[=STR]   output BED12 where STR is walk or raw [walk]\n");
+	fprintf(fp, "  --bed[=STR]   output BED12 where STR=walk,raw,flag [walk]\n");
 	fprintf(fp, "  --version     print version number\n");
 	return fp == stdout? 0 : 1;
 }
@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 		else if (c == 301) {
 			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
 			else if (strcmp(o.arg, "raw") == 0) opt.flag |= PG_F_WRITE_BED_RAW;
+			else if (strcmp(o.arg, "flag") == 0) opt.flag |= PG_F_WRITE_BED_FLAG;
 			else {
 				fprintf(stderr, "ERROR: unrecognized --bed argument. Should be 'raw' or 'walk'.\n");
 				return 1;
@@ -71,6 +72,8 @@ int main(int argc, char *argv[])
 		pg_graph_gen(&opt, g);
 		if (opt.flag & PG_F_WRITE_BED_WALK) {
 			pg_write_bed(d, 1);
+		} else if (opt.flag & PG_F_WRITE_BED_FLAG) {
+			pg_write_bed(d, 0);
 		} else {
 			pg_write_graph(g);
 			if (opt.flag & PG_F_WRITE_WALK)
