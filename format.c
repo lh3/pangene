@@ -185,7 +185,7 @@ void pg_write_walk(pg_graph_t *q)
 	pg_data_t *d = q->d;
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
-		pg_hit_sort(0, &d->genome[j], 1);
+		pg_hit_sort(&d->genome[j], 1);
 		for (i0 = 0, i = 1; i <= g->n_hit; ++i) {
 			if (i == g->n_hit || g->hit[i].cid != g->hit[i0].cid) {
 				int32_t k, n, hap, cid = g->hit[i0].cid;
@@ -206,7 +206,7 @@ void pg_write_walk(pg_graph_t *q)
 				i0 = i;
 			}
 		}
-		pg_hit_sort(0, &d->genome[j], 0);
+		pg_hit_sort(&d->genome[j], 0);
 	}
 	free(buf.s);
 	free(out.s);

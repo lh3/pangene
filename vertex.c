@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include "pgpriv.h"
-#include "kalloc.h"
 
 void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 {
@@ -63,7 +62,8 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 			for (j = 0; j < d->n_genome; ++j)
 				if (aux[j][gid]>>1 == d->n_gene)
 					++x, y += (aux[j][gid]&1);
-			//printf("X\t%s\t%d\t%d\t%d\t%d\t%d\n", d->gene[gid].name, n_dom, n_sub, (int32_t)cnt[i].x, x, y);
+			if (opt->flag & PG_F_WRITE_VTX_SEL)
+				printf("g\t%s\t%d\t%d\t%d\t%d\n", d->gene[gid].name, (int32_t)cnt[i].x, x, y, n_sub);
 			if (n_dom >= d->n_genome * opt->min_vertex_ratio && y < x) {
 				pg_seg_t *p;
 				PG_EXTEND0(pg_seg_t, q->seg, q->n_seg, q->m_seg);

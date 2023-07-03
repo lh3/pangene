@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include "pgpriv.h"
-#include "kalloc.h"
 #include "ksort.h"
 
 #define sort_key_128x(a) ((a).x)
@@ -25,20 +24,20 @@ int64_t pg_hit_cal_cm(const pg_hit_t *a, const pg_exon_t *e)
 	return -1;
 }
 
-void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm)
+void pg_hit_sort(pg_genome_t *g, int32_t by_cm)
 {
 	int32_t i, *n, *off;
 	pg_hit_t *a;
 	pg128_t *tmp;
 
-	n = Kcalloc(km, int32_t, g->n_ctg);
+	n = PG_CALLOC(int32_t, g->n_ctg);
 	for (i = 0; i < g->n_hit; ++i)
 		++n[g->hit[i].cid];
-	off = Kcalloc(km, int32_t, g->n_ctg + 1);
+	off = PG_CALLOC(int32_t, g->n_ctg + 1);
 	for (i = 1; i <= g->n_ctg; ++i)
 		off[i] = off[i - 1] + n[i - 1];
 
-	tmp = Kmalloc(km, pg128_t, g->n_hit);
+	tmp = PG_MALLOC(pg128_t, g->n_hit);
 	for (i = 0; i < g->n_hit; ++i) {
 		pg128_t t;
 		t.x = by_cm? g->hit[i].cm : g->hit[i].cs;
@@ -50,14 +49,14 @@ void pg_hit_sort(void *km, pg_genome_t *g, int32_t by_cm)
 		off[i] = off[i - 1] + n[i - 1];
 	for (i = 0; i < g->n_ctg; ++i)
 		radix_sort_pg128x(&tmp[off[i]], &tmp[off[i+1]]);
-	kfree(km, off);
-	kfree(km, n);
+	free(off);
+	free(n);
 
 	a = PG_MALLOC(pg_hit_t, g->n_hit);
 	for (i = 0; i < g->n_hit; ++i)
 		a[i] = g->hit[tmp[i].y];
 
-	kfree(km, tmp);
+	free(tmp);
 	free(g->hit);
 	g->hit = a;
 }
@@ -100,11 +99,11 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 	return (uint64_t)l_inter<<32 | l_union;
 }
 
-int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g)
+int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, i0, j, n_pseudo = 0;
 	pg128_t *a;
-	a = Kmalloc(km, pg128_t, g->n_hit);
+	a = PG_MALLOC(pg128_t, g->n_hit);
 	for (i = 0; i < g->n_hit; ++i) {
 		a[i].x = (uint64_t)g->hit[i].pid<<32 | g->hit[i].rank;
 		a[i].y = i;
@@ -136,7 +135,7 @@ int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g)
 			i0 = i;
 		}
 	}
-	kfree(km, a);
+	free(a);
 	return n_pseudo;
 }
 
