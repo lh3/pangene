@@ -1,4 +1,4 @@
-.TH pangene 1 "3 July 2023" "pangene-0.0-dirty (r71)" "Bioinformatics tools"
+.TH pangene 1 "3 July 2023" "pangene-0.0-dirty (r78)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -24,7 +24,7 @@ Align one set of proteins to multiple genomes with miniprot:
 Construct a pangenome gene graph:
 .RS 4
 .B pangene
-.RB [ -m ]
+.RB [ -u ]
 .RB [ -e
 .IR minIdentity ]
 .RB [ -b
@@ -94,8 +94,8 @@ on the genome is at least
 .I FLOAT
 fraction of the shorter alignment [0.5]
 .TP
-.B -m
-Aggressively merge putative orthologs
+.B -u
+Don't merge potential orthologs
 .TP
 .BI -p \ FLOAT
 A gene is considered a segment in the graph if it is

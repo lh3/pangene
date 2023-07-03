@@ -3,13 +3,13 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r77-dirty"
+#define PG_VERSION "0.0-r78-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
 #define PG_F_WRITE_BED_FLAG     0x4
 #define PG_F_WRITE_NO_WALK      0x8
-#define PG_F_MERGE_ORTHO        0x10
+#define PG_F_NO_MERGE_ORTHO     0x10
 #define PG_F_WRITE_VTX_SEL      0x20
 
 typedef struct {

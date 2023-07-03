@@ -16,7 +16,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 	for (i = 0; i < d->n_gene; ++i)
 		cnt[i].x = d->prot[d->gene[i].pri_pid].avg_score2, cnt[i].y = i;
 
-	if (opt->flag & PG_F_MERGE_ORTHO) {
+	if (!(opt->flag & PG_F_NO_MERGE_ORTHO)) {
 		aux = PG_CALLOC(uint32_t*, d->n_genome);
 		for (j = 0; j < d->n_genome; ++j) {
 			aux[j] = PG_MALLOC(uint32_t, d->n_gene);
@@ -50,7 +50,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 	}
 	free(flag);
 
-	if (opt->flag & PG_F_MERGE_ORTHO) {
+	if (aux) { // merge potential orthologs
 		pg_seg_t *tmp;
 		uint64_t *srt;
 
