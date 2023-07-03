@@ -3,12 +3,13 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r65-dirty"
+#define PG_VERSION "0.0-r71-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
 #define PG_F_WRITE_BED_FLAG     0x4
 #define PG_F_WRITE_NO_WALK      0x8
+#define PG_F_MERGE_ORTHO        0x10
 
 typedef struct {
 	uint64_t x, y;
@@ -81,7 +82,7 @@ typedef struct {
 } pg_data_t;
 
 typedef struct {
-	int32_t gid, cnt_dom, cnt_sub;
+	int32_t gid, n_dom, n_sub;
 	int32_t n_genome;
 	int32_t tot_cnt;
 	uint32_t del:1, dummy:31;

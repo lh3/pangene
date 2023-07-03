@@ -194,10 +194,10 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			ai->overlap = aj->overlap = 1;
 			if (si < sj || (si == sj && ai->pid > aj->pid)) {
 				ai->shadow = 1;
-				if (tmp[i].y < sj) tmp[i].y = sj, tmp[i].x = ai->pid;
+				if (tmp[i].y < sj) tmp[i].y = sj, tmp[i].x = aj->pid;
 			} else {
 				aj->shadow = 1;
-				if (tmp[j].y < si) tmp[j].y = si, tmp[j].y = aj->pid;
+				if (tmp[j].y < si) tmp[j].y = si, tmp[j].x = ai->pid;
 			}
 		}
 	}
