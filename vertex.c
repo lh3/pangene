@@ -25,12 +25,14 @@ static void pg_gen_vtx_algo1_aux(void *km, const pg_opt_t *opt, const pg_data_t 
 
 static void pg_gen_vtx_algo1(const pg_opt_t *opt, pg_graph_t *q)
 {
-	const pg_data_t *d = q->d;
+	pg_data_t *d = q->d;
 	int32_t i;
 	uint64_t *cnt;
 	cnt = PG_CALLOC(uint64_t, d->n_gene);
-	for (i = 0; i < d->n_genome; ++i)
+	for (i = 0; i < d->n_genome; ++i) {
+		pg_flag_shadow(0, opt, d, &d->genome[i], 0, 0, 0);
 		pg_gen_vtx_algo1_aux(0, opt, d, &d->genome[i], cnt);
+	}
 	for (i = 0; i < d->n_gene; ++i) {
 		int32_t pri = cnt[i]>>32, sec = (int32_t)cnt[i];
 		if (pri >= d->n_genome * opt->min_vertex_ratio) {

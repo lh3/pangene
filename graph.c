@@ -13,12 +13,11 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 	pg_flag_primary(d);
 	for (i = 0; i < d->n_genome; ++i) {
 		pg_genome_t *g = &d->genome[i];
-		int32_t n_pseudo, n_shadow;
+		int32_t n_pseudo;
 		n_pseudo = pg_flag_pseudo(0, d->prot, g);
 		pg_hit_sort(0, g, 0);
-		n_shadow = pg_flag_shadow(opt, d->prot, g, 0, 0);
 		if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s::%s] genome %d: %d pseudo, %d shadow\n", __func__, pg_timestamp(), i, n_pseudo, n_shadow);
+			fprintf(stderr, "[M::%s::%s] genome %d: %d potential pseudogenes\n", __func__, pg_timestamp(), i, n_pseudo);
 	}
 }
 
@@ -83,7 +82,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		uint32_t w, v = (uint32_t)-1;
 		int64_t vpos = -1;
 		int32_t vcid = -1, si = -1;
-		pg_flag_shadow(opt, q->d->prot, g, 1, 1); // this requires sorting by pg_hit_t::cs
+		pg_flag_shadow(0, opt, q->d, g, 1, 1, 0); // this requires sorting by pg_hit_t::cs
 		pg_hit_sort(0, g, 1); // sort by pg_hit_t::cm
 		n_arc1 = 0;
 		memset(seg_cnt, 0, q->n_seg * sizeof(int32_t));

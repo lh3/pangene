@@ -156,9 +156,18 @@ static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32
 	return 0;
 }
 
-int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri)
+static inline void pg_update_dm(pg128_t *tmp, int32_t g_dom, int32_t g_sub, uint64_t s_dom)
+{
+	if (s_dom > tmp[g_sub].y)
+		tmp[g_sub].x = g_dom, tmp[g_sub].y = s_dom;
+}
+
+int32_t pg_flag_shadow(void *km, const pg_opt_t *opt, const pg_data_t *d, pg_genome_t *g, int32_t check_vtx, int32_t check_pri, int32_t *dm_gid)
 {
 	int32_t i, i0, n_shadow = 0;
+	const pg_prot_t *prot = d->prot;
+	pg128_t *tmp = 0;
+	if (dm_gid) tmp = Kcalloc(km, pg128_t, d->n_gene);
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		int32_t j, li, gi;
@@ -190,14 +199,24 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
-			if (si < sj) ai->shadow = 1;
-			else aj->shadow = 1;
+			if (si < sj) {
+				ai->shadow = 1;
+				if (tmp) pg_update_dm(tmp, gj, gi, sj);
+			} else {
+				aj->shadow = 1;
+				if (tmp) pg_update_dm(tmp, gi, gj, si);
+			}
 		}
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
 		if (ai->shadow) ++n_shadow;
+	}
+	if (tmp) {
+		for (i = 0; i < d->n_gene; ++i)
+			dm_gid[i] = tmp[i].y == 0? -1 : tmp[i].x;
+		kfree(km, tmp);
 	}
 	return n_shadow;
 }
