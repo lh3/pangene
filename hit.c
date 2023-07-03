@@ -226,6 +226,10 @@ void pg_flag_primary(pg_data_t *d)
 			g->hit[i].pri = 0;
 		}
 	}
+	for (i = 0; i < d->n_prot; ++i) {
+		d->prot[i].n = z[i].x>>32;
+		d->prot[i].avg_score2 = d->prot[i].n? (int32_t)((double)((uint32_t)z[i].x) / d->prot[i].n + .499) : 0;
+	}
 	radix_sort_pg128x(z, z + d->n_prot);
 	for (i = d->n_prot - 1; i >= 0; --i) {
 		int32_t pid = z[i].y;

@@ -36,6 +36,7 @@ typedef struct {
 	const char *name;
 	int32_t len;
 	uint32_t gid:31, pri:1; // pri: if this protein is the primary isoform of the gene
+	int32_t n, avg_score2;
 } pg_prot_t;
 
 typedef struct {
