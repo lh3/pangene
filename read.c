@@ -28,6 +28,7 @@ void pg_data_destroy(pg_data_t *d)
 	pg_dict_destroy(d->d_ctg);
 	pg_dict_destroy(d->d_gene);
 	pg_dict_destroy(d->d_prot);
+	free(d);
 }
 
 typedef struct {
@@ -113,7 +114,8 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 		int32_t i, pid, gid;
 		pg_hit_t hit;
 		++n_tot;
-		hit.pid = hit.cid = hit.off_exon = hit.n_exon = -1;
+		memset(&hit, 0, sizeof(hit));
+		hit.pid = hit.pid_dom = hit.cid = hit.off_exon = hit.n_exon = -1;
 		for (p = q = str.s, i = 0;; ++p) {
 			if (*p == '\t' || *p == 0) {
 				int32_t c = *p;
@@ -204,8 +206,10 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 			g->hit[g->n_hit++] = hit;
 		}
 	}
+	free(buf.exon);
 	pg_dict_destroy(d_ctg);
 	pg_dict_destroy(hit_rank);
+	free(str.s);
 	ks_destroy(ks);
 	gzclose(fp);
 	if (pg_verbose >= 3)
