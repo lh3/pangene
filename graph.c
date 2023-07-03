@@ -49,6 +49,16 @@ void pg_gen_g2s(pg_graph_t *q)
 		q->g2s[q->seg[i].gid] = i;
 }
 
+void pg_graph_flag_vtx(pg_graph_t *q)
+{
+	int32_t j, i;
+	for (j = 0; j < q->d->n_genome; ++j) {
+		pg_genome_t *g = &q->d->genome[j];
+		for (i = 0; i < g->n_hit; ++i)
+			g->hit[i].vtx = (q->g2s[q->d->prot[g->hit[i].pid].gid] >= 0);
+	}
+}
+
 typedef struct {
 	uint64_t x;
 	int32_t n, dist;

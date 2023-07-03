@@ -34,13 +34,13 @@ typedef struct {
 typedef struct {
 	const char *name;
 	int32_t len;
-	uint32_t gid:31, pri:1;
+	uint32_t gid:31, pri:1; // pri: if this protein is the primary isoform of the gene
 } pg_prot_t;
 
 typedef struct {
 	const char *name;
 	int32_t len; // longest ORF
-	int32_t pri_pid; // primary protein
+	int32_t pri_pid; // pid of the primary isoform
 } pg_gene_t;
 
 typedef struct {
@@ -79,7 +79,7 @@ typedef struct {
 } pg_data_t;
 
 typedef struct {
-	int32_t gid, pri, sec;
+	int32_t gid, cnt_dom, cnt_sub;
 	int32_t n_genome;
 	int32_t tot_cnt;
 	uint32_t del:1, dummy:31;

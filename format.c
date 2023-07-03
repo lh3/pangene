@@ -126,7 +126,7 @@ static void pg_write_seg(const pg_graph_t *g)
 		int32_t pid = g->d->gene[gid].pri_pid;
 		out.l = 0;
 		pg_sprintf_lite(&out, "S\t%s\t*\tLN:i:%d\tng:i:%d\tnc:i:%d\tc1:i:%d\tc2:i:%d\tpp:Z:%s\n",
-			d->gene[gid].name, d->prot[pid].len, s->n_genome, s->tot_cnt, s->pri, s->sec, d->prot[pid].name);
+			d->gene[gid].name, d->prot[pid].len, s->n_genome, s->tot_cnt, s->cnt_dom, s->cnt_sub, d->prot[pid].name);
 		fwrite(out.s, 1, out.l, stdout);
 	}
 	free(out.s);
