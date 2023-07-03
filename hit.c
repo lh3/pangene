@@ -140,17 +140,6 @@ int32_t pg_flag_pseudo(void *km, const pg_prot_t *prot, pg_genome_t *g)
 	return n_pseudo;
 }
 
-static inline uint32_t kh_hash_uint32(uint32_t key)
-{
-	key += ~(key << 15);
-	key ^=  (key >> 10);
-	key +=  (key << 3);
-	key ^=  (key >> 6);
-	key += ~(key << 11);
-	key ^=  (key >> 16);
-	return key;
-}
-
 static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 {
 	int32_t i, len = 0;
@@ -179,7 +168,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
 		gi = prot[ai->pid].gid;
-		hi = kh_hash_uint32(gi);
+		hi = pg_hash_uint32(gi);
 		li = pg_cds_len(ai, g->exon);
 		for (j = i0; j < i; ++j) {
 			uint64_t x;
@@ -191,7 +180,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			if (aj->ce <= ai->cs) continue; // no overlap
 			if (pg_shadow_skip(aj, check_vtx, check_pri)) continue;
 			gj = prot[aj->pid].gid;
-			hj = kh_hash_uint32(gj);
+			hj = pg_hash_uint32(gj);
 			if (gi == gj) continue; // ignore iso-forms of the same gene
 			x = pg_hit_overlap(g, aj, ai);
 			lj = pg_cds_len(aj, g->exon);

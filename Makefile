@@ -4,7 +4,7 @@ CFLAGS=		-std=c99 -g -Wall -O2
 CXXFLAGS=	$(CFLAGS)
 CPPFLAGS=
 INCLUDES=
-OBJS=		kalloc.o sys.o dict.o option.o format.o read.o hit.o graph.o
+OBJS=		kalloc.o sys.o dict.o option.o format.o read.o hit.o vertex.o graph.o
 PROG=		pangene
 LIBS=		-lpthread -lz -lm
 
@@ -44,3 +44,4 @@ main.o: pgpriv.h pangene.h ketopt.h
 option.o: pangene.h
 read.o: pgpriv.h pangene.h kseq.h
 sys.o: pgpriv.h pangene.h
+vertex.o: pgpriv.h pangene.h kalloc.h
