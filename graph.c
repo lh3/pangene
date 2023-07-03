@@ -214,11 +214,14 @@ static void pg_graph_flt_high_occ(const pg_opt_t *opt, pg_graph_t *q)
 	}
 	if (pg_verbose >= 3) {
 		fprintf(stderr, "[M::%s::%s] %d high-occurrence segments\n", __func__, pg_timestamp(), n_high_occ);
-		fprintf(stderr, "[M::%s::%s] %d high-degree segments\n", __func__, pg_timestamp(), n_high_deg);
+		fprintf(stderr, "[M::%s::%s] %d high-degree segments additionally\n", __func__, pg_timestamp(), n_high_deg);
 	}
-	for (i = k = 0; i < q->n_seg; ++i)
+	for (i = k = 0; i < q->n_seg; ++i) {
 		if (!q->seg[i].del)
 			q->seg[k++] = q->seg[i];
+		else if (pg_verbose >= 3)
+			fprintf(stderr, "[M::%s] dropped %s\n", __func__, q->d->gene[q->seg[i].gid].name);
+	}
 	q->n_seg = k;
 	pg_gen_g2s(q);
 }
