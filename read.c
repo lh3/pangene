@@ -146,7 +146,6 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					d->prot[pid].len = 0;
 					hit.pid = pid;
 					rank = pg_dict_inc(hit_rank, d->prot[pid].name, 0);
-					assert(rank < 0x100000);
 					hit.rank = rank;
 				} else if (i == 1) { // query length
 					int32_t len;

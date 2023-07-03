@@ -164,7 +164,7 @@ static int32_t pg_parse_sample(kstring_t *buf, const char *name) // parse "sampl
 			if (i == 0) {
 				if (p - q == 0) return -1;
 				str_copy(buf, q, p);
-				buf->s[q - p] = 0;
+				buf->s[p - q] = 0;
 			} else if (i == 1) {
 				if (p - q == 1 && *q >= '0' && *q <= '9') // TODO: assuming one digit
 					hap = *q - '0';

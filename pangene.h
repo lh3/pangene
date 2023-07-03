@@ -48,9 +48,11 @@ typedef struct {
 	int32_t qs, qe;
 	int32_t cid; // contig ID
 	int32_t mlen, blen, fs;
+	int32_t rank;
 	int32_t score, score2;
 	int32_t n_exon, off_exon;
-	uint32_t rank:20, rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, pri:1, branch_flt:1, dummy:5;
+	int32_t pid_dom;
+	uint32_t rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, pri:1, branch_flt:1, dummy:25;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 

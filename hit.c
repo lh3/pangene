@@ -159,6 +159,8 @@ static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri)
 {
 	int32_t i, i0, n_shadow = 0;
+	pg128_t *tmp;
+	tmp = PG_CALLOC(pg128_t, g->n_hit);
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		int32_t j, li, gi;
@@ -190,15 +192,22 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
-			if (si < sj) ai->shadow = 1;
-			else aj->shadow = 1;
+			if (si < sj || (si == sj && ai->pid > aj->pid)) {
+				ai->shadow = 1;
+				if (tmp[i].y < sj) tmp[i].y = sj, tmp[i].x = ai->pid;
+			} else {
+				aj->shadow = 1;
+				if (tmp[j].y < si) tmp[j].y = si, tmp[j].y = aj->pid;
+			}
 		}
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
+		ai->pid_dom = tmp[i].y == 0? -1 : tmp[i].x;
 		if (ai->shadow) ++n_shadow;
 	}
+	free(tmp);
 	return n_shadow;
 }
 
