@@ -57,6 +57,18 @@ static void pg_gen_vertex_aux(void *km, const pg_opt_t *opt, const pg_data_t *d,
 	kfree(km, flag);
 }
 
+static void pg_gen_g2s(pg_graph_t *q)
+{
+	const pg_data_t *d = q->d;
+	int32_t i;
+	if (q->g2s) free(q->g2s);
+	q->g2s = PG_MALLOC(int32_t, d->n_gene);
+	for (i = 0; i < d->n_gene; ++i)
+		q->g2s[i] = -1;
+	for (i = 0; i < q->n_seg; ++i)
+		q->g2s[q->seg[i].gid] = i;
+}
+
 void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 {
 	const pg_data_t *d = q->d;
@@ -75,11 +87,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		}
 	}
 	free(cnt);
-	q->g2s = PG_MALLOC(int32_t, d->n_gene);
-	for (i = 0; i < d->n_gene; ++i)
-		q->g2s[i] = -1;
-	for (i = 0; i < q->n_seg; ++i)
-		q->g2s[q->seg[i].gid] = i;
+	pg_gen_g2s(q);
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] selected %d vertices out of %d genes\n", __func__, pg_timestamp(), q->n_seg, q->d->n_gene);
 }
@@ -90,8 +98,7 @@ void pg_graph_flag_vtx(pg_graph_t *q)
 	for (j = 0; j < q->d->n_genome; ++j) {
 		pg_genome_t *g = &q->d->genome[j];
 		for (i = 0; i < g->n_hit; ++i)
-			if (q->g2s[q->d->prot[g->hit[i].pid].gid] >= 0)
-				g->hit[i].vtx = 1;
+			g->hit[i].vtx = (q->g2s[q->d->prot[g->hit[i].pid].gid] >= 0);
 	}
 }
 
@@ -110,6 +117,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 	int64_t n_arc = 0, m_arc = 0, n_arc1 = 0, m_arc1 = 0;
 	pg_tmparc_t *p, *arc = 0, *arc1 = 0;
 
+	q->n_arc = 0;
 	seg_cnt = PG_MALLOC(int32_t, q->n_seg);
 	for (i = 0; i < q->n_seg; ++i)
 		q->seg[i].n_genome = q->seg[i].tot_cnt = 0;
@@ -205,23 +213,18 @@ void pg_graph_rm_del(pg_graph_t *q)
 	q->n_arc = k;
 }
 
-void pg_graph_flt(const pg_opt_t *opt, pg_graph_t *q)
+static void pg_graph_cut_low_arc(const pg_opt_t *opt, pg_graph_t *q)
 {
-	int32_t i, n_sflt = 0, n_aflt = 0;
-	for (i = 0; i < q->n_seg; ++i)
-		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
-			q->seg[i].del = 1, ++n_sflt;
+	int32_t i, n_aflt = 0;
 	for (i = 0; i < q->n_arc; ++i)
 		if (q->arc[i].n_genome < opt->min_arc_cnt)
 			q->arc[i].del = 1, ++n_aflt;
 	pg_graph_rm_del(q);
-	if (pg_verbose >= 3) {
-		fprintf(stderr, "[M::%s::%s] filtered %d high-occurrence segments\n", __func__, pg_timestamp(), n_sflt);
+	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] filtered %d low-occurrence arcs\n", __func__, pg_timestamp(), n_aflt);
-	}
 }
 
-static uint64_t *pg_arc_idx(const pg_graph_t *q)
+static uint64_t *pg_arc_index_core(const pg_graph_t *q)
 {
 	uint64_t *idx;
 	int32_t i, i0;
@@ -230,6 +233,37 @@ static uint64_t *pg_arc_idx(const pg_graph_t *q)
 		if (i == q->n_arc || q->arc[i].x>>32 != q->arc[i0].x>>32)
 			idx[q->arc[i0].x>>32] = (uint64_t)i0<<32 | (i - i0), i0 = i;
 	return idx;
+}
+
+static void pg_arc_index(pg_graph_t *q)
+{
+	if (q->idx) free(q->idx);
+	q->idx = pg_arc_index_core(q);
+}
+
+static void pg_graph_flt_high_occ(const pg_opt_t *opt, pg_graph_t *q)
+{
+	int32_t i, i0, k, n_high_occ = 0, n_high_deg = 0;
+	for (i = 0; i < q->n_seg; ++i) // filter segments occurring too many times
+		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
+			q->seg[i].del = 1, ++n_high_occ;
+	for (i0 = 0, i = 1; i <= q->n_arc; ++i) {
+		if (i == q->n_arc || q->arc[i].x>>32 != q->arc[i0].x>>32) {
+			int32_t sid = q->arc[i0].x>>32>>1;
+			if (i - i0 > opt->max_degree && !q->seg[sid].del)
+				q->seg[sid].del = 1, ++n_high_deg;
+			i0 = i;
+		}
+	}
+	if (pg_verbose >= 3) {
+		fprintf(stderr, "[M::%s::%s] %d high-occurrence segments\n", __func__, pg_timestamp(), n_high_occ);
+		fprintf(stderr, "[M::%s::%s] %d high-degree segments\n", __func__, pg_timestamp(), n_high_deg);
+	}
+	for (i = k = 0; i < q->n_seg; ++i)
+		if (!q->seg[i].del)
+			q->seg[k++] = q->seg[i];
+	q->n_seg = k;
+	pg_gen_g2s(q);
 }
 
 static int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
@@ -258,7 +292,7 @@ static inline const pg_arc_t *pg_get_arc(const pg_graph_t *q, uint32_t v, uint32
 	return 0;
 }
 
-static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q)
+static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // call after pg_mark_branch_flt_arc()
 {
 	pg_data_t *d = q->d;
 	int32_t i, j, n_flt = 0;
@@ -296,15 +330,28 @@ static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q)
 
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 {
+	// graph 1: initial vertices
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
 	pg_gen_arc(opt, q);
-	q->idx = pg_arc_idx(q);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] round-1 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);
+
+	// graph 2: after removing high-occurrence vertices
+	pg_graph_flt_high_occ(opt, q);
+	pg_graph_flag_vtx(q);
+	pg_gen_arc(opt, q);
+	pg_arc_index(q); // indexing required for the next graph
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] round-2 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);
+
+	// graph 3: branching filtering; vertices not changed
 	pg_mark_branch_flt_arc(opt, q);
 	pg_mark_branch_flt_hit(opt, q);
-	q->n_arc = 0;
 	pg_gen_arc(opt, q);
-	pg_graph_flt(opt, q);
-	free(q->idx);
-	q->idx = pg_arc_idx(q);
+	if (opt->min_arc_cnt > 1)
+		pg_graph_cut_low_arc(opt, q);
+	pg_arc_index(q);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] round-3 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);
 }

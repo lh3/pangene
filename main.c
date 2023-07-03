@@ -19,9 +19,10 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  Graph construction:\n");
 	fprintf(fp, "    -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "    -p FLOAT      gene considered if dominant in FLOAT fraction of genes [%g]\n", opt->min_vertex_ratio);
-	fprintf(fp, "    -a INT        prune an arc if it is supported by <INT genomes [%d]\n", opt->min_arc_cnt);
-	fprintf(fp, "    -b FLOAT      drop a branch if weaker than the best by FLOAT [%g]\n", opt->branch_diff);
 	fprintf(fp, "    -c INT        drop a gene if average occurrence is >INT [%d]\n", opt->max_avg_occ);
+	fprintf(fp, "    -g INT        drop a gene if its in- or out-degree >INT [%d]\n", opt->max_degree);
+	fprintf(fp, "    -b FLOAT      drop a branching arc if weaker than the best by FLOAT [%g]\n", opt->branch_diff);
+	fprintf(fp, "    -a INT        prune an arc if it is supported by <INT genomes [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  Output:\n");
 	fprintf(fp, "    -w            Suppress walk lines (W-lines)\n");
 	fprintf(fp, "    --bed[=STR]   output 12-column BED where STR is walk, raw or flag [walk]\n");
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:p:b:c:a:wv:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:c:a:wv:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
 		else if (c == 'b') opt.branch_diff = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
+		else if (c == 'g') opt.max_degree = atoi(o.arg);
 		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
 		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
 		else if (c == 'v') pg_verbose = atoi(o.arg);

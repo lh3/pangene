@@ -1,4 +1,4 @@
-.TH pangene 1 "2 July 2023" "pangene-0.0 (r64)" "Bioinformatics tools"
+.TH pangene 1 "3 July 2023" "pangene-0.0-dirty (r65)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -102,10 +102,15 @@ fraction of the genomes [0.05]. A gene is
 .I dominant
 if its best alignment is better than other overlapping genes.
 .TP
-.BI -a \ INT
-Prune an arc if it is supported by less than
+.BI -c \ INT
+Drop a gene if its average occurrence among input genomes is above
 .I INT
-number of genomes [1]
+[10]
+.TP
+.BI -g \ INT
+Drop a gene if its in- or out-degree in the initial graph is higher than
+.I INT
+[10]
 .TP
 .BI -b \ FLOAT
 Drop an arc if it is attached to a branching vertex and is weaker than the best
@@ -113,11 +118,11 @@ branching arc by
 .I FLOAT
 fraction [0.03]
 .TP
-.BI -c \ INT
-Drop a gene if its average occurrence among input genomes is above
+.BI -a \ INT
+Prune an arc if it is supported by less than
 .I INT
-[10].
-.SS Output
+number of genomes [1]
+.SS Output options
 .TP 10
 .B -w
 Suppress walk lines (W-lines)
