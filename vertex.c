@@ -69,7 +69,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		for (i = d->n_gene - 1; i >= 0; --i) {
 			int32_t n_dom = cnt[i].x>>32, n_sub = cnt[i].y>>32;
 			int32_t gid = (int32_t)cnt[i].y;
-			if (n_dom > masked[gid]) {
+			if (n_dom >= d->n_genome * opt->min_vertex_ratio && n_dom > masked[gid]) {
 				pg_seg_t *p;
 				int32_t off = idx[gid]>>32, n = (int32_t)idx[gid];
 				PG_EXTEND0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
