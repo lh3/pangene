@@ -9,7 +9,37 @@ pangene -a2 -e.5 genome1.paf genome2.paf > graph.gfa
 
 # Extract a subgraph around several genes
 gfatools view -wl C4A,C4B -r3 graph.gfa > subgraph.gfa
+# Visualize small subgraphs at https://lh3.github.io/gfatools/
 
 # Check manpage
 man ./pangene.1
 ```
+
+## Introduction
+
+Pangene is a command-line tool to construct a pangenome gene graph where a node
+repsents a marker gene and an edge between two nodes indicates their genomic
+adjaceny on input genomes. Pangene takes the [miniprot][mp] alignment between
+one protein set and multiple genomes and outputs a graph in the GFA format. It
+attempts to reduce the redundancy in input proteins and to filter spurious
+alignments while preserving close but non-identical paralogs. The output graph
+can be visualized in generic GFA viewers such as [BandageNG][bandage]. Users
+can also extract small subgraphs with [gfatools][gfatools] and display with a
+simple [online GFA viewers][gfaview] which have recently been updated to
+support the pangene output.
+
+Pangene is a **work-in-progress**. Please create an issue if you see bugs or
+questionable subgraphs.
+
+## Limitations
+
+* In general, more testing needed.
+
+* Pangene only works with [miniprot][mp]'s PAF output.
+
+* In the output graph, arcs on W-lines may be absent from L-lines.
+
+[mp]: https://github.com/lh3/miniprot
+[bandage]: https://github.com/asl/BandageNG
+[gfatools]: https://github.com/lh3/gfatools
+[gfaview]: https://lh3.github.io/gfatools/
