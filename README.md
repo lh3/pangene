@@ -50,9 +50,9 @@ questionable subgraphs.
 
 ## <a name="usage"></a>Usage
 
-The direct input of pangene consists of a list of protein-to-genome alignment.
-To generate these alignments, you need to align the same set of proteins to
-multiple genomes. How to choose the protein set can be tricky.
+Pangene takes a list of protein-to-genome alignment as input. To generate
+these alignments, you need to align the same set of proteins to multiple
+genomes. How to choose the protein set can be tricky.
 
 ### <a name="prep-aa"></a>Preparing a protein set
 
@@ -67,7 +67,7 @@ human-readable gene names for visualization later.
 Due to structural variations, some individuals may have genes distinct from the
 gene annotations on the reference genome. In principle, it is preferred to
 include structurally variable genes in the protein set. Nonetheless, such genes
-are rare in the human genome. You can still build good pangene graphs with
+are rare in the human genome. You can still get decent pangene graphs with
 reference gene annotations only.
 
 For a new species without good gene annotations, you may use protein annotations
@@ -87,11 +87,8 @@ to each genome with:
 ```sh
 miniprot --outs=0.97 --no-cs -Iut16 genomeX.fna proteins.faa > genomeX.paf
 ```
-You may parallelize alignment with something like:
-```sh
-ls *.fna|sed s,.fna$,,|xargs -i echo miniprot --outs=0.97 --no-cs -Iut16 {}.fna proteins.faa \> {}.paf|parallel -j2
-```
-Or use [asub][asub] to submit to a cluster.
+For aligning proteins to bacterial genomes without splicing, add `-S` to the
+command line above.
 
 ### <a name="build-graph"></a>Constructing a pangene graph
 
@@ -100,8 +97,9 @@ The following command-line constructs a pangene graph
 pangene *.paf > graph.gfa
 ```
 If the output graph is cluttered in the Bandage viewer, you may add option
-`-a2` to filter out edges supported by a single genome. Graph construction
-takes a couple of minutes for typical input.
+`-a2` to filter out edges supported by a single genome. By default, pangene
+filters out genes occurring in less than 5% of the genomes after deredundancy.
+If you want to retain low-frequency genes, add `-p0` to disable the filter.
 
 ### <a name="explore-graph"></a>Exploring a pangene graph
 
