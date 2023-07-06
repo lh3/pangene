@@ -36,8 +36,8 @@ the GFA format. It attempts to reduce the redundancy in the input proteins and
 filter spurious alignments while preserving close but non-identical paralogs.
 The output graph can be visualized in generic GFA viewers such as
 [BandageNG][bandage]. Users can also extract small subgraphs with
-[gfatools][gfatools] and display with a simple [online GFA viewers][gfaview]
-which have recently been updated to support the pangene output.
+[gfatools][gfatools] and display with a simple [online GFA viewer][gfaview].
+Prebuilt pangene graphs can be found at [DOI:10.5281/zenodo.8118576][zenodo].
 
 Bacterial pangenome tools such as [panaroo][panaroo] often leverage gene graphs
 to build bacterial pangenomes. Pangene is different in that it uses miniprot to
@@ -131,3 +131,4 @@ This viewer shows gene paths and counts their frequencies.
 [gfaview]: https://lh3.github.io/gfatools/
 [panaroo]: https://github.com/gtonkinhill/panaroo
 [asub]: https://github.com/lh3/asub
+[zenodo]: https://zenodo.org/record/8118577
