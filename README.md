@@ -1,4 +1,4 @@
-## Getting Started
+## <a name="started"></a>Getting Started
 ```sh
 # Align proteins to each genome
 miniprot --outs=0.97 --no-cs -Iut16 genome1.fna proteins.faa > genome1.paf
@@ -15,7 +15,18 @@ gfatools view -wl C4A,C4B -r3 graph.gfa > subgraph.gfa
 man ./pangene.1
 ```
 
-## Introduction
+## Table of Contents
+
+- [Getting Started](#started)
+- [Introduction](#intro)
+- [Usage](#usage)
+  - [Preparing a protein set](#prep-aa)
+  - [Aligning proteins to genomes](#align-aa)
+  - [Constructing a pangene graph](#build-graph)
+  - [Exploring a pangene graph](#explore-graph)
+- [Limitations](#limit)
+
+## <a name="intro"></a>Introduction
 
 Pangene is a command-line tool to construct a pangenome gene graph. In this
 graph, a node repsents a marker gene and an edge between two genes indicates
@@ -37,21 +48,21 @@ Pangene is a **work-in-progress**. It may not be properly handling corner
 cases during graph construction. Please create an issue if you see bugs or
 questionable subgraphs.
 
-## Usage
+## <a name="usage"></a>Usage
 
 The direct input of pangene consists of a list of protein-to-genome alignment.
 To generate these alignments, you need to align the same set of proteins to
 multiple genomes. How to choose the protein set can be tricky.
 
-### Preparing the protein set
+### <a name="prep-aa"></a>Preparing a protein set
 
 For constructing a human pangene graph, the simplest choice is to use annotated
 genes on GRCh38. It is highly recommended to name a protein sequence like
 `RGPD6:ENSP00000512633.1` where `RGPD6` is the gene name and
 `ENSP00000512633.1` is the protein identifier. Different isoforms of the same
-gene can be present in the protein set. In the output GFA, nodes are named
-after genes. You would want to use human-readable gene names for visualization
-later.
+gene can be present in the protein set. Pangene is designed to work with them.
+In the output GFA, nodes are named after genes. You would want to use
+human-readable gene names for visualization later.
 
 Due to structural variations, some individuals may have genes distinct from the
 gene annotations on the reference genome. In principle, it is preferred to
@@ -69,7 +80,7 @@ them with CD-HIT or MMseqs2 and feed the representative protein of each cluster
 to pangene. This apparently works for ~150 complete *Mycobacterium
 tuberculosis* genomes but again, more evaluation is needed.
 
-### Aligning proteins to genomes
+### <a name="align-aa"></a>Aligning proteins to genomes
 
 Pangene currently only works with miniprot's PAF output. You may align proteins
 to each genome with:
@@ -82,7 +93,7 @@ ls *.fna|sed s,.fna$,,|xargs -i echo miniprot --outs=0.97 --no-cs -Iut16 {}.fna 
 ```
 Or use [asub][asub] to submit to a cluster.
 
-### Constructing a pangene graph
+### <a name="build-graph"></a>Constructing a pangene graph
 
 The following command-line constructs a pangene graph
 ```sh
@@ -92,7 +103,7 @@ If the output graph is cluttered in the Bandage viewer, you may add option
 `-a2` to filter out edges supported by a single genome. Graph construction
 takes a couple of minutes for typical input.
 
-### Exploring a pangene graph
+### <a name="explore-graph"></a>Exploring a pangene graph
 
 You can visualize the entire pangene graph with the Bandage viewer. If you know
 or find genes of interest, you can extract a subgraph with
@@ -108,7 +119,7 @@ gfatools view -wl @list.txt -r3 graph.gfa > subgraph.gfa
 You may visualize small subgraphs with the [online gfatools viewer][gfaview].
 This viewer shows gene paths and counts their frequencies.
 
-## Limitations
+## <a name="limit"></a>Limitations
 
 * In general, more testing needed.
 
