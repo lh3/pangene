@@ -287,6 +287,21 @@ static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // cal
 	return n_flt;
 }
 
+void pg_debug_gene(const pg_graph_t *q, const char *name)
+{
+	int32_t gid, sid;
+	uint32_t j;
+	gid = pg_dict_get(q->d->d_gene, name);
+	assert(gid >= 0);
+	sid = q->g2s[gid];
+	assert(sid >= 0);
+	for (j = 0; j < q->n_arc; ++j) {
+		const pg_arc_t *a = &q->arc[j];
+		if (a->x>>32>>1 == sid)
+			fprintf(stderr, "Z\t%c%s\t%c%s\t%d\n", "><"[a->x>>32&1], q->d->gene[q->seg[a->x>>32>>1].gid].name, "><"[a->x&1], q->d->gene[q->seg[(uint32_t)a->x>>1].gid].name, a->n_genome);
+	}
+}
+
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 {
 	// graph 1: initial vertices

@@ -81,3 +81,11 @@ int32_t pg_dict_inc(void *d_, const char *s, int32_t v0)
 	else ++kh_val(d->h, k);
 	return kh_val(d->h, k);
 }
+
+int32_t pg_dict_get(const void *d_, const char *s)
+{
+	const pg_dict_t *d = (const pg_dict_t*)d_;
+	khint_t k;
+	k = pg_sh_get(d->h, s);
+	return k != kh_end(d->h)? kh_val(d->h, k) : -1;
+}

@@ -50,6 +50,7 @@ void *pg_dict_init(int32_t do_copy);
 void pg_dict_destroy(void *h_);
 int32_t pg_dict_size(const void *h_);
 const char **pg_dict_put(void *d_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_);
+int32_t pg_dict_get(const void *d_, const char *s);
 int32_t pg_dict_inc(void *h_, const char *s, int32_t v0);
 
 void pg_sprintf_lite(kstring_t *s, const char *fmt, ...);
