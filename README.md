@@ -109,15 +109,11 @@ You can look at the entire graph in the Bandage GFA viewer. Bandage shows the
 topology but not the haplotype paths. When you are interested in a specific
 gene, you would probably like to try the gfa-server that is part of
 [gfatools][gfatools]. [Here][server] is a public server for human genes.
-
-The gfa-server is implemented in the Go programming language. To install and
-deploy the server:
+You can deploy this server on your machine with
 ```sh
-git clone https://github.com/lh3/gfatools
-cd gfatools && make
-go build gfa-server.go
-./gfa-server.go -p8000 -j js -e/ graph.gfa 2> server.log &
-# open http://127.0.0.1:8000/ in your browser
+curl -L https://zenodo.org/record/8126999/files/pangene-r87-bin.tar.bz2?download=1|tar -jxvf -
+cd pangene-r87-bin
+bin_mac-arm64/gfa-server -d html data/HPRC-r87a.gfa.gz 2> server.log # for Mac
 ```
 Then you can open link `http://127.0.0.1:8000/` in your browser, type gene
 names and visualize a local subgraph around input genes.
