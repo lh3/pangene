@@ -143,8 +143,9 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 				s1 += arc[j].s1;
 				s2 += arc[j].s2;
 			}
-			PG_EXTEND0(pg_arc_t, q->arc, q->n_arc, q->m_arc);
+			PG_EXTEND(pg_arc_t, q->arc, q->n_arc, q->m_arc);
 			p = &q->arc[q->n_arc++];
+			memset(p, 0, sizeof(*p));
 			p->x = arc[i0].x;
 			p->n_genome = i - i0;
 			p->tot_cnt = n;
@@ -298,12 +299,14 @@ void pg_debug_gene(const pg_graph_t *q, const char *name)
 	for (j = 0; j < q->n_arc; ++j) {
 		const pg_arc_t *a = &q->arc[j];
 		if (a->x>>32>>1 == sid)
-			fprintf(stderr, "Z\t%c%s\t%c%s\t%d\n", "><"[a->x>>32&1], q->d->gene[q->seg[a->x>>32>>1].gid].name, "><"[a->x&1], q->d->gene[q->seg[(uint32_t)a->x>>1].gid].name, a->n_genome);
+			fprintf(stderr, "Z\t%c%s\t%c%s\t%d\t%d\n", "><"[a->x>>32&1], q->d->gene[q->seg[a->x>>32>>1].gid].name, "><"[a->x&1], q->d->gene[q->seg[(uint32_t)a->x>>1].gid].name, a->n_genome, a->branch_flt);
 	}
 }
 
 void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 {
+	int32_t i;
+
 	// graph 1: initial vertices
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
@@ -315,14 +318,16 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 	pg_graph_flt_high_occ(opt, q);
 	pg_graph_flag_vtx(q);
 	pg_gen_arc(opt, q);
-	pg_arc_index(q); // indexing required for the next graph
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] round-2 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);
 
 	// graph 3: branching filtering; vertices not changed
-	pg_mark_branch_flt_arc(opt, q);
-	pg_mark_branch_flt_hit(opt, q);
-	pg_gen_arc(opt, q);
+	for (i = 0; i < opt->n_branch_flt; ++i) {
+		pg_arc_index(q);
+		pg_mark_branch_flt_arc(opt, q);
+		pg_mark_branch_flt_hit(opt, q);
+		pg_gen_arc(opt, q);
+	}
 	if (opt->min_arc_cnt > 1)
 		pg_graph_cut_low_arc(opt, q);
 	pg_arc_index(q);
