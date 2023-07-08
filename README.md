@@ -131,4 +131,4 @@ This viewer shows gene paths and counts their frequencies.
 [gfaview]: https://lh3.github.io/gfatools/
 [panaroo]: https://github.com/gtonkinhill/panaroo
 [asub]: https://github.com/lh3/asub
-[zenodo]: https://zenodo.org/record/8118577
+[zenodo]: https://doi.org/10.5281/zenodo.8118576
