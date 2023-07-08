@@ -9,6 +9,8 @@ pangene -a2 genome1.paf genome2.paf > graph.gfa
 
 # Extract a subgraph around several genes
 gfatools view -wl C4A,C4B -r3 graph.gfa > subgraph.gfa
+
+# Visit http://45.55.105.22:8000 for pangene HPRC graph
 # Visualize small subgraphs at https://lh3.github.io/gfatools/
 
 # Check manpage
@@ -19,11 +21,11 @@ man ./pangene.1
 
 - [Getting Started](#started)
 - [Introduction](#intro)
-- [Usage](#usage)
+- [Graph Construction](#build)
   - [Preparing a protein set](#prep-aa)
   - [Aligning proteins to genomes](#align-aa)
   - [Constructing a pangene graph](#build-graph)
-  - [Exploring a pangene graph](#explore-graph)
+- [Graph Visualization](#visual)
 - [Limitations](#limit)
 
 ## <a name="intro"></a>Introduction
@@ -35,9 +37,9 @@ alignment between a protein set and multiple genomes and produces a graph in
 the GFA format. It attempts to reduce the redundancy in the input proteins and
 filter spurious alignments while preserving close but non-identical paralogs.
 The output graph can be visualized in generic GFA viewers such as
-[BandageNG][bandage]. Users can also extract small subgraphs with
-[gfatools][gfatools] and display with a simple [online GFA viewer][gfaview].
-Prebuilt pangene graphs can be found at [DOI:10.5281/zenodo.8118576][zenodo].
+[BandageNG][bandage] or via a [web interface](@visual). Users can explore local
+human subgraphs at a [public server][server]. Prebuilt pangene graphs can be
+found at [DOI:10.5281/zenodo.8118576][zenodo].
 
 Bacterial pangenome tools such as [panaroo][panaroo] often leverage gene graphs
 to build bacterial pangenomes. Pangene is different in that it uses miniprot to
@@ -48,7 +50,7 @@ Pangene is a **work-in-progress**. It may not be properly handling corner
 cases during graph construction. Please create an issue if you see bugs or
 questionable subgraphs.
 
-## <a name="usage"></a>Usage
+## <a name="build"></a>Graph Construction
 
 Pangene takes a list of protein-to-genome alignment as input. To generate
 these alignments, you need to align the same set of proteins to multiple
@@ -101,10 +103,27 @@ If the output graph is cluttered in the Bandage viewer, you may add option
 filters out genes occurring in less than 5% of the genomes after deredundancy.
 If you want to retain low-frequency genes, add `-p0` to disable the filter.
 
-### <a name="explore-graph"></a>Exploring a pangene graph
+## <a name="visual"></a>Graph Visualization
 
-You can visualize the entire pangene graph with the Bandage viewer. If you know
-or find genes of interest, you can extract a subgraph with
+You can look at the entire graph in the Bandage GFA viewer. Bandage shows the
+topology but not the haplotype paths. When you are interested in a specific
+gene, you would probably like to try the gfa-server that is part of
+[gfatools][gfatools]. [Here][server] is a public server for human genes.
+
+The gfa-server is implemented in the Go programming language. To install and
+deploy the server:
+```sh
+git clone https://github.com/lh3/gfatools
+cd gfatools && make
+go build gfa-server.go
+./gfa-server.go -p8000 -j js -e/ graph.gfa 2> server.log &
+# open http://127.0.0.1:8000/ in your browser
+```
+Then you can open link `http://127.0.0.1:8000/` in your browser, type gene
+names and visualize a local subgraph around input genes.
+
+The gfa-server is built on top of gfatools. You can directly use gfatools to
+extract subgraphs:
 ```sh
 gfatools view -wl C4A,C4B -r3 graph.gfa > subgraph.gfa
 ```
@@ -114,8 +133,7 @@ file `list.txt`, you may use
 ```sh
 gfatools view -wl @list.txt -r3 graph.gfa > subgraph.gfa
 ```
-You may visualize small subgraphs with the [online gfatools viewer][gfaview].
-This viewer shows gene paths and counts their frequencies.
+You can visualize subgraphs at a [online gfatools viewer][gfaview].
 
 ## <a name="limit"></a>Limitations
 
@@ -132,3 +150,4 @@ This viewer shows gene paths and counts their frequencies.
 [panaroo]: https://github.com/gtonkinhill/panaroo
 [asub]: https://github.com/lh3/asub
 [zenodo]: https://doi.org/10.5281/zenodo.8118576
+[server]: http://45.55.105.22:8000
