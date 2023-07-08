@@ -146,4 +146,4 @@ You can visualize subgraphs at a [online gfatools viewer][gfaview].
 [panaroo]: https://github.com/gtonkinhill/panaroo
 [asub]: https://github.com/lh3/asub
 [zenodo]: https://doi.org/10.5281/zenodo.8118576
-[server]: http://45.55.105.22:8000
+[server]: http://pangene.bioinweb.org
