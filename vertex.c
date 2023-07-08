@@ -66,7 +66,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 				printf("g\t%s\t%d\t%d\t%d\t%d\n", d->gene[gid].name, (int32_t)cnt[i].x, x, y, n_sub);
 			if (n_dom >= d->n_genome * opt->min_vertex_ratio && y < x) {
 				pg_seg_t *p;
-				PG_EXTEND0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
+				PG_GROW0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
 				p = &q->seg[q->n_seg++];
 				p->gid = gid, p->n_dom = n_dom, p->n_sub = n_sub;
 				if (x > 0) {
@@ -95,7 +95,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 			int32_t n_dom = cnt[i].x>>32, n_sub = cnt[i].y>>32;
 			if (n_dom >= d->n_genome * opt->min_vertex_ratio) {
 				pg_seg_t *p;
-				PG_EXTEND0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
+				PG_GROW0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
 				p = &q->seg[q->n_seg++];
 				p->gid = i, p->n_dom = n_dom, p->n_sub = n_sub;
 			}

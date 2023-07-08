@@ -17,7 +17,7 @@ typedef struct __kstring_t {
 #define PG_CALLOC(type, cnt)       ((type*)calloc((cnt), sizeof(type)))
 #define PG_REALLOC(type, ptr, cnt) ((type*)realloc((ptr), (cnt) * sizeof(type)))
 
-#define PG_EXTEND(type, ptr, __i, __m) do { \
+#define PG_GROW(type, ptr, __i, __m) do { \
 		if ((__i) >= (__m)) { \
 			(__m) = (__i) + 1; \
 			(__m) += ((__m)>>1) + 16; \
@@ -25,7 +25,7 @@ typedef struct __kstring_t {
 		} \
 	} while (0)
 
-#define PG_EXTEND0(type, ptr, __i, __m) do { \
+#define PG_GROW0(type, ptr, __i, __m) do { \
 		if ((__i) >= (__m)) { \
 			size_t old_m = (__m); \
 			(__m) = (__i) + 1; \

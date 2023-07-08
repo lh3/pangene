@@ -95,9 +95,9 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 			++seg_cnt[sid];
 			if (a->cid != vcid) v = (uint32_t)-1, vpos = -1;
 			if (v != (uint32_t)-1) {
-				PG_EXTEND0(pg_tmparc_t, arc1, n_arc1, m_arc1);
+				PG_GROW0(pg_tmparc_t, arc1, n_arc1, m_arc1);
 				p = &arc1[n_arc1++], p->x = (uint64_t)v<<32|w, p->dist = a->cm - vpos, p->s1 = si, p->s2 = a->score;
-				PG_EXTEND0(pg_tmparc_t, arc1, n_arc1, m_arc1);
+				PG_GROW0(pg_tmparc_t, arc1, n_arc1, m_arc1);
 				p = &arc1[n_arc1++], p->x = (uint64_t)(w^1)<<32|(v^1), p->dist = a->cm - vpos, p->s1 = a->score, p->s2 = si;
 			}
 			v = w, vpos = a->cm, vcid = a->cid, si = a->score;
@@ -116,7 +116,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 					max_s1 = max_s1 > arc1[j].s1? max_s1 : arc1[j].s1;
 					max_s2 = max_s2 > arc1[j].s2? max_s2 : arc1[j].s2;
 				}
-				PG_EXTEND0(pg_tmparc_t, arc, n_arc, m_arc);
+				PG_GROW0(pg_tmparc_t, arc, n_arc, m_arc);
 				p = &arc[n_arc++];
 				p->x = arc1[i0].x;
 				p->n = i - i0;
@@ -143,7 +143,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 				s1 += arc[j].s1;
 				s2 += arc[j].s2;
 			}
-			PG_EXTEND(pg_arc_t, q->arc, q->n_arc, q->m_arc);
+			PG_GROW(pg_arc_t, q->arc, q->n_arc, q->m_arc);
 			p = &q->arc[q->n_arc++];
 			memset(p, 0, sizeof(*p));
 			p->x = arc[i0].x;
