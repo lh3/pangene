@@ -81,6 +81,8 @@ int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // call after
 		pg_genome_t *g = &d->genome[j];
 		uint32_t v = (uint32_t)-1;
 		int32_t vi = -1;
+		for (i = 0; i < g->n_hit; ++i)
+			g->hit[i].weak_br = 0;
 		pg_hit_sort(g, 1); // sort by pg_hit_t::cm
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];

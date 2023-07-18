@@ -185,12 +185,15 @@ int32_t pg_flag_shadow1(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t 
 			ai->overlap = aj->overlap = 1;
 			if (ai->weak_br == aj->weak_br) {
 				shadow = (si < sj || (si == sj && ai->pid > aj->pid))? 0 : 1; // 0 for i and 1 for j
-			} else if (ai->weak_br == 1) shadow = 0;
-			else shadow = 1;
-			if (shadow == 0) {
+			} else if (ai->weak_br > aj->weak_br) { // i is worse
+				shadow = 0;
+			} else { // j is worse
+				shadow = 1;
+			}
+			if (shadow == 0) { // mark i
 				ai->shadow = 1;
 				if (tmp[i].y < sj) tmp[i].y = sj, tmp[i].x = aj->pid;
-			} else {
+			} else { // mark j
 				aj->shadow = 1;
 				if (tmp[j].y < si) tmp[j].y = si, tmp[j].x = ai->pid;
 			}
