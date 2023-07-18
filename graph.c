@@ -235,7 +235,7 @@ static int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 			max_s1 = max_s1 > q->arc[off + i].s1? max_s1 : q->arc[off + i].s1;
 		for (i = 0; i < n; ++i)
 			if (q->arc[off + i].s1 < max_s1 * (1.0 - opt->branch_diff))
-				q->arc[off + i].branch_flt = 1, ++n_flt;
+				q->arc[off + i].weak_br = 1, ++n_flt;
 	}
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] marked %d diverged branches\n", __func__, pg_timestamp(), n_flt);
@@ -272,14 +272,14 @@ static int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // cal
 			w = (uint32_t)sid<<1 | a->rev;
 			if (v != (uint32_t)-1) {
 				e = pg_get_arc(q, v, w);
-				if (e && e->branch_flt) g->hit[vi].branch_flt = 1;
+				if (e && e->weak_br) g->hit[vi].weak_br = 1;
 				e = pg_get_arc(q, w^1, v^1);
-				if (e && e->branch_flt) a->branch_flt = 1;
+				if (e && e->weak_br) a->weak_br = 1;
 			}
 			v = w, vi = i;
 		}
 		for (i = 0; i < g->n_hit; ++i)
-			if (g->hit[i].branch_flt)
+			if (g->hit[i].weak_br)
 				++n_flt;
 		pg_hit_sort(g, 0); // sort by pg_hit_t::cs
 	}
@@ -299,7 +299,7 @@ void pg_debug_gene(const pg_graph_t *q, const char *name)
 	for (j = 0; j < q->n_arc; ++j) {
 		const pg_arc_t *a = &q->arc[j];
 		if (a->x>>32>>1 == sid)
-			fprintf(stderr, "Z\t%c%s\t%c%s\t%d\t%d\n", "><"[a->x>>32&1], q->d->gene[q->seg[a->x>>32>>1].gid].name, "><"[a->x&1], q->d->gene[q->seg[(uint32_t)a->x>>1].gid].name, a->n_genome, a->branch_flt);
+			fprintf(stderr, "Z\t%c%s\t%c%s\t%d\t%d\n", "><"[a->x>>32&1], q->d->gene[q->seg[a->x>>32>>1].gid].name, "><"[a->x&1], q->d->gene[q->seg[(uint32_t)a->x>>1].gid].name, a->n_genome, a->weak_br);
 	}
 }
 

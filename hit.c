@@ -151,11 +151,10 @@ static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32
 {
 	if (check_vtx && a->vtx == 0) return 1;
 	if (check_rep && a->rep == 0) return 1;
-	if (a->branch_flt) return 1;
 	return 0;
 }
 
-int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri)
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_rep)
 {
 	int32_t i, i0, n_shadow = 0;
 	pg128_t *tmp;
@@ -164,7 +163,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		pg_hit_t *ai = &g->hit[i];
 		int32_t j, li, gi;
 		uint32_t hi;
-		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
+		if (pg_shadow_skip(ai, check_vtx, check_rep)) continue;
 		ai->overlap = ai->shadow = 0;
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
@@ -173,13 +172,13 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		li = pg_cds_len(ai, g->exon);
 		for (j = i0; j < i; ++j) {
 			uint64_t x;
-			int32_t lj, gj;
+			int32_t lj, gj, shadow = -1;
 			double cov_short;
 			uint32_t hj;
 			uint64_t si, sj;
 			pg_hit_t *aj = &g->hit[j];
 			if (aj->ce <= ai->cs) continue; // no overlap
-			if (pg_shadow_skip(aj, check_vtx, check_pri)) continue;
+			if (pg_shadow_skip(aj, check_vtx, check_rep)) continue;
 			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(gj);
 			if (gi == gj) continue; // ignore iso-forms of the same gene
@@ -191,7 +190,11 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
-			if (si < sj || (si == sj && ai->pid > aj->pid)) {
+			if (ai->weak_br == aj->weak_br) {
+				shadow = (si < sj || (si == sj && ai->pid > aj->pid))? 0 : 1; // 0 for i and 1 for j
+			} else if (ai->weak_br == 1) shadow = 0;
+			else shadow = 1;
+			if (shadow == 0) {
 				ai->shadow = 1;
 				if (tmp[i].y < sj) tmp[i].y = sj, tmp[i].x = aj->pid;
 			} else {
@@ -202,7 +205,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
-		if (pg_shadow_skip(ai, check_vtx, check_pri)) continue;
+		if (pg_shadow_skip(ai, check_vtx, check_rep)) continue;
 		ai->pid_dom = tmp[i].y == 0? -1 : tmp[i].x;
 		if (ai->shadow) ++n_shadow;
 	}

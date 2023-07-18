@@ -85,7 +85,7 @@ static inline uint32_t pg_hash_uint32(uint32_t key)
 
 static inline int32_t pg_hit_arc(const pg_hit_t *a)
 {
-	return (a->rep && a->vtx && !a->shadow && !a->pseudo && !a->branch_flt);
+	return (a->rep && a->vtx && !a->shadow && !a->pseudo);
 }
 
 #endif
