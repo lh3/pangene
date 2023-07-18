@@ -14,7 +14,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 	flag = PG_CALLOC(int8_t, d->n_gene);
 	cnt = PG_MALLOC(pg128_t, d->n_gene);
 	for (i = 0; i < d->n_gene; ++i)
-		cnt[i].x = d->prot[d->gene[i].pri_pid].avg_score2, cnt[i].y = i;
+		cnt[i].x = d->prot[d->gene[i].rep_pid].avg_score2, cnt[i].y = i;
 
 	if (!(opt->flag & PG_F_NO_MERGE_ORTHO)) {
 		aux = PG_CALLOC(uint32_t*, d->n_genome);
@@ -31,7 +31,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			int32_t gid;
-			if (a->rank != 0 || a->pri == 0) continue;
+			if (a->rank != 0 || a->rep == 0) continue;
 			gid = d->prot[a->pid].gid;
 			if (a->shadow) {
 				assert(a->pid_dom >= 0);

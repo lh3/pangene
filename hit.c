@@ -147,10 +147,10 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32_t check_pri)
+static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32_t check_rep)
 {
 	if (check_vtx && a->vtx == 0) return 1;
-	if (check_pri && a->pri == 0) return 1;
+	if (check_rep && a->rep == 0) return 1;
 	if (a->branch_flt) return 1;
 	return 0;
 }
@@ -210,19 +210,19 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	return n_shadow;
 }
 
-void pg_flag_primary(pg_data_t *d)
+void pg_flag_representative(pg_data_t *d) // flag representative isoform
 {
 	pg128_t *z;
 	int32_t i, j;
 	z = PG_CALLOC(pg128_t, d->n_prot);
-	for (i = 0; i < d->n_gene; ++i) d->gene[i].pri_pid = -1;
-	for (i = 0; i < d->n_prot; ++i) z[i].y = i, d->prot[i].pri = 0;
+	for (i = 0; i < d->n_gene; ++i) d->gene[i].rep_pid = -1;
+	for (i = 0; i < d->n_prot; ++i) z[i].y = i, d->prot[i].rep = 0;
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i) {
 			if (g->hit[i].rank == 0)
 				z[g->hit[i].pid].x += 1ULL<<32 | g->hit[i].score2; // NB: assuming each protein has only one rank=0 hit
-			g->hit[i].pri = 0;
+			g->hit[i].rep = 0;
 		}
 	}
 	for (i = 0; i < d->n_prot; ++i) {
@@ -233,16 +233,16 @@ void pg_flag_primary(pg_data_t *d)
 	for (i = d->n_prot - 1; i >= 0; --i) {
 		int32_t pid = z[i].y;
 		int32_t gid = d->prot[pid].gid;
-		if (d->gene[gid].pri_pid < 0) {
-			d->gene[gid].pri_pid = pid;
-			d->prot[pid].pri = 1;
+		if (d->gene[gid].rep_pid < 0) {
+			d->gene[gid].rep_pid = pid;
+			d->prot[pid].rep = 1;
 		}
 	}
 	free(z);
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i)
-			if (d->prot[g->hit[i].pid].pri)
-				g->hit[i].pri = 1;
+			if (d->prot[g->hit[i].pid].rep)
+				g->hit[i].rep = 1;
 	}
 }

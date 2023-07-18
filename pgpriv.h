@@ -66,7 +66,7 @@ void pg_hit_sort(pg_genome_t *g, int32_t by_cm);
 uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab);
 int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_pri);
-void pg_flag_primary(pg_data_t *d);
+void pg_flag_representative(pg_data_t *d);
 
 void pg_gen_g2s(pg_graph_t *q);
 void pg_graph_flag_vtx(pg_graph_t *q);
@@ -85,7 +85,7 @@ static inline uint32_t pg_hash_uint32(uint32_t key)
 
 static inline int32_t pg_hit_arc(const pg_hit_t *a)
 {
-	return (a->pri && a->vtx && !a->shadow && !a->pseudo && !a->branch_flt);
+	return (a->rep && a->vtx && !a->shadow && !a->pseudo && !a->branch_flt);
 }
 
 #endif
