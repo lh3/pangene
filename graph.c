@@ -15,7 +15,7 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		int32_t n_pseudo, n_shadow;
 		n_pseudo = pg_flag_pseudo(d->prot, g);
 		pg_hit_sort(g, 0);
-		n_shadow = pg_flag_shadow1(opt, d->prot, g);
+		n_shadow = pg_flag_shadow(opt, d->prot, g);
 		if (pg_verbose >= 3)
 			fprintf(stderr, "[M::%s::%s] genome %d: %d pseudo, %d shadow\n", __func__, pg_timestamp(), i, n_pseudo, n_shadow);
 	}
@@ -73,9 +73,6 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 	int64_t n_arc = 0, m_arc = 0, n_arc1 = 0, m_arc1 = 0;
 	pg_tmparc_t *p, *arc = 0, *arc1 = 0;
 
-	pg_flag_shadow(opt, q->d);
-	PG_SET_FILTER(q->d, shadow == 1);
-
 	q->n_arc = 0;
 	seg_cnt = PG_MALLOC(int32_t, q->n_seg);
 	for (i = 0; i < q->n_seg; ++i)
@@ -85,13 +82,14 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		uint32_t w, v = (uint32_t)-1;
 		int64_t vpos = -1;
 		int32_t vcid = -1, si = -1;
+		pg_flag_shadow(opt, q->d->prot, g);
 		pg_hit_sort(g, 1); // sort by pg_hit_t::cm
 		n_arc1 = 0;
 		memset(seg_cnt, 0, q->n_seg * sizeof(int32_t));
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			uint32_t sid;
-			if (a->flt) continue;
+			if (a->flt || a->shadow) continue;
 			sid = q->g2s[q->d->prot[a->pid].gid];
 			assert(sid != (uint32_t)-1);
 			w = (uint32_t)sid<<1 | a->rev;
@@ -262,7 +260,7 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 	pg_graph_flt_high_occ(opt, q);
 	pg_graph_flag_vtx(q);
 	PG_SET_FILTER(q->d, vtx == 0);
-	pg_gen_arc(opt, q);
+	pg_gen_arc(opt, q); // don't apply "PG_SET_FILTER(q->d, shadow == 1)" as this would filter out CYP2D7
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] round-2 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);
 
@@ -273,6 +271,7 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 		pg_mark_branch_flt_hit(opt, q);
 		PG_SET_FILTER(q->d, weak_br == 2);
 		pg_gen_arc(opt, q);
+		PG_SET_FILTER(q->d, shadow == 1);
 	}
 	if (opt->min_arc_cnt > 1)
 		pg_graph_cut_low_arc(opt, q);

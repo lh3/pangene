@@ -147,7 +147,7 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-int32_t pg_flag_shadow1(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, i0, n_shadow = 0;
 	pg128_t *tmp;
@@ -207,13 +207,6 @@ int32_t pg_flag_shadow1(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t 
 	}
 	free(tmp);
 	return n_shadow;
-}
-
-void pg_flag_shadow(const pg_opt_t *opt, pg_data_t *d)
-{
-	int32_t j;
-	for (j = 0; j < d->n_genome; ++j)
-		pg_flag_shadow1(opt, d->prot, &d->genome[j]);
 }
 
 void pg_flag_representative(pg_data_t *d) // flag representative isoform
