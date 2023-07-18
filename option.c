@@ -16,5 +16,6 @@ void pg_opt_init(pg_opt_t *opt)
 	opt->max_degree = 10;
 	opt->n_branch_flt = 3;
 	opt->min_arc_cnt = 1;
+	opt->close_thres = 1000000;
 	opt->branch_diff = 0.03;
 }
