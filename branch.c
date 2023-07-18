@@ -87,15 +87,15 @@ int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // call after
 			const pg_arc_t *e;
 			uint32_t w;
 			int32_t sid;
-			if (!pg_hit_arc(a)) continue;
+			if (a->flt) continue;
 			sid = q->g2s[q->d->prot[a->pid].gid];
 			if (vi >= 0 && a->cid != g->hit[vi].cid) v = (uint32_t)-1;
 			w = (uint32_t)sid<<1 | a->rev;
 			if (v != (uint32_t)-1) {
 				e = pg_get_arc(q, v, w);
-				if (e && e->weak_br) g->hit[vi].weak_br = 1;
+				if (e && e->weak_br) g->hit[vi].weak_br = e->weak_br;
 				e = pg_get_arc(q, w^1, v^1);
-				if (e && e->weak_br) a->weak_br = 1;
+				if (e && e->weak_br) a->weak_br = e->weak_br;
 			}
 			v = w, vi = i;
 		}

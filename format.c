@@ -88,8 +88,8 @@ static inline void pg_write_bed_hit(kstring_t *out, const pg_data_t *d, int32_t 
 	for (i = 0; i < a->n_exon; ++i)
 		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].os);
 	snprintf(buf, 15, "%.4f", (double)a->mlen / a->blen);
-	pg_sprintf_lite(out, "\trk:i:%d\trp:i:%d\tsd:i:%d\tvt:i:%d\tps:i:%d\tbr:i:%d\tcm:i:%ld\tid:f:%s\tdm:Z:%s\n",
-		a->rank, a->rep, a->shadow, a->vtx, a->pseudo, a->weak_br, a->cm, buf, a->pid_dom < 0? "*" : d->prot[a->pid_dom].name);
+	pg_sprintf_lite(out, "\tft:i:%d\trk:i:%d\trp:i:%d\tsd:i:%d\tvt:i:%d\tps:i:%d\tbr:i:%d\tcm:i:%ld\tid:f:%s\tdm:Z:%s\n",
+		a->flt, a->rank, a->rep, a->shadow, a->vtx, a->pseudo, a->weak_br, a->cm, buf, a->pid_dom < 0? "*" : d->prot[a->pid_dom].name);
 }
 
 static void pg_write_bed_genome(const pg_data_t *d, int32_t aid, int32_t is_walk)
@@ -101,7 +101,7 @@ static void pg_write_bed_genome(const pg_data_t *d, int32_t aid, int32_t is_walk
 	g = &d->genome[aid];
 	for (i = 0; i < g->n_hit; ++i) {
 		const pg_hit_t *a = &g->hit[i];
-		if (is_walk && !pg_hit_arc(a)) continue;
+		if (is_walk && a->flt) continue;
 		out.l = 0;
 		pg_write_bed_hit(&out, d, aid, a);
 		fwrite(out.s, 1, out.l, stdout);
@@ -198,7 +198,7 @@ void pg_write_walk(pg_graph_t *q)
 				pg_sprintf_lite(&out, "\t%s\t*\t*\t", g->ctg[cid].name);
 				for (k = i0, n = 0; k < i; ++k) {
 					const pg_hit_t *a = &g->hit[k];
-					if (!pg_hit_arc(a)) continue;
+					if (a->flt) continue;
 					pg_sprintf_lite(&out, "%c%s", "><"[a->rev], d->gene[d->prot[a->pid].gid].name);
 					++n;
 				}

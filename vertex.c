@@ -31,7 +31,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			int32_t gid;
-			if (a->rank != 0 || a->rep == 0) continue;
+			if (a->rank != 0 || a->rep == 0 || a->flt) continue;
 			gid = d->prot[a->pid].gid;
 			if (a->shadow) {
 				assert(a->pid_dom >= 0);

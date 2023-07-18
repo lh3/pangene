@@ -147,14 +147,7 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-static inline int32_t pg_shadow_skip(const pg_hit_t *a, int32_t check_vtx, int32_t check_rep)
-{
-	if (check_vtx && a->vtx == 0) return 1;
-	if (check_rep && a->rep == 0) return 1;
-	return 0;
-}
-
-int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t check_vtx, int32_t check_rep)
+int32_t pg_flag_shadow1(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, i0, n_shadow = 0;
 	pg128_t *tmp;
@@ -163,7 +156,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 		pg_hit_t *ai = &g->hit[i];
 		int32_t j, li, gi;
 		uint32_t hi;
-		if (pg_shadow_skip(ai, check_vtx, check_rep)) continue;
+		if (ai->flt) continue;
 		ai->overlap = ai->shadow = 0;
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
@@ -178,7 +171,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			uint64_t si, sj;
 			pg_hit_t *aj = &g->hit[j];
 			if (aj->ce <= ai->cs) continue; // no overlap
-			if (pg_shadow_skip(aj, check_vtx, check_rep)) continue;
+			if (aj->flt) continue;
 			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(gj);
 			if (gi == gj) continue; // ignore iso-forms of the same gene
@@ -205,12 +198,19 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
-		if (pg_shadow_skip(ai, check_vtx, check_rep)) continue;
+		if (ai->flt) continue;
 		ai->pid_dom = tmp[i].y == 0? -1 : tmp[i].x;
 		if (ai->shadow) ++n_shadow;
 	}
 	free(tmp);
 	return n_shadow;
+}
+
+void pg_flag_shadow(const pg_opt_t *opt, pg_data_t *d)
+{
+	int32_t j;
+	for (j = 0; j < d->n_genome; ++j)
+		pg_flag_shadow1(opt, d->prot, &d->genome[j]);
 }
 
 void pg_flag_representative(pg_data_t *d) // flag representative isoform
