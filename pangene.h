@@ -56,7 +56,7 @@ typedef struct {
 	int32_t score, score2;
 	int32_t n_exon, off_exon;
 	int32_t pid_dom;
-	uint32_t rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, rep:1, weak_br:1, dummy:25;
+	uint32_t rev:1, pseudo:1, vtx:1, overlap:1, shadow:1, rep:1, weak_br:2, dummy:24;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 

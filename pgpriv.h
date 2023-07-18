@@ -72,6 +72,9 @@ void pg_gen_g2s(pg_graph_t *q);
 void pg_graph_flag_vtx(pg_graph_t *q);
 void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q);
 
+int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q);
+int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q);
+
 static inline uint32_t pg_hash_uint32(uint32_t key)
 {
 	key += ~(key << 15);
@@ -86,6 +89,16 @@ static inline uint32_t pg_hash_uint32(uint32_t key)
 static inline int32_t pg_hit_arc(const pg_hit_t *a)
 {
 	return (a->rep && a->vtx && !a->shadow && !a->pseudo);
+}
+
+static inline const pg_arc_t *pg_get_arc(const pg_graph_t *q, uint32_t v, uint32_t w)
+{
+	int32_t i, n = (int32_t)q->idx[v];
+	const pg_arc_t *a = &q->arc[q->idx[v]>>32];
+	for (i = 0; i < n; ++i)
+		if ((uint32_t)a[i].x == w)
+			return &a[i];
+	return 0;
 }
 
 #endif
