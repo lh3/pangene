@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "pgpriv.h"
 
-static pg128_t **pg_gen_rep_pos(const pg_data_t *d)
+static pg128_t **pg_gen_rep_pos(const pg_data_t *d) // only work if sorted
 {
 	int32_t i, j;
 	pg128_t **a;
@@ -10,6 +10,7 @@ static pg128_t **pg_gen_rep_pos(const pg_data_t *d)
 	for (j = 0; j < d->n_genome; ++j) {
 		const pg_genome_t *g = &d->genome[j];
 		pg128_t *aj;
+		int32_t r = 0;
 		aj = a[j] = PG_CALLOC(pg128_t, d->n_gene);
 		for (i = 0; i < d->n_gene; ++i)
 			aj[i].x = (uint64_t)-1;
@@ -17,25 +18,30 @@ static pg128_t **pg_gen_rep_pos(const pg_data_t *d)
 			const pg_hit_t *b = &g->hit[i];
 			if (b->rep && b->rank == 0) {
 				int32_t gid = d->prot[b->pid].gid;
-				aj[gid].x = b->cid, aj[gid].y = b->cm;
+				aj[gid].x = (uint64_t)b->cid<<32 | r;
+				aj[gid].y = b->cm;
+				if (!b->flt) ++r;
 			}
 		}
 	}
 	return a;
 }
 
-static int32_t pg_n_close(int32_t close_thres, int32_t n_genome, pg128_t *const*a, int32_t g1, int32_t g2)
+static int32_t pg_n_local(int32_t local_dist, int32_t local_count, int32_t n_genome, pg128_t *const*a, int32_t g1, int32_t g2)
 {
-	int32_t j, n_close = 0;
+	int32_t j, n_local = 0;
 	for (j = 0; j < n_genome; ++j) {
 		const pg128_t *a1 = &a[j][g1], *a2 = &a[j][g2];
 		int64_t d;
+		int32_t c;
 		if (a1->x == (uint64_t)-1 || a2->x == (uint64_t)-1) continue;
-		if (a1->x != a2->x) continue;
+		if (a1->x>>32 != a2->x>>32) continue;
 		d = (int64_t)a1->y - (int64_t)a2->y;
-		if (d >= -close_thres && d <= close_thres) ++n_close;
+		c = (int32_t)a1->x - (int32_t)a2->x;
+		if ((d >= -local_dist && d <= local_dist) || (c >= -local_count && c <= local_count))
+			++n_local;
 	}
-	return n_close;
+	return n_local;
 }
 
 int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
@@ -57,10 +63,10 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 		assert(n_max > 0);
 		for (i = 0; i < n; ++i) {
 			if (a[i].s1 < max_s1 * (1.0 - opt->branch_diff)) {
-				int32_t n_close = 0;
+				int32_t n_local = 0;
 				for (j = 0; j < n_max; ++j)
-					n_close += pg_n_close(opt->close_thres, q->d->n_genome, pos, max_gid[j], q->seg[(uint32_t)a[i].x>>1].gid);
-				if (n_close == 0) a[i].weak_br = 2, ++n_flt2;
+					n_local += pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, max_gid[j], q->seg[(uint32_t)a[i].x>>1].gid);
+				if (n_local == 0) a[i].weak_br = 2, ++n_flt2;
 				else a[i].weak_br = 1, ++n_flt1;
 			}
 		}

@@ -122,6 +122,20 @@ branching arc by
 .I FLOAT
 fraction [0.03]
 .TP
+.BI -D \ NUM
+Two genes are considered local if they are at most
+.I NUM
+bp apart [2M]. This and option
+.B -C
+work together with
+.BR -b .
+Non-local branching edges will be cut.
+.TP
+.BI -C \ INT
+Two genes are considered local if there are no more than
+.I INT
+unfiltered genes [20]
+.TP
 .BI -a \ INT
 Prune an arc if it is supported by less than
 .I INT

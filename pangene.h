@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r100-dirty"
+#define PG_VERSION "0.0-r101-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -28,7 +28,8 @@ typedef struct {
 	int32_t max_degree;
 	int32_t n_branch_flt;
 	int32_t min_arc_cnt;
-	int32_t close_thres;
+	int32_t local_dist;
+	int32_t local_count;
 } pg_opt_t;
 
 typedef struct {
