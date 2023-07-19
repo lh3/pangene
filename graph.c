@@ -271,8 +271,8 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 		pg_mark_branch_flt_hit(opt, q);
 		PG_SET_FILTER(q->d, weak_br == 2);
 		pg_gen_arc(opt, q);
-		PG_SET_FILTER(q->d, shadow == 1);
 	}
+	PG_SET_FILTER(q->d, shadow == 1);
 	if (opt->min_arc_cnt > 1)
 		pg_graph_cut_low_arc(opt, q);
 	pg_arc_index(q);
