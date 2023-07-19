@@ -49,25 +49,26 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 	uint32_t v, n_vtx = q->n_seg * 2, n_flt1 = 0, n_flt2 = 0;
 	int32_t j, *max_gid;
 	pg128_t **pos;
-	max_gid = PG_MALLOC(int32_t, q->n_seg * 2); // we don't need an array this large, but the program wastes a lot more memory elsewhere
+	max_gid = PG_MALLOC(int32_t, q->n_seg * 2); // we don't need an array this large, but the program uses a lot more memory elsewhere
 	pos = pg_gen_rep_pos(q->d);
 	for (v = 0; v < n_vtx; ++v) {
 		int32_t i, n_max, max_s1 = 0, n = (int32_t)q->idx[v];
 		pg_arc_t *a = &q->arc[q->idx[v]>>32];
 		if (n < 2) continue;
-		for (i = 0; i < n; ++i)
+		for (i = 0; i < n; ++i) // find max score
 			max_s1 = max_s1 > a[i].s1? max_s1 : a[i].s1;
 		for (i = n_max = 0; i < n; ++i)
-			if (a[i].s1 == max_s1)
+			if (a[i].s1 == max_s1) // find arcs with the max score
 				max_gid[n_max++] = q->seg[(uint32_t)a[i].x>>1].gid;
 		assert(n_max > 0);
 		for (i = 0; i < n; ++i) {
 			if (a[i].s1 < max_s1 * (1.0 - opt->branch_diff)) {
-				int32_t n_local = 0;
+				int32_t n_local = 0, gid = q->seg[(uint32_t)a[i].x>>1].gid;
 				for (j = 0; j < n_max; ++j)
-					n_local += pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, max_gid[j], q->seg[(uint32_t)a[i].x>>1].gid);
+					n_local += pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, max_gid[j], gid);
 				if (n_local == 0) a[i].weak_br = 2, ++n_flt2;
 				else a[i].weak_br = 1, ++n_flt1;
+				//fprintf(stderr, "B\t%s\t%s\t%.4f\t%d\n", q->d->gene[q->seg[a[i].x>>33].gid].name, q->d->gene[gid].name, (double)a[i].s1 / max_s1, n_local);
 			}
 		}
 	}
@@ -75,7 +76,7 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 	free(pos);
 	free(max_gid);
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%s] marked %d closely diverged branches and %d distantly diverged branches\n", __func__, pg_timestamp(), n_flt1, n_flt2);
+		fprintf(stderr, "[M::%s::%s] marked %d locally diverged branches and %d distantly diverged branches\n", __func__, pg_timestamp(), n_flt1, n_flt2);
 	return n_flt1 + n_flt2;
 }
 
@@ -87,19 +88,19 @@ int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // call after
 		pg_genome_t *g = &d->genome[j];
 		uint32_t v = (uint32_t)-1;
 		int32_t vi = -1;
-		for (i = 0; i < g->n_hit; ++i)
-			g->hit[i].weak_br = 0;
+		//for (i = 0; i < g->n_hit; ++i) g->hit[i].weak_br = 0;
 		pg_hit_sort(g, 1); // sort by pg_hit_t::cm
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			const pg_arc_t *e;
 			uint32_t w;
 			int32_t sid;
-			if (a->flt) continue;
+			if (a->flt || a->shadow) continue;
 			sid = q->g2s[q->d->prot[a->pid].gid];
 			if (vi >= 0 && a->cid != g->hit[vi].cid) v = (uint32_t)-1;
 			w = (uint32_t)sid<<1 | a->rev;
 			if (v != (uint32_t)-1) {
+				//fprintf(stderr, "L\t%s\t%s\t%s\n", g->ctg[a->cid].name, d->gene[q->seg[v>>1].gid].name, d->gene[q->seg[w>>1].gid].name);
 				e = pg_get_arc(q, v, w);
 				if (e && e->weak_br) g->hit[vi].weak_br = e->weak_br;
 				e = pg_get_arc(q, w^1, v^1);
