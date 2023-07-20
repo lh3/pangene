@@ -102,9 +102,11 @@ int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q) // call after
 			if (v != (uint32_t)-1) {
 				//fprintf(stderr, "L\t%s\t%s\t%s\n", g->ctg[a->cid].name, d->gene[q->seg[v>>1].gid].name, d->gene[q->seg[w>>1].gid].name);
 				e = pg_get_arc(q, v, w);
-				if (e && e->weak_br) g->hit[vi].weak_br = e->weak_br;
+				if (e && e->weak_br)
+					g->hit[vi].weak_br = g->hit[vi].weak_br > e->weak_br? g->hit[vi].weak_br : e->weak_br;
 				e = pg_get_arc(q, w^1, v^1);
-				if (e && e->weak_br) a->weak_br = e->weak_br;
+				if (e && e->weak_br)
+					a->weak_br = a->weak_br > e->weak_br? a->weak_br : e->weak_br;
 			}
 			v = w, vi = i;
 		}
