@@ -1,17 +1,23 @@
 ## <a name="started"></a>Getting Started
 ```sh
-# Align proteins to each genome
+# Install pangene
+git clone https://github.com/lh3/pangene
+cd pangene && make
+
+# Generate the C4 example with provided alignment
+./pangene test/C4/*.paf.gz > C4.gfa
+
+# Visit http://pangene.liheng.org for pangene HPRC graph
+
+# Align proteins to each genome (general use cases; no examples)
 miniprot --outs=0.97 --no-cs -Iut16 genome1.fna proteins.faa > genome1.paf
 miniprot --outs=0.97 --no-cs -Iut16 genome2.fna proteins.faa > genome2.paf
 
 # Construct a pangene graph
 pangene -a2 genome1.paf genome2.paf > graph.gfa
 
-# Extract a subgraph around several genes
+# Extract a subgraph around several genes (requiring gfatools)
 gfatools view -wl C4A,C4B -r3 graph.gfa > subgraph.gfa
-
-# Visit http://45.55.105.22:8000 for pangene HPRC graph
-# Visualize small subgraphs at https://lh3.github.io/gfatools/
 
 # Check manpage
 man ./pangene.1
