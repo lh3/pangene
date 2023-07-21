@@ -1,4 +1,4 @@
-.TH pangene 1 "3 July 2023" "pangene-0.0-dirty (r78)" "Bioinformatics tools"
+.TH pangene 1 "3 July 2023" "pangene-0.0-dirty (r108)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -117,10 +117,21 @@ Drop a gene if its in- or out-degree in the initial graph is higher than
 [10]
 .TP
 .BI -b \ FLOAT
-Drop an arc if it is attached to a branching vertex and is weaker than the best
+Demote an arc if it is attached to a branching vertex and is weaker than the best
 branching arc by
 .I FLOAT
 fraction [0.03]
+.TP
+.BI -B \ FLOAT
+Cut an arc if it is attached to a branching vertex and is weaker than the best
+branching arc by
+.I FLOAT
+fraction [0.2]
+.TP
+.BI -T \ INT
+Apply branch cutting for
+.I INT
+rounds [7]
 .TP
 .BI -D \ NUM
 Two genes are considered local if they are at most
