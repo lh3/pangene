@@ -139,6 +139,43 @@ int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g)
 	return n_pseudo;
 }
 
+typedef struct {
+	int32_t c[2];
+	int64_t s[2];
+} pseudo_joint_aux_t;
+
+int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg_flag_pseudo()
+{
+	int32_t i, j, n_pseudo = 0;
+	pseudo_joint_aux_t *aux;
+	aux = PG_CALLOC(pseudo_joint_aux_t, d->n_prot);
+	for (j = 0; j < d->n_genome; ++j) {
+		const pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			const pg_hit_t *a = &g->hit[i];
+			if (a->rank == 0) {
+				int32_t w = a->n_exon == 1? 0 : 1;
+				aux[a->pid].c[w]++;
+				aux[a->pid].s[w] += a->score;
+			}
+		}
+	}
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			pg_hit_t *a = &g->hit[i];
+			pseudo_joint_aux_t *p = &aux[a->pid];
+			if (a->n_exon == 1 && p->c[1] >= d->n_genome * opt->min_vertex_ratio && !a->pseudo
+				&& p->s[1] * p->c[0] > p->s[0] * p->c[1]) // multi-exon should have higher score
+			{
+				a->pseudo = 1, ++n_pseudo;
+			}
+		}
+	}
+	free(aux);
+	return n_pseudo;
+}
+
 static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 {
 	int32_t i, len = 0;

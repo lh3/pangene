@@ -6,7 +6,7 @@
 
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 {
-	int32_t i;
+	int32_t i, tmp;
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
 	pg_flag_representative(d);
@@ -19,6 +19,9 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		if (pg_verbose >= 3)
 			fprintf(stderr, "[M::%s::%s] genome %d: %d pseudo, %d shadow\n", __func__, pg_timestamp(), i, n_pseudo, n_shadow);
 	}
+	tmp = pg_flag_pseudo_joint(opt, d);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] %d pseudogene hits identified jointly\n", __func__, pg_timestamp(), tmp);
 }
 
 pg_graph_t *pg_graph_init(pg_data_t *d)
