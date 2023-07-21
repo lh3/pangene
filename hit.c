@@ -211,7 +211,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			if (aj->flt) continue;
 			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(gj);
-			if (gi == gj) continue; // ignore iso-forms of the same gene
+			if (gi == gj && ai->pid != aj->pid) continue; // ignore iso-forms of the same gene
 			x = pg_hit_overlap(g, aj, ai);
 			lj = pg_cds_len(aj, g->exon);
 			cov_short = (double)(x>>32) / (li < lj? li : lj);

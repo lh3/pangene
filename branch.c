@@ -16,11 +16,11 @@ static pg128_t **pg_gen_rep_pos(const pg_data_t *d) // only work if sorted
 			aj[i].x = (uint64_t)-1;
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *b = &g->hit[i];
-			if (b->rep && b->rank == 0) {
+			if (b->rep && b->rank == 0 && !b->shadow && !b->flt) {
 				int32_t gid = d->prot[b->pid].gid;
 				aj[gid].x = (uint64_t)b->cid<<32 | r;
 				aj[gid].y = b->cm;
-				if (!b->flt) ++r;
+				++r;
 			}
 		}
 	}
@@ -68,7 +68,7 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 					n_local += pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, max_gid[j], gid);
 				if (n_local == 0) a[i].weak_br = 2, ++n_flt2;
 				else a[i].weak_br = 1, ++n_flt1;
-				//fprintf(stderr, "B\t%s\t%s\t%.4f\t%d\n", q->d->gene[q->seg[a[i].x>>33].gid].name, q->d->gene[gid].name, (double)a[i].s1 / max_s1, n_local);
+				//fprintf(stderr, "B\t%s\t%s\t%s\t%.4f\t%d\n", q->d->gene[q->seg[a[i].x>>33].gid].name, q->d->gene[max_gid[0]].name, q->d->gene[gid].name, (double)a[i].s1 / max_s1, n_local);
 			}
 		}
 	}
