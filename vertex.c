@@ -3,6 +3,47 @@
 #include <stdio.h>
 #include "pgpriv.h"
 
+void pg_flt_prot(pg_data_t *d)
+{
+	int32_t i, j, *cnt, *flag, n_prot = 0, n_gene = 0;
+	cnt = PG_CALLOC(int32_t, d->n_prot);
+	flag = PG_MALLOC(int32_t, d->n_prot);
+	for (i = 0; i < d->n_prot; ++i)
+		flag[i] = -1;
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i)
+			if (!g->hit[i].shadow)
+				flag[g->hit[i].pid] = j;
+		for (i = 0; i < d->n_prot; ++i)
+			if (flag[i] == j)
+				++cnt[i];
+	}
+	free(flag);
+	for (i = 0; i < d->n_prot; ++i) {
+		d->prot[i].flt = (cnt[i] == 0);
+		//printf("X\t%s\t%d\t%d\n", d->prot[i].name, cnt[i], d->prot[i].flt);
+	}
+	free(cnt);
+	for (i = 0; i < d->n_gene; ++i)
+		d->gene[i].flt = 1;
+	for (i = 0; i < d->n_prot; ++i)
+		if (!d->prot[i].flt)
+			d->gene[d->prot[i].gid].flt = 0;
+	for (i = 0; i < d->n_prot; ++i)
+		if (!d->prot[i].flt) ++n_prot;
+	for (i = 0; i < d->n_gene; ++i)
+		if (!d->gene[i].flt) ++n_gene;
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i)
+			if (d->prot[g->hit[i].pid].flt)
+				g->hit[i].flt = 1;
+	}
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins remain\n", __func__, pg_timestamp(), n_gene, n_prot);
+}
+
 void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 {
 	const pg_data_t *d = q->d;

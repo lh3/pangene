@@ -184,7 +184,7 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t cmp_iso)
 {
 	int32_t i, i0, n_shadow = 0;
 	pg128_t *tmp;
@@ -211,7 +211,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			if (aj->flt) continue;
 			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(gj);
-			if (gi == gj && ai->pid != aj->pid) continue; // ignore iso-forms of the same gene
+			if (!cmp_iso && gi == gj && ai->pid != aj->pid) continue; // ignore iso-forms of the same gene
 			x = pg_hit_overlap(g, aj, ai);
 			lj = pg_cds_len(aj, g->exon);
 			cov_short = (double)(x>>32) / (li < lj? li : lj);
@@ -256,7 +256,7 @@ void pg_flag_representative(pg_data_t *d) // flag representative isoform
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i) {
-			if (g->hit[i].rank == 0)
+			if (g->hit[i].rank == 0 && g->hit[i].flt == 0)
 				z[g->hit[i].pid].x += 1ULL<<32 | g->hit[i].score2; // NB: assuming each protein has only one rank=0 hit
 			g->hit[i].rep = 0;
 		}
