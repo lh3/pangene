@@ -20,10 +20,8 @@ void pg_flt_prot(pg_data_t *d)
 				++cnt[i];
 	}
 	free(flag);
-	for (i = 0; i < d->n_prot; ++i) {
+	for (i = 0; i < d->n_prot; ++i)
 		d->prot[i].flt = (cnt[i] == 0);
-		//printf("X\t%s\t%d\t%d\n", d->prot[i].name, cnt[i], d->prot[i].flt);
-	}
 	free(cnt);
 	for (i = 0; i < d->n_gene; ++i)
 		d->gene[i].flt = 1;
