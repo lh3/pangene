@@ -24,7 +24,6 @@ Align one set of proteins to multiple genomes with miniprot:
 Construct a pangenome gene graph:
 .RS 4
 .B pangene
-.RB [ -u ]
 .RB [ -e
 .IR minIdentity ]
 .RB [ -b
@@ -93,9 +92,6 @@ Two alignments are considered to overlap with each other if their intersection
 on the genome is at least
 .I FLOAT
 fraction of the shorter alignment [0.5]
-.TP
-.B -u
-Don't merge potential orthologs
 .TP
 .BI -p \ FLOAT
 A gene is considered a segment in the graph if it is

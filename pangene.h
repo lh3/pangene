@@ -9,8 +9,7 @@
 #define PG_F_WRITE_BED_WALK     0x2
 #define PG_F_WRITE_BED_FLAG     0x4
 #define PG_F_WRITE_NO_WALK      0x8
-#define PG_F_NO_MERGE_ORTHO     0x10
-#define PG_F_WRITE_VTX_SEL      0x20
+#define PG_F_WRITE_VTX_SEL      0x10
 
 typedef struct {
 	uint64_t x, y;
