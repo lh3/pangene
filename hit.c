@@ -258,13 +258,13 @@ void pg_flag_representative(pg_data_t *d) // flag representative isoform
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			if (a->rank == 0 && a->flt == 0)
-				z[a->pid].x += 1ULL<<32 | a->score2; // NB: assuming each protein has only one rank=0 hit
+				z[a->pid].x += (uint64_t)a->score2<<32 | 1; // NB: assuming each protein has only one rank=0 hit
 			a->rep = 0;
 		}
 	}
 	for (i = 0; i < d->n_prot; ++i) {
-		d->prot[i].n = z[i].x>>32;
-		d->prot[i].avg_score2 = d->prot[i].n? (int32_t)((double)((uint32_t)z[i].x) / d->prot[i].n + .499) : 0;
+		d->prot[i].n = (uint32_t)z[i].x;
+		d->prot[i].avg_score2 = d->prot[i].n? (int32_t)((double)(z[i].x>>32) / d->prot[i].n + .499) : 0;
 	}
 	radix_sort_pg128x(z, z + d->n_prot);
 	for (i = d->n_prot - 1; i >= 0; --i) {
