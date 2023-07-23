@@ -216,7 +216,7 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			lj = pg_cds_len(aj, g->exon);
 			cov_short = (double)(x>>32) / (li < lj? li : lj);
 			assert(cov_short <= 1.0);
-			if (cov_short < opt->min_ov_ratio) continue; // overlap too short
+			if ((ai->pid != aj->pid && cov_short < opt->min_ov_ratio) || (ai->pid == aj->pid && x>>32 == 0)) continue; // overlap too short
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
