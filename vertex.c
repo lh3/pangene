@@ -75,10 +75,10 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 			if (a->shadow) {
 				assert(a->pid_dom >= 0);
 				flag[gid] |= 2;
-				if (aux) aux[j][gid] = (uint32_t)d->prot[a->pid_dom].gid<<1;
+				aux[j][gid] = (uint32_t)d->prot[a->pid_dom].gid<<1;
 			} else {
 				flag[gid] |= 1;
-				if (aux) aux[j][gid] = (uint32_t)d->n_gene<<1;
+				aux[j][gid] = (uint32_t)d->n_gene<<1;
 			}
 		}
 		for (i = 0; i < d->n_gene; ++i) {
@@ -88,7 +88,6 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		}
 	}
 	free(flag);
-
 
 	// generate segments
 	radix_sort_pg128x(cnt, cnt + d->n_gene);

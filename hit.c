@@ -256,9 +256,10 @@ void pg_flag_representative(pg_data_t *d) // flag representative isoform
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i) {
-			if (g->hit[i].rank == 0 && g->hit[i].flt == 0)
-				z[g->hit[i].pid].x += 1ULL<<32 | g->hit[i].score2; // NB: assuming each protein has only one rank=0 hit
-			g->hit[i].rep = 0;
+			pg_hit_t *a = &g->hit[i];
+			if (a->rank == 0 && a->flt == 0)
+				z[a->pid].x += 1ULL<<32 | a->score2; // NB: assuming each protein has only one rank=0 hit
+			a->rep = 0;
 		}
 	}
 	for (i = 0; i < d->n_prot; ++i) {
