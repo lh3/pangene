@@ -246,6 +246,42 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	return n_shadow;
 }
 
+int32_t pg_flag_scattered(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
+{
+	int32_t i, i0, n_flt = 0;
+	int8_t *flag;
+	flag = PG_CALLOC(int8_t, g->n_hit);
+	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
+		pg_hit_t *ai = &g->hit[i];
+		int32_t j, gi;
+		if (ai->flt) continue;
+		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
+			++i0;
+		gi = prot[ai->pid].gid;
+		for (j = i0; j < i; ++j) {
+			uint64_t x;
+			int32_t gj;
+			pg_hit_t *aj = &g->hit[j];
+			if (aj->flt || aj->ce <= ai->cs) continue; // no overlap
+			gj = prot[aj->pid].gid;
+			if (gi != gj) continue;
+			x = pg_hit_overlap(g, aj, ai);
+			if (x>>32 == 0) continue; // no overlap on CDS
+			if (ai->rep + aj->rep == 1) {
+				if (ai->rep) flag[j] = 1;
+				else if (aj->rep) flag[i] = 1;
+			}
+		}
+	}
+	for (i = 0; i < g->n_hit; ++i) {
+		pg_hit_t *a = &g->hit[i];
+		if (!a->rep && !a->flt && !flag[i])
+			a->flt = 1, ++n_flt;
+	}
+	free(flag);
+	return n_flt;
+}
+
 void pg_flag_representative(pg_data_t *d) // flag representative isoform
 {
 	pg128_t *z;

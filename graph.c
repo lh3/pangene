@@ -6,7 +6,7 @@
 
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 {
-	int32_t i, n_shadow = 0, n_pseudo = 0, n_hit = 0;
+	int32_t i, n_shadow = 0, n_pseudo = 0, n_hit = 0, n_scat = 0;
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
 	for (i = 0; i < d->n_genome; ++i) {
@@ -23,6 +23,10 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 	n_pseudo = pg_flag_pseudo_joint(opt, d);
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d pseudogene hits identified jointly\n", __func__, pg_timestamp(), n_pseudo);
+	for (i = 0; i < d->n_genome; ++i)
+		n_scat += pg_flag_scattered(opt, d->prot, &d->genome[i]);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] filtered %d scattered short isoforms\n", __func__, pg_timestamp(), n_scat);
 }
 
 pg_graph_t *pg_graph_init(pg_data_t *d)
@@ -255,7 +259,7 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
 	PG_SET_FILTER(q->d, vtx == 0);
-	PG_SET_FILTER(q->d, rep == 0);
+	//PG_SET_FILTER(q->d, rep == 0);
 	pg_gen_arc(opt, q);
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] round-1 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);

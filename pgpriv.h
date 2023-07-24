@@ -68,6 +68,7 @@ void pg_flt_prot(pg_data_t *d);
 int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d);
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g);
+int32_t pg_flag_scattered(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g);
 void pg_flag_representative(pg_data_t *d);
 
 void pg_gen_g2s(pg_graph_t *q);
