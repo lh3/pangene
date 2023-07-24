@@ -191,30 +191,32 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	tmp = PG_CALLOC(pg128_t, g->n_hit);
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
-		int32_t j, li;
+		int32_t j, li, gi;
 		uint32_t hi;
 		if (ai->flt) continue;
 		ai->overlap = ai->shadow = 0;
 		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
 			++i0;
+		gi = prot[ai->pid].gid;
 		hi = pg_hash_uint32(ai->pid);
 		li = pg_cds_len(ai, g->exon);
 		for (j = i0; j < i; ++j) {
 			uint64_t x;
-			int32_t lj, shadow = -1;
+			int32_t lj, gj, shadow = -1;
 			double cov_short;
 			uint32_t hj;
 			uint64_t si, sj;
 			pg_hit_t *aj = &g->hit[j];
 			if (aj->ce <= ai->cs) continue; // no overlap
 			if (aj->flt) continue;
+			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(aj->pid);
 			x = pg_hit_overlap(g, aj, ai);
 			if (x>>32 == 0) continue; // no overlap on CDS
 			lj = pg_cds_len(aj, g->exon);
 			cov_short = (double)(x>>32) / (li < lj? li : lj);
 			assert(cov_short <= 1.0);
-			if (ai->pid != aj->pid && cov_short < opt->min_ov_ratio) continue; // overlap too short
+			if (gi != gj && cov_short < opt->min_ov_ratio) continue; // overlap too short
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
