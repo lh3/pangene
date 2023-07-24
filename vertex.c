@@ -32,6 +32,7 @@ void pg_flt_prot(pg_data_t *d)
 		if (!d->prot[i].flt) ++n_prot;
 	for (i = 0; i < d->n_gene; ++i)
 		if (!d->gene[i].flt) ++n_gene;
+		//else fprintf(stderr, "X\t%s\n", d->gene[i].name);
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i)
@@ -110,6 +111,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 						aux[j][aux[j][gid]>>1] |= 1;
 			}
 		}
+		//else fprintf(stderr, "Y\t%s\tn_dom=%d\n", d->gene[gid].name, n_dom);
 	}
 	for (j = 0; j < d->n_genome; ++j) free(aux[j]);
 	free(aux);
