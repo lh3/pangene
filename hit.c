@@ -184,7 +184,7 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
-int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g, int32_t cmp_iso)
+int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, i0, n_shadow = 0;
 	pg128_t *tmp;
@@ -211,12 +211,12 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			if (aj->flt) continue;
 			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(gj);
-			if (!cmp_iso && gi == gj && ai->pid != aj->pid) continue; // ignore iso-forms of the same gene
 			x = pg_hit_overlap(g, aj, ai);
+			if (x>>32 == 0) continue; // no overlap on CDS
 			lj = pg_cds_len(aj, g->exon);
 			cov_short = (double)(x>>32) / (li < lj? li : lj);
 			assert(cov_short <= 1.0);
-			if ((ai->pid != aj->pid && cov_short < opt->min_ov_ratio) || (ai->pid == aj->pid && x>>32 == 0)) continue; // overlap too short
+			if (ai->pid != aj->pid && cov_short < opt->min_ov_ratio) continue; // overlap too short
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
