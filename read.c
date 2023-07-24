@@ -212,7 +212,17 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 	free(str.s);
 	ks_destroy(ks);
 	gzclose(fp);
-	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%s] genome %d: %d alignments parsed, %d kept\n", __func__, pg_timestamp(), d->n_genome-1, n_tot, g->n_hit);
+	{ // postprocessing
+		int32_t n_pseudo, n_iso_ov, n_iso_scat, n_shadow;
+		n_pseudo = pg_flag_pseudo(d->prot, g);
+		PG_SET_FILTER(d, pseudo == 1);
+		pg_hit_sort(g, 0);
+		n_iso_ov = pg_select_isoform_overlap(opt, d->prot, g);
+		n_iso_scat = pg_filter_isoform_scattered(opt, d->n_gene, d->prot, g);
+		n_shadow = pg_flag_shadow(opt, d->prot, g);
+		if (pg_verbose >= 3)
+			fprintf(stderr, "[M::%s::%s] genome %d: %d hits parsed, %d kept; %d pseudo, %d overlapping, %d scaterred; %d shadowed\n", __func__, pg_timestamp(), d->n_genome-1, n_tot, g->n_hit,
+					n_pseudo, n_iso_ov, n_iso_scat, n_shadow);
+	}
 	return 0;
 }

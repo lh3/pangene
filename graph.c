@@ -6,27 +6,14 @@
 
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 {
-	int32_t i, n_shadow = 0, n_pseudo = 0, n_hit = 0, n_scat = 0;
+	int32_t n_pseudo;
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
-	for (i = 0; i < d->n_genome; ++i) {
-		pg_genome_t *g = &d->genome[i];
-		n_hit += g->n_hit;
-		n_pseudo += pg_flag_pseudo(d->prot, g);
-		pg_hit_sort(g, 0);
-		n_shadow += pg_flag_shadow(opt, d->prot, g);
-	}
-	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%s] %d total hits; %d pseudogene hits; %d shadowed hits\n", __func__, pg_timestamp(), n_hit, n_pseudo, n_shadow);
 	pg_flt_prot(d);
 	pg_flag_representative(d);
 	n_pseudo = pg_flag_pseudo_joint(opt, d);
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d pseudogene hits identified jointly\n", __func__, pg_timestamp(), n_pseudo);
-	for (i = 0; i < d->n_genome; ++i)
-		n_scat += pg_flag_scattered(opt, d->prot, &d->genome[i]);
-	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%s] filtered %d scattered short isoforms\n", __func__, pg_timestamp(), n_scat);
 }
 
 pg_graph_t *pg_graph_init(pg_data_t *d)

@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "pgpriv.h"
 
+// Compute the CDS overlap length and union length. The union length is actually not used at the moment.
 uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t *ab)
 {
 	int32_t l_inter = 0, l_union = 0, x;
@@ -40,6 +41,7 @@ uint64_t pg_hit_overlap(const pg_genome_t *g, const pg_hit_t *aa, const pg_hit_t
 	return (uint64_t)l_inter<<32 | l_union;
 }
 
+// Compute the CDS length of an alignment
 static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 {
 	int32_t i, len = 0;
@@ -48,6 +50,99 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
 	return len;
 }
 
+/*
+ * All rountines below follow a similar logic and have some code duplications.
+ */
+
+// select among overlapping isoforms of the same gene
+int32_t pg_select_isoform_overlap(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
+{
+	int32_t i, j, i0, n_flt = 0, gi, gj;
+	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
+		pg_hit_t *ai = &g->hit[i];
+		uint32_t hi;
+		if (ai->flt) continue;
+		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
+			++i0;
+		gi = prot[ai->pid].gid;
+		hi = pg_hash_uint32(ai->pid);
+		for (j = i0; j < i; ++j) {
+			uint32_t hj;
+			uint64_t x, si, sj;
+			pg_hit_t *aj = &g->hit[j];
+			if (aj->flt || aj->ce <= ai->cs) continue; // no overlap
+			gj = prot[aj->pid].gid;
+			if (gi != gj) continue; // ignore isoforms from different genes
+			hj = pg_hash_uint32(aj->pid);
+			x = pg_hit_overlap(g, aj, ai);
+			if (x>>32 == 0) continue; // no overlap on CDS
+			si = (uint64_t)ai->score2<<32 | hi;
+			sj = (uint64_t)aj->score2<<32 | hj;
+			if (si < sj || (si == sj && ai->rank > aj->rank))
+				ai->flt_iso_ov = 1;
+			else aj->flt_iso_ov = 1;
+		}
+	}
+	for (i = 0; i < g->n_hit; ++i)
+		if (g->hit[i].flt_iso_ov)
+			g->hit[i].flt = 1, ++n_flt;
+	return n_flt;
+}
+
+// filter scattered short isoforms that don't overlap with the best isoform
+int32_t pg_filter_isoform_scattered(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g)
+{
+	int32_t i, i0, n_flt = 0;
+	uint64_t *best_pid;
+	int8_t *kept;
+	best_pid = PG_CALLOC(uint64_t, n_gene);
+	for (i = 0; i < g->n_hit; ++i) { // find the best scoring isoform of each gene
+		const pg_hit_t *a = &g->hit[i];
+		int32_t gid;
+		if (a->flt) continue;
+		gid = prot[a->pid].gid;
+		if (best_pid[gid]>>32 < a->score2)
+			best_pid[gid] = (uint64_t)a->score2<<32 | a->pid;
+	}
+	kept = PG_CALLOC(int8_t, g->n_hit);
+	for (i = 0; i < g->n_hit; ++i) {
+		const pg_hit_t *a = &g->hit[i];
+		if (!a->flt && a->pid == (uint32_t)best_pid[prot[a->pid].gid])
+			kept[i] = 1;
+	}
+	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
+		pg_hit_t *ai = &g->hit[i];
+		int32_t j, gi;
+		if (ai->flt) continue;
+		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
+			++i0;
+		gi = prot[ai->pid].gid;
+		for (j = i0; j < i; ++j) {
+			uint64_t x;
+			int32_t gj, bp;
+			pg_hit_t *aj = &g->hit[j];
+			if (aj->flt || aj->ce <= ai->cs) continue; // no overlap
+			gj = prot[aj->pid].gid;
+			if (gi != gj) continue; // ignore isoforms from different genes
+			x = pg_hit_overlap(g, aj, ai);
+			if (x>>32 == 0) continue; // no overlap on CDS
+			bp = (uint32_t)best_pid[gi]; // we come here if there is a genomic overlap but no CDS overlap -- very rare if ever happens
+			assert(bp != 0); // shouldn't happen
+			if (ai->pid == bp || aj->pid == bp)
+				kept[i] = kept[j] = 1;
+		}
+	}
+	for (i = 0; i < g->n_hit; ++i) {
+		pg_hit_t *a = &g->hit[i];
+		if (!a->flt && !kept[i])
+			a->flt = a->flt_iso_scat = 1, ++n_flt;
+	}
+	free(kept);
+	free(best_pid);
+	return n_flt;
+}
+
+// test overlap between same or different genes
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, i0, n_shadow = 0;
@@ -110,40 +205,4 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 	}
 	free(tmp);
 	return n_shadow;
-}
-
-int32_t pg_flag_scattered(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
-{
-	int32_t i, i0, n_flt = 0;
-	int8_t *flag;
-	flag = PG_CALLOC(int8_t, g->n_hit);
-	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
-		pg_hit_t *ai = &g->hit[i];
-		int32_t j, gi;
-		if (ai->flt) continue;
-		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
-			++i0;
-		gi = prot[ai->pid].gid;
-		for (j = i0; j < i; ++j) {
-			uint64_t x;
-			int32_t gj;
-			pg_hit_t *aj = &g->hit[j];
-			if (aj->flt || aj->ce <= ai->cs) continue; // no overlap
-			gj = prot[aj->pid].gid;
-			if (gi != gj) continue;
-			x = pg_hit_overlap(g, aj, ai);
-			if (x>>32 == 0) continue; // no overlap on CDS
-			if (ai->rep + aj->rep == 1) {
-				if (ai->rep) flag[j] = 1;
-				else if (aj->rep) flag[i] = 1;
-			}
-		}
-	}
-	for (i = 0; i < g->n_hit; ++i) {
-		pg_hit_t *a = &g->hit[i];
-		if (!a->rep && !a->flt && !flag[i])
-			a->flt = 1, ++n_flt;
-	}
-	free(flag);
-	return n_flt;
 }

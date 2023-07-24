@@ -13,7 +13,7 @@ void pg_flt_prot(pg_data_t *d)
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i)
-			if (!g->hit[i].shadow)
+			if (!g->hit[i].flt && !g->hit[i].shadow)
 				flag[g->hit[i].pid] = j;
 		for (i = 0; i < d->n_prot; ++i)
 			if (flag[i] == j)
@@ -71,20 +71,20 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
 			int32_t gid;
-			if (a->rank != 0 || a->rep == 0 || a->flt) continue;
+			if (a->rank != 0 || a->flt) continue;
 			gid = d->prot[a->pid].gid;
 			if (a->shadow) {
 				assert(a->pid_dom >= 0);
 				flag[gid] |= 2;
-				aux[j][gid] = (uint32_t)d->prot[a->pid_dom].gid<<1;
+				if (aux[j][gid] == (uint32_t)(d->n_gene + 1) << 1)
+					aux[j][gid] = (uint32_t)d->prot[a->pid_dom].gid<<1;
 			} else {
 				flag[gid] |= 1;
 				aux[j][gid] = (uint32_t)d->n_gene<<1;
 			}
 		}
 		for (i = 0; i < d->n_gene; ++i) {
-			assert(flag[i] != 3);
-			if (flag[i]&1) cnt[i].x += 1ULL<<32;
+			if (flag[i]&1) cnt[i].x += 1ULL<<32; // it is possible that flag[i]==3; in this case, we count the non-shadowed hit first
 			else if (flag[i]&2) cnt[i].y += 1ULL<<32;
 		}
 	}
