@@ -78,6 +78,7 @@ int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q);
 
 int32_t pg_select_isoform_overlap(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_filter_isoform_scattered(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g);
+int32_t pg_filter_full_shadow(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g);
 
 static inline uint32_t pg_hash_uint32(uint32_t key)
