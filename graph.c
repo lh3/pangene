@@ -259,7 +259,8 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 	pg_gen_vtx(opt, q);
 	pg_graph_flag_vtx(q);
 	PG_SET_FILTER(q->d, vtx == 0);
-	//PG_SET_FILTER(q->d, rep == 0);
+	if (opt->flag & PG_F_REP_ONLY)
+		PG_SET_FILTER(q->d, rep == 0);
 	pg_gen_arc(opt, q);
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] round-1 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);

@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:R", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
 		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
 		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
 		else if (c == 'G') opt.flag |= PG_F_WRITE_VTX_SEL;
+		else if (c == 'R') opt.flag |= PG_F_REP_ONLY;
 		else if (c == 'D') opt.local_dist = pg_parse_num(o.arg);
 		else if (c == 'C') opt.local_count = atoi(o.arg);
 		else if (c == 'v') pg_verbose = atoi(o.arg);

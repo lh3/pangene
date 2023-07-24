@@ -220,7 +220,9 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			si = (uint64_t)ai->score2<<32 | hi;
 			sj = (uint64_t)aj->score2<<32 | hj;
 			ai->overlap = aj->overlap = 1;
-			if (ai->weak_br == aj->weak_br) {
+			if (gi == gj) { // don't consider weak_br for different isoforms of the same gene
+				shadow = (si < sj || (si == sj && ai->rank > aj->rank))? 0 : 1; // 0 for i and 1 for j
+			} else if (ai->weak_br == aj->weak_br) {
 				shadow = (si < sj || (si == sj && ai->rank > aj->rank))? 0 : 1; // 0 for i and 1 for j
 			} else if (ai->weak_br > aj->weak_br) { // i is worse
 				shadow = 0;
