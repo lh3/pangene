@@ -223,11 +223,12 @@ int32_t pg_filter_isoform_scattered(const pg_opt_t *opt, int32_t n_gene, const p
 		if (a->flt) continue;
 		gid = prot[a->pid].gid;
 		if (best_pid[gid]>>32 < a->score2)
-			best_pid[gid] = (uint64_t)a->score2<<32 | a->pid;
+			best_pid[gid] = (uint64_t)a->score<<32 | a->pid;
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *a = &g->hit[i];
-		if (!a->flt && a->pid != (uint32_t)best_pid[prot[a->pid].gid])
+		int32_t bp = (uint32_t)best_pid[prot[a->pid].gid], bs = best_pid[prot[a->pid].gid]>>32;
+		if (!a->flt && a->pid != bp && a->score < bs * opt->min_scatter_ratio)
 			a->flt = a->flt_iso_scat = 1, ++n_flt;
 	}
 	free(best_pid);
