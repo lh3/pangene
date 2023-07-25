@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r122-dirty"
+#define PG_VERSION "0.0-r123-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2

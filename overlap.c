@@ -89,59 +89,6 @@ int32_t pg_select_isoform_overlap(const pg_opt_t *opt, const pg_prot_t *prot, pg
 	return n_flt;
 }
 
-// filter scattered short isoforms that don't overlap with the best isoform
-int32_t pg_filter_isoform_scattered(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g)
-{
-	int32_t i, i0, n_flt = 0;
-	uint64_t *best_pid;
-	int8_t *kept;
-	best_pid = PG_CALLOC(uint64_t, n_gene);
-	for (i = 0; i < g->n_hit; ++i) { // find the best scoring isoform of each gene
-		const pg_hit_t *a = &g->hit[i];
-		int32_t gid;
-		if (a->flt) continue;
-		gid = prot[a->pid].gid;
-		if (best_pid[gid]>>32 < a->score2)
-			best_pid[gid] = (uint64_t)a->score2<<32 | a->pid;
-	}
-	kept = PG_CALLOC(int8_t, g->n_hit);
-	for (i = 0; i < g->n_hit; ++i) {
-		const pg_hit_t *a = &g->hit[i];
-		if (!a->flt && a->pid == (uint32_t)best_pid[prot[a->pid].gid])
-			kept[i] = 1;
-	}
-	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
-		pg_hit_t *ai = &g->hit[i];
-		int32_t j, gi;
-		if (ai->flt) continue;
-		while (i0 < i && !(g->hit[i0].cid == ai->cid && g->hit[i0].ce > ai->cs)) // update i0
-			++i0;
-		gi = prot[ai->pid].gid;
-		for (j = i0; j < i; ++j) {
-			uint64_t x;
-			int32_t gj, bp;
-			pg_hit_t *aj = &g->hit[j];
-			if (aj->flt || aj->ce <= ai->cs) continue; // no overlap
-			gj = prot[aj->pid].gid;
-			if (gi != gj) continue; // ignore isoforms from different genes
-			x = pg_hit_overlap(g, aj, ai);
-			if (x>>32 == 0) continue; // no overlap on CDS
-			bp = (uint32_t)best_pid[gi]; // actually, we should NEVER come here after pg_select_isoform_overlap()
-			assert(bp != 0); // shouldn't happen
-			if (ai->pid == bp || aj->pid == bp)
-				kept[i] = kept[j] = 1;
-		}
-	}
-	for (i = 0; i < g->n_hit; ++i) {
-		pg_hit_t *a = &g->hit[i];
-		if (!a->flt && !kept[i])
-			a->flt = a->flt_iso_scat = 1, ++n_flt;
-	}
-	free(kept);
-	free(best_pid);
-	return n_flt;
-}
-
 // test overlap between same or different genes
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g)
 {
@@ -210,6 +157,30 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 /*
  * Other overlap-based filter routines
  */
+
+// filter scattered short isoforms that don't overlap with the best isoform
+int32_t pg_filter_isoform_scattered(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g)
+{
+	int32_t i, n_flt = 0;
+	uint64_t *best_pid;
+	best_pid = PG_CALLOC(uint64_t, n_gene);
+	for (i = 0; i < g->n_hit; ++i) { // find the best scoring isoform of each gene
+		const pg_hit_t *a = &g->hit[i];
+		int32_t gid;
+		if (a->flt) continue;
+		gid = prot[a->pid].gid;
+		if (best_pid[gid]>>32 < a->score2)
+			best_pid[gid] = (uint64_t)a->score2<<32 | a->pid;
+	}
+	for (i = 0; i < g->n_hit; ++i) {
+		pg_hit_t *a = &g->hit[i];
+		if (!a->flt && a->pid != (uint32_t)best_pid[prot[a->pid].gid])
+			a->flt = a->flt_iso_scat = 1, ++n_flt;
+	}
+	free(best_pid);
+	return n_flt;
+}
+
 int32_t pg_filter_full_shadow(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g)
 {
 	int32_t i, n_flt = 0;
