@@ -85,7 +85,7 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 	}
 	hit->n_exon = tmp->n_exon;
 	hit->off_exon = g->n_exon;
-	hit->fs = n_fs;
+	hit->lof = n_fs;
 	g->n_exon += tmp->n_exon;
 }
 
@@ -111,7 +111,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 	ks = ks_init(fp);
 	while (ks_getuntil(ks, KS_SEP_LINE, &str, &dret) >= 0) {
 		char *p, *q, *r;
-		int32_t i, pid, gid;
+		int32_t i, pid, gid, n_fs = -1, n_stop = -1;
 		pg_hit_t hit;
 		++n_tot;
 		memset(&hit, 0, sizeof(hit));
@@ -191,6 +191,10 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 				} else if (i >= 12) { // tags
 					if (strncmp(q, "ms:i:", 5) == 0) { // score
 						hit.score = strtol(q + 5, &r, 10);
+					} else if (strncmp(q, "fs:i:", 5) == 0) { // number of frameshifts
+						n_fs = strtol(q + 5, &r, 10);
+					} else if (strncmp(q, "st:i:", 5) == 0) { // number of stop codons
+						n_stop = strtol(q + 5, &r, 10);
 					} else if (strncmp(q, "cg:Z:", 5) == 0) { // CIGAR
 						pg_parse_cigar(d, g, &hit, &buf, q + 5);
 					}
@@ -200,6 +204,8 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 			}
 		}
 		if (hit.n_exon >= 1) {
+			int32_t lof = (n_fs > 0? n_fs : 0) + (n_stop > 0? n_stop : 0);
+			hit.lof = hit.lof > lof? hit.lof : lof;
 			PG_GROW0(pg_hit_t, g->hit, g->n_hit, g->m_hit);
 			hit.cm = pg_hit_cal_cm(&hit, &g->exon[hit.off_exon]);
 			hit.score2 = (int32_t)(pow(hit.score, (double)hit.mlen / hit.blen) + 1.0);

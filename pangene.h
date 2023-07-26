@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r128-dirty"
+#define PG_VERSION "0.0-r129-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -53,7 +53,7 @@ typedef struct {
 	int32_t pid; // protein ID
 	int32_t qs, qe;
 	int32_t cid; // contig ID
-	int32_t mlen, blen, fs;
+	int32_t mlen, blen, lof;
 	int32_t rank;
 	int32_t score, score2;
 	int32_t n_exon, off_exon;

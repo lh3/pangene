@@ -202,7 +202,15 @@ void pg_write_walk(pg_graph_t *q)
 					pg_sprintf_lite(&out, "%c%s", "><"[a->rev], d->gene[d->prot[a->pid].gid].name);
 					++n;
 				}
-				if (n > 0) puts(out.s);
+				if (n > 0) {
+					pg_sprintf_lite(&out, "\tlf:B:i");
+					for (k = i0; k < i; ++k) {
+						const pg_hit_t *a = &g->hit[k];
+						if (a->flt) continue;
+						pg_sprintf_lite(&out, ",%d", a->lof);
+					}
+					puts(out.s);
+				}
 				i0 = i;
 			}
 		}
