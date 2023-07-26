@@ -10,7 +10,7 @@ void pg_opt_init(pg_opt_t *opt)
 	opt->gene_delim = ':';
 	opt->min_prot_iden = 0.5;
 	opt->min_prot_ratio = 0.5;
-	opt->min_scatter_ratio = 0.5;
+	opt->min_scatter_ratio = 0.8;
 	opt->min_ov_ratio = 0.5;
 	opt->min_vertex_ratio = 0.05;
 	opt->max_avg_occ = 10;

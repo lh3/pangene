@@ -16,7 +16,7 @@ static pg128_t **pg_gen_rep_pos(const pg_data_t *d) // only work if sorted
 			aj[i].x = (uint64_t)-1;
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *b = &g->hit[i];
-			if (b->rep && b->rank == 0 && !b->shadow && !b->flt) {
+			if (!b->shadow && !b->flt) {
 				int32_t gid = d->prot[b->pid].gid;
 				aj[gid].x = (uint64_t)b->cid<<32 | r;
 				aj[gid].y = b->cm;
