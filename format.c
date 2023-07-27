@@ -167,8 +167,9 @@ static int32_t pg_parse_sample(kstring_t *buf, const char *name) // parse "sampl
 				str_copy(buf, q, p);
 				buf->s[p - q] = 0;
 			} else if (i == 1) {
-				if (p - q == 1 && *q >= '0' && *q <= '9') // TODO: assuming one digit
-					hap = *q - '0';
+				char *r;
+				hap = strtol(q, &r, 10);
+				if (r == p && hap >= 0) return hap;
 				else return -1;
 			}
 			q = p + 1, ++i;
@@ -193,6 +194,8 @@ void pg_write_walk(pg_graph_t *q)
 				out.l = 0;
 				if (hap >= 0)
 					pg_sprintf_lite(&out, "W\t%s\t%d", buf.s, hap);
+				else if (g->label)
+					pg_sprintf_lite(&out, "W\t%s\t0", buf.s, hap);
 				else
 					pg_sprintf_lite(&out, "W\t%d\t0", j);
 				pg_sprintf_lite(&out, "\t%s\t*\t*\t", g->ctg[cid].name);

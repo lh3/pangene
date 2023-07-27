@@ -22,7 +22,7 @@ void pg_data_destroy(pg_data_t *d)
 	int32_t i;
 	for (i = 0; i < d->n_genome; ++i) {
 		pg_genome_t *g = &d->genome[i];
-		free(g->ctg); free(g->hit); free(g->exon);
+		free(g->ctg); free(g->hit); free(g->exon); free(g->label);
 	}
 	free(d->genome); free(d->gene); free(d->prot);
 	pg_dict_destroy(d->d_ctg);
@@ -89,6 +89,21 @@ static void pg_parse_cigar(pg_data_t *d, pg_genome_t *g, pg_hit_t *hit, pg_exons
 	g->n_exon += tmp->n_exon;
 }
 
+static char *pg_read_label(const char *fn)
+{
+	char *label;
+	int32_t st = 0, en, i, len;
+	len = en = strlen(fn);
+	for (i = len - 1; i >= 0 && fn[i] != '/'; --i) {}
+	st = i + 1;
+	if (strncmp(&fn[en-3], ".gz", 3) == 0) en -= 3;
+	if (strncmp(&fn[en-4], ".paf", 4) == 0) en -= 4;
+	if (st >= en) return 0;
+	label = PG_CALLOC(char, en - st + 1);
+	strncpy(label, &fn[st], en - st);
+	return label;
+}
+
 int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 {
 	gzFile fp;
@@ -107,6 +122,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 	PG_GROW0(pg_genome_t, d->genome, d->n_genome, d->m_genome);
 	g = &d->genome[d->n_genome++];
 	memset(g, 0, sizeof(*g));
+	g->label = pg_read_label(fn);
 
 	ks = ks_init(fp);
 	while (ks_getuntil(ks, KS_SEP_LINE, &str, &dret) >= 0) {
@@ -228,8 +244,8 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 		n_iso_scat = pg_filter_isoform_scattered(opt, d->n_gene, d->prot, g);
 		n_shadow = pg_flag_shadow(opt, d->prot, g);
 		if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s::%s] genome %d: %d hits parsed, %d kept; %d pseudo, %d full shadow, %d overlapping, %d scaterred; %d shadowed\n",
-					__func__, pg_timestamp(), d->n_genome-1, n_tot, g->n_hit, n_full_shadow, n_pseudo, n_iso_ov, n_iso_scat, n_shadow);
+			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d full shadow, %d overlapping, %d scaterred; %d shadowed\n",
+					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_full_shadow, n_pseudo, n_iso_ov, n_iso_scat, n_shadow);
 	}
 	return 0;
 }

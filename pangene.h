@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r129-dirty"
+#define PG_VERSION "0.0-r130-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -74,6 +74,7 @@ typedef struct {
 	pg_hit_t *hit;
 	int32_t n_exon, m_exon;
 	pg_exon_t *exon;
+	char *label; // derived from input file name
 } pg_genome_t;
 
 typedef struct {
