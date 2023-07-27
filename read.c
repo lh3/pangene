@@ -245,7 +245,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 		n_shadow = pg_flag_shadow(opt, d->prot, g);
 		if (pg_verbose >= 3)
 			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d full shadow, %d overlapping, %d scaterred; %d shadowed\n",
-					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_full_shadow, n_pseudo, n_iso_ov, n_iso_scat, n_shadow);
+					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_full_shadow, n_iso_ov, n_iso_scat, n_shadow);
 	}
 	return 0;
 }

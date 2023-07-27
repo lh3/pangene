@@ -195,7 +195,7 @@ void pg_write_walk(pg_graph_t *q)
 				if (hap >= 0)
 					pg_sprintf_lite(&out, "W\t%s\t%d", buf.s, hap);
 				else if (g->label)
-					pg_sprintf_lite(&out, "W\t%s\t0", buf.s, hap);
+					pg_sprintf_lite(&out, "W\t%s\t0", g->label);
 				else
 					pg_sprintf_lite(&out, "W\t%d\t0", j);
 				pg_sprintf_lite(&out, "\t%s\t*\t*\t", g->ctg[cid].name);
