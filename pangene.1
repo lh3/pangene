@@ -1,4 +1,4 @@
-.TH pangene 1 "24 July 2023" "pangene-0.0-dirty (r126)" "Bioinformatics tools"
+.TH pangene 1 "27 July 2023" "pangene-0.0-dirty (r132)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -85,6 +85,13 @@ Filter out an alignment if its identity below
 Filter out an alignment if less than
 .I FLOAT
 fraction of the protein is aligned [0.5]
+.TP
+.BI -X \ STR
+Exclude genes in the
+.I STR
+list [].
+.I STR
+can be a comma separated string, or a file if it starts with symbol `@'.
 .SS Graph construction
 .TP 10
 .BI -f \ FLOAT

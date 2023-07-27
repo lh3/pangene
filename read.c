@@ -143,9 +143,11 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					// add gene
 					if (*r == opt->gene_delim) {
 						*r = 0;
+						if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break;
 						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
 						*r = opt->gene_delim;
 					} else {
+						if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break;
 						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
 					}
 					if (absent) {
@@ -248,4 +250,60 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_full_shadow, n_iso_ov, n_iso_scat, n_shadow);
 	}
 	return 0;
+}
+
+// adapted from gfa_read_list() in gfatools
+char **pg_read_list(const char *o, int *n_)
+{
+	int n = 0, m = 0;
+	char **s = 0;
+	*n_ = 0;
+	if (*o != '@') {
+		const char *q = o, *p;
+		for (p = q;; ++p) {
+			if (*p == ',' || *p == ' ' || *p == '\t' || *p == 0) {
+				if (p - q > 0) {
+					PG_GROW0(char*, s, n, m);
+					s[n++] = pg_strndup(q, p - q);
+				}
+				if (*p == 0) break;
+				q = p + 1;
+			}
+		}
+	} else {
+		gzFile fp;
+		kstream_t *ks;
+		kstring_t str = {0,0,0};
+		int dret;
+
+		fp = gzopen(o + 1, "r");
+		if (fp == 0) return 0;
+		ks = ks_init(fp);
+		while (ks_getuntil(ks, KS_SEP_LINE, &str, &dret) >= 0) {
+			char *p;
+			for (p = str.s; *p && !isspace(*p); ++p);
+			PG_GROW0(char*, s, n, m);
+			s[n++] = pg_strndup(str.s, p - str.s);
+		}
+		ks_destroy(ks);
+		gzclose(fp);
+	}
+	if (s) s = PG_REALLOC(char*, s, n);
+	*n_ = n;
+	return s;
+}
+
+void *pg_read_list_dict(const char *o)
+{
+	int i, n, absent;
+	char **s;
+	void *d;
+	s = pg_read_list(o, &n);
+	d = pg_dict_init(0);
+	for (i = 0; i < n; ++i) {
+		pg_dict_put(d, s[i], i, 0, &absent);
+		if (!absent) free(s[i]);
+	}
+	free(s);
+	return d;
 }

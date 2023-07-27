@@ -16,6 +16,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "    -d CHAR       gene-protein delimiter [%c]\n", opt->gene_delim);
 	fprintf(fp, "    -e FLOAT      drop an alignment if its identity <FLOAT [%g]\n", opt->min_prot_iden);
 	fprintf(fp, "    -l FLOAT      drop an alignment if <FLOAT fraction of the protein aligned [%g]\n", opt->min_prot_ratio);
+	fprintf(fp, "    -X STR/@FILE  exclude genes in STR list or in @FILE []\n");
 	fprintf(fp, "  Graph construction:\n");
 	fprintf(fp, "    -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "    -p FLOAT      gene considered if dominant in FLOAT fraction of genes [%g]\n", opt->min_vertex_ratio);
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:X:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 		else if (c == 'G') opt.flag |= PG_F_WRITE_VTX_SEL;
 		else if (c == 'D') opt.local_dist = pg_parse_num(o.arg);
 		else if (c == 'C') opt.local_count = atoi(o.arg);
+		else if (c == 'X') opt.excl = pg_read_list_dict(o.arg);
 		else if (c == 'v') pg_verbose = atoi(o.arg);
 		else if (c == 301) {
 			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
@@ -113,6 +115,7 @@ int main(int argc, char *argv[])
 		pg_graph_destroy(g);
 	}
 	pg_data_destroy(d);
+	if (opt.excl) pg_dict_destroy(opt.excl);
 
 	if (pg_verbose >= 3) {
 		fprintf(stderr, "[M::%s] Version: %s\n", __func__, PG_VERSION);

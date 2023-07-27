@@ -52,6 +52,8 @@ int32_t pg_dict_size(const void *h_);
 const char **pg_dict_put(void *d_, const char *s, int32_t v0, int32_t *v1, int32_t *absent_);
 int32_t pg_dict_get(const void *d_, const char *s);
 int32_t pg_dict_inc(void *h_, const char *s, int32_t v0);
+void *pg_read_list_dict(const char *o);
+char *pg_strndup(const char *src, size_t n);
 
 void pg_sprintf_lite(kstring_t *s, const char *fmt, ...);
 
@@ -80,6 +82,8 @@ int32_t pg_select_isoform_overlap(const pg_opt_t *opt, const pg_prot_t *prot, pg
 int32_t pg_filter_isoform_scattered(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_filter_full_shadow(const pg_opt_t *opt, int32_t n_gene, const pg_prot_t *prot, pg_genome_t *g);
 int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *g);
+
+char *pg_strdup(const char *src);
 
 static inline uint32_t pg_hash_uint32(uint32_t key)
 {
