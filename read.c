@@ -249,8 +249,8 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 		n_flt_chain = pg_flt_chain_shadow(d->prot, d->n_prot, g);
 		n_flt_subopt = pg_flt_subopt_isoform(d->prot, d->n_gene, g);
 		if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d suboptimal isoforms, %d overlapping isoforms, %d chained\n",
-					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_flt_subopt, n_flt_ov_iso, n_flt_chain);
+			fprintf(stderr, "[M::%s::%s] [%d] %s: %d hits parsed, %d kept and %d+%d+%d+%d filtered\n",
+					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_flt_ov_iso, n_flt_chain, n_flt_subopt);
 	}
 	return 0;
 }

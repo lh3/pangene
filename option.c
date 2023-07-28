@@ -10,12 +10,12 @@ void pg_opt_init(pg_opt_t *opt)
 	opt->gene_delim = ':';
 	opt->min_prot_iden = 0.5;
 	opt->min_prot_ratio = 0.5;
-	opt->max_div = 0.33;
+	opt->max_div_stddev = 7.0;
 	opt->min_ov_ratio = 0.5;
 	opt->min_vertex_ratio = 0.05;
 	opt->max_avg_occ = 10;
 	opt->max_degree = 10;
-	opt->n_branch_flt = 7;
+	opt->n_branch_flt = 10;
 	opt->min_arc_cnt = 1;
 	opt->local_dist = 2000000;
 	opt->local_count = 10;

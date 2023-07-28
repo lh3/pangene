@@ -1,5 +1,7 @@
 #include <assert.h>
+#include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "pgpriv.h"
 #include "ksort.h"
 
@@ -126,8 +128,9 @@ int32_t pg_flt_subopt_isoform(const pg_prot_t *prot, int32_t n_gene, pg_genome_t
 
 int32_t pg_flt_subopt_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg_flt_ov_isoform()
 {
-	int32_t i, j, gid, n_flt = 0, *best;
+	int32_t i, j, gid, n_flt = 0, *best, *best1;
 	best = PG_CALLOC(int32_t, d->n_gene);
+	best1 = PG_CALLOC(int32_t, d->n_gene);
 	for (j = 0; j < d->n_genome; ++j) {
 		const pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i) {
@@ -139,15 +142,36 @@ int32_t pg_flt_subopt_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg_
 		}
 	}
 	for (j = 0; j < d->n_genome; ++j) {
+		double avg, stddev, s, s2, thres;
+		int32_t n;
 		pg_genome_t *g = &d->genome[j];
+		memset(best1, 0, sizeof(*best1) * d->n_gene);
+		for (i = 0; i < g->n_hit; ++i) {
+			const pg_hit_t *a = &g->hit[i];
+			if (a->flt) continue;
+			gid = d->prot[a->pid].gid;
+			if (a->score > best1[gid])
+				best1[gid] = a->score;
+		}
+		for (i = 0, s = s2 = 0.0, n = 0; i < d->n_gene; ++i) {
+			if (best1[i] > 0) {
+				double diff = (double)(best[i] - best1[i]) / best[i];
+				s += diff, s2 += diff * diff, ++n;
+			}
+		}
+		avg = (double)s / n;
+		stddev = sqrt((double)s2 / n - avg * avg);
+		thres = 1.0 - (avg + opt->max_div_stddev * stddev);
+		//fprintf(stderr, "X\t%d\t%s\t%lf\t%lf\t%d\n", i, g->label, avg, stddev, n);
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			if (a->flt) continue;
 			gid = d->prot[a->pid].gid;
-			if (a->score < (double)best[gid] * (1.0 - opt->max_div))
+			if ((double)a->score / best[gid] < thres)
 				a->flt = a->flt_iso_sub_joint = 1, ++n_flt;
 		}
 	}
+	free(best1);
 	free(best);
 	return n_flt;
 }
