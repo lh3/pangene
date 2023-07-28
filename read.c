@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <math.h>
 #include <zlib.h>
 #include "pgpriv.h"
 #include "kseq.h"
@@ -207,7 +208,10 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 						break;
 				} else if (i >= 12) { // tags
 					if (strncmp(q, "ms:i:", 5) == 0) { // score
-						hit.score = strtol(q + 5, &r, 10);
+						double div = 1.0 - (double)hit.mlen / hit.blen;
+						double uncov = 1.0 - (double)(hit.qe - hit.qs) / d->prot[hit.pid].len;
+						hit.score_ori = strtol(q + 5, &r, 10);
+						hit.score_adj = (int32_t)(hit.score_ori * expl(-opt->score_adj_coef * (div + uncov)) + .499);
 					} else if (strncmp(q, "fs:i:", 5) == 0) { // number of frameshifts
 						n_fs = strtol(q + 5, &r, 10);
 					} else if (strncmp(q, "st:i:", 5) == 0) { // number of stop codons

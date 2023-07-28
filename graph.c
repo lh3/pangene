@@ -100,11 +100,11 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 			if (a->cid != vcid) v = (uint32_t)-1, vpos = -1;
 			if (v != (uint32_t)-1) {
 				PG_GROW0(pg_tmparc_t, arc1, n_arc1, m_arc1);
-				p = &arc1[n_arc1++], p->x = (uint64_t)v<<32|w, p->dist = a->cm - vpos, p->s1 = si, p->s2 = a->score;
+				p = &arc1[n_arc1++], p->x = (uint64_t)v<<32|w, p->dist = a->cm - vpos, p->s1 = si, p->s2 = a->score_ori;
 				PG_GROW0(pg_tmparc_t, arc1, n_arc1, m_arc1);
-				p = &arc1[n_arc1++], p->x = (uint64_t)(w^1)<<32|(v^1), p->dist = a->cm - vpos, p->s1 = a->score, p->s2 = si;
+				p = &arc1[n_arc1++], p->x = (uint64_t)(w^1)<<32|(v^1), p->dist = a->cm - vpos, p->s1 = a->score_ori, p->s2 = si;
 			}
-			v = w, vpos = a->cm, vcid = a->cid, si = a->score;
+			v = w, vpos = a->cm, vcid = a->cid, si = a->score_ori;
 		}
 		pg_hit_sort(g, 0); // sort by pg_hit_t::cs
 		assert(n_arc1 <= INT32_MAX);

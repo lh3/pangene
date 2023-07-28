@@ -33,6 +33,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 			int32_t gid;
 			if (a->rank != 0 || a->flt) continue;
 			gid = d->prot[a->pid].gid;
+			//if (strcmp(d->gene[gid].name, "KIR3DS1") == 0) fprintf(stderr, "X\t%s\t%s\t%d\t%d\t%s\n", g->label, d->gene[gid].name, a->score, a->shadow, a->pid_dom >= 0? d->prot[a->pid_dom].name : "*");
 			if (a->shadow) {
 				assert(a->pid_dom >= 0);
 				flag[gid] |= 2;

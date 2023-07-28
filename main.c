@@ -17,6 +17,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "    -X STR/@FILE  exclude genes in STR list or in @FILE []\n");
 	fprintf(fp, "    -e FLOAT      drop an alignment if its identity <FLOAT [%g]\n", opt->min_prot_iden);
 	fprintf(fp, "    -l FLOAT      drop an alignment if <FLOAT fraction of the protein aligned [%g]\n", opt->min_prot_ratio);
+	fprintf(fp, "    -m FLOAT      score adjustment coefficient [%g]\n", opt->score_adj_coef);
 	fprintf(fp, "  Graph construction:\n");
 	fprintf(fp, "    -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "    -p FLOAT      gene considered if dominant in FLOAT fraction of genes [%g]\n", opt->min_vertex_ratio);
@@ -58,11 +59,12 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:X:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:X:m:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
 		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);
+		else if (c == 'm') opt.score_adj_coef = atof(o.arg);
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
 		else if (c == 'b') opt.branch_diff = atof(o.arg);
 		else if (c == 'B') opt.branch_diff_cut = atof(o.arg);

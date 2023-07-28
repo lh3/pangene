@@ -112,8 +112,8 @@ int32_t pg_flt_subopt_isoform(const pg_prot_t *prot, int32_t n_gene, pg_genome_t
 		const pg_hit_t *a = &g->hit[i];
 		if (a->flt || a->rank > 0) continue;
 		gid = prot[a->pid].gid;
-		if (a->score > best[gid]>>32)
-			best[gid] = (uint64_t)a->score << 32 | a->pid;
+		if (a->score_adj > best[gid]>>32)
+			best[gid] = (uint64_t)a->score_adj << 32 | a->pid;
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *a = &g->hit[i];
@@ -162,7 +162,7 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg
 			if (a->rank == 0) {
 				int32_t w = a->n_exon == 1? 0 : 1;
 				aux[a->pid].c[w]++;
-				aux[a->pid].s[w] += a->score;
+				aux[a->pid].s[w] += a->score_adj;
 			}
 		}
 	}
@@ -195,7 +195,7 @@ void pg_flag_representative(pg_data_t *d) // flag representative isoform
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			if (a->rank == 0 && a->flt == 0)
-				z[a->pid].x += (uint64_t)a->score<<32 | 1; // NB: assuming each protein has only one rank=0 hit
+				z[a->pid].x += (uint64_t)a->score_adj<<32 | 1; // NB: assuming each protein has only one rank=0 hit
 			a->rep = 0;
 		}
 	}

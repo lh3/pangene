@@ -76,8 +76,8 @@ int32_t pg_flt_ov_isoform(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_
 			hj = pg_hash_uint32(aj->pid);
 			x = pg_hit_overlap(g, aj, ai);
 			if (x>>32 == 0) continue; // no overlap on CDS
-			si = (uint64_t)ai->score<<32 | hi;
-			sj = (uint64_t)aj->score<<32 | hj;
+			si = (uint64_t)ai->score_adj<<32 | hi;
+			sj = (uint64_t)aj->score_adj<<32 | hj;
 			if (si < sj || (si == sj && ai->rank > aj->rank))
 				ai->flt_iso_ov = 1;
 			else aj->flt_iso_ov = 1;
@@ -123,8 +123,8 @@ int32_t pg_flag_shadow(const pg_opt_t *opt, const pg_prot_t *prot, pg_genome_t *
 			cov_short = (double)(x>>32) / (li < lj? li : lj);
 			assert(cov_short <= 1.0);
 			if (gi != gj && cov_short < opt->min_ov_ratio) continue; // overlap too short
-			si = (uint64_t)ai->score<<32 | hi;
-			sj = (uint64_t)aj->score<<32 | hj;
+			si = (uint64_t)ai->score_adj<<32 | hi;
+			sj = (uint64_t)aj->score_adj<<32 | hj;
 			if (gi == gj) { // don't consider weak_br for different isoforms of the same gene
 				shadow = (si < sj || (si == sj && ai->rank > aj->rank))? 0 : 1; // 0 for i and 1 for j
 			} else if (ai->weak_br == aj->weak_br) {

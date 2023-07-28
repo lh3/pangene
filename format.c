@@ -80,7 +80,7 @@ static inline void pg_write_bed_hit(kstring_t *out, const pg_data_t *d, int32_t 
 	const pg_genome_t *g = &d->genome[aid];
 	int32_t i;
 	char buf[16];
-	pg_sprintf_lite(out, "%s\t%ld\t%ld\t%s\t%d\t%c\t", g->ctg[a->cid].name, a->cs, a->ce, d->prot[a->pid].name, a->score, "+-"[a->rev]);
+	pg_sprintf_lite(out, "%s\t%ld\t%ld\t%s\t%d\t%c\t", g->ctg[a->cid].name, a->cs, a->ce, d->prot[a->pid].name, a->score_ori, "+-"[a->rev]);
 	pg_sprintf_lite(out, "%ld\t%ld\t0\t%d\t", a->cs, a->ce, a->n_exon);
 	for (i = 0; i < a->n_exon; ++i)
 		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].oe - g->exon[a->off_exon + i].os);
