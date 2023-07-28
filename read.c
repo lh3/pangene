@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-#include <math.h>
 #include <zlib.h>
 #include "pgpriv.h"
 #include "kseq.h"
@@ -226,7 +225,6 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 			hit.lof = hit.lof > lof? hit.lof : lof;
 			PG_GROW0(pg_hit_t, g->hit, g->n_hit, g->m_hit);
 			hit.cm = pg_hit_cal_cm(&hit, &g->exon[hit.off_exon]);
-			hit.score2 = (int32_t)(pow(hit.score, (double)hit.mlen / hit.blen) + 1.0);
 			g->hit[g->n_hit++] = hit;
 		}
 	}
@@ -237,15 +235,22 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 	ks_destroy(ks);
 	gzclose(fp);
 	{ // postprocessing
-		int32_t n_pseudo = 0, n_flt_subopt = 0, n_flt_ov_iso = 0;
+		int32_t i, n_pseudo = 0, n_flt_subopt = 0, n_flt_ov_iso = 0, n_flt_chain = 0;
 		n_pseudo = pg_flag_pseudo(d->prot, g);
 		PG_SET_FILTER(d, pseudo == 1);
-		n_flt_subopt = pg_flt_subopt_isoform(d->prot, d->n_gene, g);
 		pg_hit_sort(g, 0);
+		pg_flag_shadow(opt, d->prot, g);
+		for (i = 0; i < g->n_hit; ++i) {
+			pg_hit_t *a = &g->hit[i];
+			a->pid_dom0 = a->pid_dom;
+			a->pid_dom = -1, a->shadow = 0; // reset
+		}
 		n_flt_ov_iso = pg_flt_ov_isoform(opt, d->prot, g);
+		n_flt_chain = pg_flt_chain_shadow(d->prot, d->n_prot, g);
+		n_flt_subopt = pg_flt_subopt_isoform(d->prot, d->n_gene, g);
 		if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d suboptimal isoforms, %d overlapping isoforms\n",
-					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_flt_subopt, n_flt_ov_iso);
+			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d suboptimal isoforms, %d overlapping isoforms, %d chained\n",
+					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_flt_subopt, n_flt_ov_iso, n_flt_chain);
 	}
 	return 0;
 }
