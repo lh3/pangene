@@ -101,6 +101,57 @@ int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g)
 	return n_pseudo;
 }
 
+int32_t pg_flt_subopt_isoform(const pg_prot_t *prot, int32_t n_gene, pg_genome_t *g)
+{
+	uint64_t *best;
+	int32_t i, gid, n_flt = 0;
+	best = PG_CALLOC(uint64_t, n_gene);
+	for (i = 0; i < g->n_hit; ++i) {
+		const pg_hit_t *a = &g->hit[i];
+		if (a->flt || a->rank > 0) continue;
+		gid = prot[a->pid].gid;
+		if (a->score > best[gid]>>32)
+			best[gid] = (uint64_t)a->score << 32 | a->pid;
+	}
+	for (i = 0; i < g->n_hit; ++i) {
+		pg_hit_t *a = &g->hit[i];
+		if (a->flt || a->rank > 0) continue;
+		gid = prot[a->pid].gid;
+		if (a->pid != (int32_t)best[gid])
+			a->flt = a->flt_iso_sub_self = 1, ++n_flt;
+	}
+	free(best);
+	return n_flt;
+}
+
+int32_t pg_flt_subopt_joint(const pg_opt_t *opt, pg_data_t *d)
+{
+	int32_t i, j, gid, n_flt = 0, *best;
+	best = PG_CALLOC(int32_t, d->n_gene);
+	for (j = 0; j < d->n_genome; ++j) {
+		const pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			const pg_hit_t *a = &g->hit[i];
+			if (a->flt) continue;
+			gid = d->prot[a->pid].gid;
+			if (a->score > best[gid])
+				best[gid] = a->score;
+		}
+	}
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			pg_hit_t *a = &g->hit[i];
+			if (a->flt) continue;
+			gid = d->prot[a->pid].gid;
+			if (a->score < (double)best[gid] * (1.0 - opt->max_div))
+				a->flt = a->flt_iso_sub_joint = 1, ++n_flt;
+		}
+	}
+	free(best);
+	return n_flt;
+}
+
 typedef struct {
 	int32_t c[2];
 	int64_t s[2];

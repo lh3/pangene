@@ -237,17 +237,15 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 	ks_destroy(ks);
 	gzclose(fp);
 	{ // postprocessing
-		int32_t n_pseudo, n_full_shadow = 0, n_iso_ov, n_iso_scat, n_shadow;
+		int32_t n_pseudo = 0, n_flt_subopt = 0, n_flt_ov_iso = 0;
 		n_pseudo = pg_flag_pseudo(d->prot, g);
 		PG_SET_FILTER(d, pseudo == 1);
+		n_flt_subopt = pg_flt_subopt_isoform(d->prot, d->n_gene, g);
 		pg_hit_sort(g, 0);
-		n_full_shadow = pg_filter_full_shadow(opt, d->n_gene, d->prot, g);
-		n_iso_ov = pg_select_isoform_overlap(opt, d->prot, g);
-		n_iso_scat = pg_filter_isoform_scattered(opt, d->n_gene, d->prot, g);
-		n_shadow = pg_flag_shadow(opt, d->prot, g);
+		n_flt_ov_iso = pg_flt_ov_isoform(opt, d->prot, g);
 		if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d full shadow, %d overlapping, %d scaterred; %d shadowed\n",
-					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_full_shadow, n_iso_ov, n_iso_scat, n_shadow);
+			fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits parsed, %d kept; %d pseudo, %d suboptimal isoforms, %d overlapping isoforms\n",
+					__func__, pg_timestamp(), d->n_genome-1, g->label, n_tot, g->n_hit, n_pseudo, n_flt_subopt, n_flt_ov_iso);
 	}
 	return 0;
 }

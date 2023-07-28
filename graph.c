@@ -6,14 +6,26 @@
 
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 {
-	int32_t n_pseudo;
+	int32_t i, j, n;
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
 	pg_flt_prot(d);
 	pg_flag_representative(d);
-	n_pseudo = pg_flag_pseudo_joint(opt, d);
+	n = pg_flag_pseudo_joint(opt, d);
 	if (pg_verbose >= 3)
-		fprintf(stderr, "[M::%s::%s] %d pseudogene hits identified jointly\n", __func__, pg_timestamp(), n_pseudo);
+		fprintf(stderr, "[M::%s::%s] %d pseudogene hits identified jointly\n", __func__, pg_timestamp(), n);
+	n = pg_flt_subopt_joint(opt, d);
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] %d weak hits identified jointly\n", __func__, pg_timestamp(), n);
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		int32_t n_shadow, tot;
+		for (i = 0, tot = 0; i < g->n_hit; ++i)
+			if (!g->hit[i].flt) ++tot;
+		n_shadow = pg_flag_shadow(opt, d->prot, g);
+		fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits remain, of which %d are shadowed\n",
+				__func__, pg_timestamp(), d->n_genome-1, g->label, tot, n_shadow);
+	}
 }
 
 pg_graph_t *pg_graph_init(pg_data_t *d)
