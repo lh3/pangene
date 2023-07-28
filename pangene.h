@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r136-dirty"
+#define PG_VERSION "0.0-r137-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -59,7 +59,7 @@ typedef struct {
 	int32_t score;
 	int32_t n_exon, off_exon;
 	int32_t pid_dom, pid_dom0;
-	uint32_t rev:1, flt:1, flt_iso_sub_self:1, flt_iso_sub_joint:1, flt_iso_ov:1, flt_chain:1, pseudo:1, vtx:1, shadow:1, rep:1, weak_br:2;
+	uint32_t rev:1, flt:1, flt_iso_sub_self:1, flt_iso_ov:1, flt_chain:1, pseudo:1, vtx:1, shadow:1, rep:1, weak_br:2;
 	int64_t cs, cm, ce;
 } pg_hit_t;
 

@@ -9,7 +9,6 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 	int32_t i, j, n;
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
-	pg_flt_prot(d);
 	pg_flag_representative(d);
 	n = pg_flag_pseudo_joint(opt, d);
 	if (pg_verbose >= 3)

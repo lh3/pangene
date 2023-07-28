@@ -158,6 +158,7 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg
 		const pg_genome_t *g = &d->genome[j];
 		for (i = 0; i < g->n_hit; ++i) {
 			const pg_hit_t *a = &g->hit[i];
+			if (a->flt) continue;
 			if (a->rank == 0) {
 				int32_t w = a->n_exon == 1? 0 : 1;
 				aux[a->pid].c[w]++;
@@ -170,6 +171,7 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			pseudo_joint_aux_t *p = &aux[a->pid];
+			if (a->flt) continue;
 			if (a->n_exon == 1 && p->c[1] >= d->n_genome * opt->min_vertex_ratio && !a->pseudo
 				&& p->s[1] * p->c[0] > p->s[0] * p->c[1]) // multi-exon should have higher score
 			{

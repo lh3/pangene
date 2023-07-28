@@ -88,8 +88,8 @@ static inline void pg_write_bed_hit(kstring_t *out, const pg_data_t *d, int32_t 
 	for (i = 0; i < a->n_exon; ++i)
 		pg_sprintf_lite(out, "%d,", g->exon[a->off_exon + i].os);
 	snprintf(buf, 15, "%.4f", (double)a->mlen / a->blen);
-	pg_sprintf_lite(out, "\tft:i:%d\tss:i:%d\tio:i:%d\tsj:i:%d\tcf:i:%d\trk:i:%d\trp:i:%d\tsd:i:%d\tvt:i:%d\tps:i:%d\tbr:i:%d\tcm:i:%ld\tid:f:%s\tdm:Z:%s\n",
-		a->flt, a->flt_iso_sub_self, a->flt_iso_ov, a->flt_iso_sub_joint, a->flt_chain, a->rank, a->rep, a->shadow, a->vtx, a->pseudo, a->weak_br, a->cm, buf,
+	pg_sprintf_lite(out, "\tft:i:%d\tpf:Z:%d%d%d%d\trk:i:%d\trp:i:%d\tsd:i:%d\tvt:i:%d\tbr:i:%d\tcm:i:%ld\tid:f:%s\tdm:Z:%s\n",
+		a->flt, a->pseudo, a->flt_iso_ov, a->flt_chain, a->flt_iso_sub_self, a->rank, a->rep, a->shadow, a->vtx, a->weak_br, a->cm, buf,
 		a->pid_dom0 < 0? "*" : d->prot[a->pid_dom0].name);
 }
 
