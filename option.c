@@ -19,6 +19,6 @@ void pg_opt_init(pg_opt_t *opt)
 	opt->min_arc_cnt = 1;
 	opt->local_dist = 2000000;
 	opt->local_count = 10;
-	opt->branch_diff = 0.03;
+	opt->branch_diff = 0.02;
 	opt->branch_diff_cut = 0.5;
 }
