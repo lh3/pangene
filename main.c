@@ -15,6 +15,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  Input preprocessing:\n");
 	fprintf(fp, "    -d CHAR       gene-protein delimiter [%c]\n", opt->gene_delim);
 	fprintf(fp, "    -X STR/@FILE  exclude genes in STR list or in @FILE []\n");
+	fprintf(fp, "    -I STR/@FILE  attempt to include genes in the output graph []\n");
 	fprintf(fp, "    -e FLOAT      drop an alignment if its identity <FLOAT [%g]\n", opt->min_prot_iden);
 	fprintf(fp, "    -l FLOAT      drop an alignment if <FLOAT fraction of the protein aligned [%g]\n", opt->min_prot_ratio);
 	fprintf(fp, "    -m FLOAT      score adjustment coefficient [%g]\n", opt->score_adj_coef);

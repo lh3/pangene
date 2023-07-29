@@ -1,4 +1,4 @@
-.TH pangene 1 "28 July 2023" "pangene-0.0-dirty (r139)" "Bioinformatics tools"
+.TH pangene 1 "28 July 2023" "pangene-0.0-dirty (r141)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -92,6 +92,22 @@ Exclude genes in the
 list [].
 .I STR
 can be a comma separated string, or a file if it starts with symbol `@'.
+.TP
+.BI -I \ STR
+Attempt to include genes in the
+.I STR
+list []. This option only controls the vertex selection step. It does not
+guarantee to keep a gene.
+.TP
+.BI -m \ FLOAT
+Score adjustment coefficient [2]. The adjusted score is equal to
+.IR S *exp( FLOAT *( d + c ))
+where
+.I S
+is the original alignment score, where
+.IR d =1- identity
+and
+.IR c =1- coveredFraction .
 .SS Graph construction
 .TP 10
 .BI -f \ FLOAT

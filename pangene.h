@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r140-dirty"
+#define PG_VERSION "0.0-r141-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -22,7 +22,7 @@ typedef struct {
 	double min_prot_iden; // filter out a protein if identity below 50%
 	double score_adj_coef;
 	double min_ov_ratio; // consider two proteins of different genes overlap if 50% of the short protein overlap
-	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 33% of the assemblies
+	double min_vertex_ratio; // a gene is considered as a vertex if it is primary in 5% of the assemblies
 	double branch_diff, branch_diff_cut;
 	int32_t max_avg_occ;
 	int32_t max_degree;
