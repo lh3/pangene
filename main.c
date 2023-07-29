@@ -25,7 +25,8 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "    -c INT        drop a gene if average occurrence is >INT [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "    -g INT        drop a gene if its in- or out-degree >INT [%d]\n", opt->max_degree);
 	fprintf(fp, "    -b FLOAT      demote a branching arc if weaker than the best by FLOAT [%g]\n", opt->branch_diff);
-	fprintf(fp, "    -B FLOAT      cut a branching arc if weaker than the best by FLOAT [%g]\n", opt->branch_diff_cut);
+	fprintf(fp, "    -B FLOAT      cut a branching arc if weaker by FLOAT [%g]\n", opt->branch_diff_cut);
+	fprintf(fp, "    -y FLOAT      cut a distant branching arc if weaker by FLOAT [%g]\n", opt->branch_diff_dist);
 	fprintf(fp, "    -T INT        apply branch cutting for INT times [%d]\n", opt->n_branch_flt);
 	fprintf(fp, "    -a INT        prune an arc if it is supported by <INT genomes [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  Output:\n");
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:c:a:wv:GD:C:T:X:I:m:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:c:a:wv:GD:C:T:X:I:m:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -69,6 +70,7 @@ int main(int argc, char *argv[])
 		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
 		else if (c == 'b') opt.branch_diff = atof(o.arg);
 		else if (c == 'B') opt.branch_diff_cut = atof(o.arg);
+		else if (c == 'y') opt.branch_diff_dist = atof(o.arg);
 		else if (c == 'T') opt.n_branch_flt = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
 		else if (c == 'g') opt.max_degree = atoi(o.arg);
