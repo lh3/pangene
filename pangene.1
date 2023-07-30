@@ -1,4 +1,4 @@
-.TH pangene 1 "28 July 2023" "pangene-0.0-dirty (r141)" "Bioinformatics tools"
+.TH pangene 1 "30 July 2023" "pangene-0.0-dirty (r143)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -134,6 +134,11 @@ Drop a gene if its average occurrence among input genomes is above
 Drop a gene if its in- or out-degree in the initial graph is higher than
 .I INT
 [10]
+.TP
+.BI -r \ INT
+Drop a gene if it connects more than
+.I INT
+loci that are distant from each other [3]
 .TP
 .BI -b \ FLOAT
 Demote an arc if it is attached to a branching vertex and is weaker than the best

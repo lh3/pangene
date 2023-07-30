@@ -173,7 +173,7 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg
 			pseudo_joint_aux_t *p = &aux[a->pid];
 			if (a->flt) continue;
 			if (a->n_exon == 1 && p->c[1] >= d->n_genome * opt->min_vertex_ratio && !a->pseudo
-				&& p->s[1] * p->c[0] > p->s[0] * p->c[1]) // multi-exon should have higher score
+				&& p->s[1] * p->c[0] >= p->s[0] * p->c[1]) // multi-exon should have higher score
 			{
 				a->pseudo = 1, ++n_pseudo;
 			}

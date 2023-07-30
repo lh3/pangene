@@ -202,9 +202,22 @@ static void pg_arc_index(pg_graph_t *q)
 	q->idx = pg_arc_index_core(q);
 }
 
+static void pg_hard_delete(pg_graph_t *q)
+{
+	int32_t i, k;
+	for (i = k = 0; i < q->n_seg; ++i) {
+		if (!q->seg[i].del)
+			q->seg[k++] = q->seg[i];
+		else if (pg_verbose >= 3)
+			fprintf(stderr, "#X\t%s\t%d\t%d\n", q->d->gene[q->seg[i].gid].name, q->seg[i].n_dist_loci[0], q->seg[i].n_dist_loci[1]);
+	}
+	q->n_seg = k;
+	pg_gen_g2s(q);
+}
+
 static void pg_graph_flt_high_occ(const pg_opt_t *opt, pg_graph_t *q)
 {
-	int32_t i, i0, k, n_high_occ = 0, n_high_deg = 0;
+	int32_t i, i0, n_high_occ = 0, n_high_deg = 0;
 	for (i = 0; i < q->n_seg; ++i) // filter segments occurring too many times
 		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
 			q->seg[i].del = 1, ++n_high_occ;
@@ -220,14 +233,20 @@ static void pg_graph_flt_high_occ(const pg_opt_t *opt, pg_graph_t *q)
 		fprintf(stderr, "[M::%s::%s] %d high-occurrence segments\n", __func__, pg_timestamp(), n_high_occ);
 		fprintf(stderr, "[M::%s::%s] %d high-degree segments additionally\n", __func__, pg_timestamp(), n_high_deg);
 	}
-	for (i = k = 0; i < q->n_seg; ++i) {
-		if (!q->seg[i].del)
-			q->seg[k++] = q->seg[i];
-		else if (pg_verbose >= 3)
-			fprintf(stderr, "[M::%s] dropped %s\n", __func__, q->d->gene[q->seg[i].gid].name);
+	pg_hard_delete(q);
+}
+
+static int32_t pg_graph_flt_high_loci(const pg_opt_t *opt, pg_graph_t *q)
+{
+	int32_t i, n_high_loci = 0;
+	for (i = 0; i < q->n_seg; ++i) { // filter segments occurring too many times
+		pg_seg_t *s = &q->seg[i];
+		int32_t m = s->n_dist_loci[0] > s->n_dist_loci[1]? s->n_dist_loci[0] : s->n_dist_loci[1];
+		if (m > opt->max_dist_loci)
+			q->seg[i].del = 1, ++n_high_loci;
 	}
-	q->n_seg = k;
-	pg_gen_g2s(q);
+	pg_hard_delete(q);
+	return n_high_loci;
 }
 
 void pg_debug_gene(const pg_graph_t *q, const char *name)
@@ -272,6 +291,11 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 		pg_mark_branch_flt_arc(opt, q);
 		pg_mark_branch_flt_hit(opt, q);
 		PG_SET_FILTER(q->d, weak_br == 2);
+		if (i > 0) {
+			pg_graph_flt_high_loci(opt, q);
+			pg_graph_flag_vtx(q);
+			PG_SET_FILTER(q->d, vtx == 0);
+		}
 		pg_gen_arc(opt, q);
 	}
 	PG_SET_FILTER(q->d, shadow == 1);

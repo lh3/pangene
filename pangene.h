@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r142-dirty"
+#define PG_VERSION "0.0-r143-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -28,6 +28,7 @@ typedef struct {
 	double branch_diff_cut;
 	int32_t max_avg_occ;
 	int32_t max_degree;
+	int32_t max_dist_loci;
 	int32_t n_branch_flt;
 	int32_t min_arc_cnt;
 	int32_t local_dist;
@@ -95,6 +96,7 @@ typedef struct {
 	int32_t n_genome;
 	int32_t tot_cnt;
 	uint32_t del:1, dummy:31;
+	int32_t n_dist_loci[2];
 } pg_seg_t;
 
 typedef struct {

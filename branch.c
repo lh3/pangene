@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include "pgpriv.h"
 
@@ -47,12 +48,17 @@ static int32_t pg_n_local(int32_t local_dist, int32_t local_count, int32_t n_gen
 int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 {
 	uint32_t v, n_vtx = q->n_seg * 2, n_flt1 = 0, n_flt2 = 0;
-	int32_t j, *max_gid;
+	int32_t j, *max_gid, max_deg = 0, *tmp;
 	pg128_t **pos;
 	max_gid = PG_MALLOC(int32_t, q->n_seg * 2); // we don't need an array this large, but the program uses a lot more memory elsewhere
 	pos = pg_gen_rep_pos(q->d);
+	for (j = 0; j < q->n_seg; ++j)
+		q->seg[j].n_dist_loci[0] = q->seg[j].n_dist_loci[1] = 0;
+	for (v = 0; v < n_vtx; ++v)
+		max_deg = max_deg > (int32_t)q->idx[v]? max_deg : (int32_t)q->idx[v];
+	tmp = PG_CALLOC(int32_t, max_deg);
 	for (v = 0; v < n_vtx; ++v) {
-		int32_t i, n_max, max_s1 = 0, n = (int32_t)q->idx[v];
+		int32_t i, n_max, max_s1 = 0, n = (int32_t)q->idx[v], n_group;
 		pg_arc_t *a = &q->arc[q->idx[v]>>32];
 		if (n < 2) continue;
 		for (i = 0; i < n; ++i) // find max score
@@ -72,7 +78,18 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 				//fprintf(stderr, "B\t%s\t%s\t%s\t%.4f\t%d\n", q->d->gene[q->seg[a[i].x>>33].gid].name, q->d->gene[max_gid[0]].name, q->d->gene[gid].name, (double)a[i].s1 / max_s1, n_local);
 			}
 		}
+		// calculate n_dist_loci. This may be an overestimate
+		memset(tmp, 0, n * sizeof(*tmp)); // set to -1
+		for (i = 0, n_group = 0; i < n; ++i) {
+			int32_t gi = q->seg[(uint32_t)a[i].x>>1].gid;
+			if (tmp[i] == 0) tmp[i] = ++n_group;
+			for (j = i + 1; j < n; ++j)
+				if (pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, gi, q->seg[(uint32_t)a[j].x>>1].gid) > 0 && tmp[j] == 0)
+					tmp[j] = tmp[i];
+		}
+		q->seg[v>>1].n_dist_loci[v&1] = n_group;
 	}
+	free(tmp);
 	for (j = 0; j < q->d->n_genome; ++j) free(pos[j]);
 	free(pos);
 	free(max_gid);
