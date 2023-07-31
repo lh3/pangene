@@ -206,47 +206,46 @@ static void pg_hard_delete(pg_graph_t *q)
 {
 	int32_t i, k;
 	for (i = k = 0; i < q->n_seg; ++i) {
-		if (!q->seg[i].del)
-			q->seg[k++] = q->seg[i];
-		else if (pg_verbose >= 3)
-			fprintf(stderr, "#X\t%s\t%d\t%d\n", q->d->gene[q->seg[i].gid].name, q->seg[i].n_dist_loci[0], q->seg[i].n_dist_loci[1]);
+		pg_seg_t *s = &q->seg[i];
+		if (!s->del) {
+			q->seg[k++] = *s;
+		} else if (pg_verbose >= 3) {
+			if (q->idx)
+				fprintf(stderr, "#del\t%s\tavg_occ=%.1f\tdeg=%d,%d\tdist_deg=%d,%d\n", q->d->gene[s->gid].name, (double)s->tot_cnt / q->d->n_genome,
+						(uint32_t)q->idx[(uint32_t)i<<1], (uint32_t)q->idx[(uint32_t)i<<1|1], s->n_dist_loci[0], s->n_dist_loci[1]);
+			else
+				fprintf(stderr, "#del\t%s\tavg_occ=%.1f\tdeg=*,*\tdist_deg=%d,%d\n", q->d->gene[s->gid].name, (double)s->tot_cnt / q->d->n_genome, s->n_dist_loci[0], s->n_dist_loci[1]);
+		}
 	}
 	q->n_seg = k;
-	pg_gen_g2s(q);
 }
 
-static void pg_graph_flt_high_occ(const pg_opt_t *opt, pg_graph_t *q)
+static void pg_flt_high_occ(int32_t max_avg_occ, int32_t max_degree, int32_t max_dist_loci, pg_graph_t *q)
 {
-	int32_t i, i0, n_high_occ = 0, n_high_deg = 0;
+	int32_t i, i0, n_high_occ = 0, n_high_deg = 0, n_high_loci = 0;
 	for (i = 0; i < q->n_seg; ++i) // filter segments occurring too many times
-		if (q->seg[i].tot_cnt > opt->max_avg_occ * q->seg[i].n_genome)
+		if (q->seg[i].tot_cnt > max_avg_occ * q->d->n_genome)
 			q->seg[i].del = 1, ++n_high_occ;
 	for (i0 = 0, i = 1; i <= q->n_arc; ++i) {
 		if (i == q->n_arc || q->arc[i].x>>32 != q->arc[i0].x>>32) {
 			int32_t sid = q->arc[i0].x>>32>>1;
-			if (i - i0 > opt->max_degree && !q->seg[sid].del)
+			if (i - i0 > max_degree && !q->seg[sid].del)
 				q->seg[sid].del = 1, ++n_high_deg;
 			i0 = i;
 		}
 	}
-	if (pg_verbose >= 3) {
-		fprintf(stderr, "[M::%s::%s] %d high-occurrence segments\n", __func__, pg_timestamp(), n_high_occ);
-		fprintf(stderr, "[M::%s::%s] %d high-degree segments additionally\n", __func__, pg_timestamp(), n_high_deg);
-	}
-	pg_hard_delete(q);
-}
-
-static int32_t pg_graph_flt_high_loci(const pg_opt_t *opt, pg_graph_t *q)
-{
-	int32_t i, n_high_loci = 0;
 	for (i = 0; i < q->n_seg; ++i) { // filter segments occurring too many times
 		pg_seg_t *s = &q->seg[i];
 		int32_t m = s->n_dist_loci[0] > s->n_dist_loci[1]? s->n_dist_loci[0] : s->n_dist_loci[1];
-		if (m > opt->max_dist_loci)
+		if (m > max_dist_loci && !s->del)
 			q->seg[i].del = 1, ++n_high_loci;
 	}
+	if (pg_verbose >= 3)
+		fprintf(stderr, "[M::%s::%s] filtered %d high-occurrence segments, %d high-degree segments and %d segments connecting distant loci\n",
+				__func__, pg_timestamp(), n_high_occ, n_high_deg, n_high_loci);
 	pg_hard_delete(q);
-	return n_high_loci;
+	pg_gen_g2s(q);
+	pg_graph_flag_vtx(q);
 }
 
 void pg_debug_gene(const pg_graph_t *q, const char *name)
@@ -278,8 +277,7 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 		fprintf(stderr, "[M::%s::%s] round-1 graph: %d genes and %d arcs\n", __func__, pg_timestamp(), q->n_seg, q->n_arc);
 
 	// graph 2: after removing high-occurrence vertices
-	pg_graph_flt_high_occ(opt, q);
-	pg_graph_flag_vtx(q);
+	pg_flt_high_occ(opt->max_avg_occ * 2, opt->max_degree * 2, opt->max_dist_loci, q); // max_dist_loci is not applied as the relevant info not calculated at this point
 	PG_SET_FILTER(q->d, vtx == 0);
 	pg_gen_arc(opt, q); // don't apply "PG_SET_FILTER(q->d, shadow == 1)" as this would filter out CYP2D7
 	if (pg_verbose >= 3)
@@ -287,13 +285,16 @@ void pg_graph_gen(const pg_opt_t *opt, pg_graph_t *q)
 
 	// graph 3: branching filtering; vertices not changed
 	for (i = 0; i < opt->n_branch_flt; ++i) {
+		double r = 1.0 + (double)(opt->n_branch_flt - 1 - i) / opt->n_branch_flt;
+		int32_t max_avg_occ = (int32_t)(opt->max_avg_occ * r + .499);
+		int32_t max_degree = (int32_t)(opt->max_degree * r + .499);
+		int32_t max_dist_loci = (int32_t)(opt->max_dist_loci * r + .499);
 		pg_arc_index(q);
 		pg_mark_branch_flt_arc(opt, q);
 		pg_mark_branch_flt_hit(opt, q);
 		PG_SET_FILTER(q->d, weak_br == 2);
 		if (i > 0) {
-			pg_graph_flt_high_loci(opt, q);
-			pg_graph_flag_vtx(q);
+			pg_flt_high_occ(max_avg_occ, max_degree, max_dist_loci, q);
 			PG_SET_FILTER(q->d, vtx == 0);
 		}
 		pg_gen_arc(opt, q);

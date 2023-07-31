@@ -88,6 +88,13 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 					tmp[j] = tmp[i];
 		}
 		q->seg[v>>1].n_dist_loci[v&1] = n_group;
+		#if 0 // debugging only
+		if (strcmp(q->d->gene[q->seg[v>>1].gid].name, "SMIM30") == 0) {
+			fprintf(stderr, "X\t%c\t%d\n", "><"[v&1], n);
+			for (i = 0; i < n; ++i)
+				fprintf(stderr, "X\t%c%s\n", "><"[a[i].x&1], q->d->gene[q->seg[(uint32_t)a[i].x>>1].gid].name);
+		}
+		#endif
 	}
 	free(tmp);
 	for (j = 0; j < q->d->n_genome; ++j) free(pos[j]);
