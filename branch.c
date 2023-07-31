@@ -28,7 +28,7 @@ static pg128_t **pg_gen_rep_pos(const pg_data_t *d) // only work if sorted
 	return a;
 }
 
-static int32_t pg_n_local(int32_t local_dist, int32_t local_count, int32_t n_genome, pg128_t *const*a, int32_t g1, int32_t g2)
+static int32_t pg_n_local(int32_t local_dist, int32_t local_count, int32_t frag_mode, int32_t n_genome, pg128_t *const*a, int32_t g1, int32_t g2)
 {
 	int32_t j, n_local = 0;
 	for (j = 0; j < n_genome; ++j) {
@@ -36,7 +36,7 @@ static int32_t pg_n_local(int32_t local_dist, int32_t local_count, int32_t n_gen
 		int64_t d;
 		int32_t c;
 		if (a1->x == (uint64_t)-1 || a2->x == (uint64_t)-1) continue;
-		if (a1->x>>32 != a2->x>>32) continue;
+		if (!frag_mode && a1->x>>32 != a2->x>>32) continue;
 		d = (int64_t)a1->y - (int64_t)a2->y;
 		c = (int32_t)a1->x - (int32_t)a2->x;
 		if ((d >= -local_dist && d <= local_dist) || (c >= -local_count && c <= local_count))
@@ -48,7 +48,7 @@ static int32_t pg_n_local(int32_t local_dist, int32_t local_count, int32_t n_gen
 int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 {
 	uint32_t v, n_vtx = q->n_seg * 2, n_flt1 = 0, n_flt2 = 0;
-	int32_t j, *max_gid, max_deg = 0, *tmp;
+	int32_t j, *max_gid, max_deg = 0, *tmp, frag_mode = !!(opt->flag & PG_F_FRAG_MODE);
 	pg128_t **pos;
 	max_gid = PG_MALLOC(int32_t, q->n_seg * 2); // we don't need an array this large, but the program uses a lot more memory elsewhere
 	pos = pg_gen_rep_pos(q->d);
@@ -72,7 +72,7 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 			if (r > opt->branch_diff) {
 				int32_t n_local = 0, gid = q->seg[(uint32_t)a[i].x>>1].gid;
 				for (j = 0; j < n_max; ++j)
-					n_local += pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, max_gid[j], gid);
+					n_local += pg_n_local(opt->local_dist, opt->local_count, frag_mode, q->d->n_genome, pos, max_gid[j], gid);
 				if ((n_local == 0 && r > opt->branch_diff_dist) || r > opt->branch_diff_cut) a[i].weak_br = 2, ++n_flt2;
 				else a[i].weak_br = 1, ++n_flt1;
 				//fprintf(stderr, "B\t%s\t%s\t%s\t%.4f\t%d\n", q->d->gene[q->seg[a[i].x>>33].gid].name, q->d->gene[max_gid[0]].name, q->d->gene[gid].name, (double)a[i].s1 / max_s1, n_local);
@@ -84,7 +84,7 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q)
 			int32_t gi = q->seg[(uint32_t)a[i].x>>1].gid;
 			if (tmp[i] == 0) tmp[i] = ++n_group;
 			for (j = i + 1; j < n; ++j)
-				if (pg_n_local(opt->local_dist, opt->local_count, q->d->n_genome, pos, gi, q->seg[(uint32_t)a[j].x>>1].gid) > 0 && tmp[j] == 0)
+				if (pg_n_local(opt->local_dist, opt->local_count, frag_mode, q->d->n_genome, pos, gi, q->seg[(uint32_t)a[j].x>>1].gid) > 0 && tmp[j] == 0)
 					tmp[j] = tmp[i];
 		}
 		q->seg[v>>1].n_dist_loci[v&1] = n_group;

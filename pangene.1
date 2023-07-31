@@ -1,4 +1,4 @@
-.TH pangene 1 "30 July 2023" "pangene-0.0-dirty (r143)" "Bioinformatics tools"
+.TH pangene 1 "31 July 2023" "pangene-0.0-dirty (r145)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -133,7 +133,7 @@ Drop a gene if its average occurrence among input genomes is above
 .BI -g \ INT
 Drop a gene if its in- or out-degree in the initial graph is higher than
 .I INT
-[10]
+[15]
 .TP
 .BI -r \ INT
 Drop a gene if it connects more than
@@ -155,7 +155,11 @@ fraction [0.5]
 .BI -T \ INT
 Apply branch cutting for
 .I INT
-rounds [7]
+rounds [15]
+.TP
+.B -F
+Don't consider genes on different contigs to be distant from each other. Useful
+for fragmented short-read assemblies.
 .TP
 .BI -D \ NUM
 Two genes are considered local if they are at most

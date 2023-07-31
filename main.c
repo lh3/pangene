@@ -29,6 +29,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "    -B FLOAT      cut a branching arc if weaker by FLOAT [%g]\n", opt->branch_diff_cut);
 	fprintf(fp, "    -y FLOAT      cut a distant branching arc if weaker by FLOAT [%g]\n", opt->branch_diff_dist);
 	fprintf(fp, "    -T INT        apply branch cutting for INT times [%d]\n", opt->n_branch_flt);
+	fprintf(fp, "    -F            don't consider genes on different contigs as distant\n");
 	fprintf(fp, "    -a INT        prune an arc if it is supported by <INT genomes [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  Output:\n");
 	fprintf(fp, "    -w            Suppress walk lines (W-lines)\n");
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:r:c:a:wv:GD:C:T:X:I:m:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:m:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 		else if (c == 'B') opt.branch_diff_cut = atof(o.arg);
 		else if (c == 'y') opt.branch_diff_dist = atof(o.arg);
 		else if (c == 'r') opt.max_dist_loci = atoi(o.arg);
+		else if (c == 'F') opt.flag |= PG_F_FRAG_MODE;
 		else if (c == 'T') opt.n_branch_flt = atof(o.arg);
 		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
 		else if (c == 'g') opt.max_degree = atoi(o.arg);
