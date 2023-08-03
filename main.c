@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:m:", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:", long_options)) >= 0) {
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
 		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
 		else if (c == 'C') opt.local_count = atoi(o.arg);
 		else if (c == 'X') opt.excl = pg_read_list_dict(o.arg);
 		else if (c == 'I') opt.incl = pg_read_list_dict(o.arg);
+		else if (c == 'P') opt.preferred = pg_read_list_dict(o.arg);
 		else if (c == 'v') pg_verbose = atoi(o.arg);
 		else if (c == 301) {
 			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
@@ -127,6 +128,7 @@ int main(int argc, char *argv[])
 	pg_data_destroy(d);
 	if (opt.excl) pg_dict_destroy(opt.excl);
 	if (opt.incl) pg_dict_destroy(opt.incl);
+	if (opt.preferred) pg_dict_destroy(opt.preferred);
 
 	if (pg_verbose >= 3) {
 		fprintf(stderr, "[M::%s] Version: %s\n", __func__, PG_VERSION);

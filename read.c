@@ -137,24 +137,25 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 				int32_t c = *p;
 				*p = 0;
 				if (i == 0) { // query name
-					int32_t rank;
+					int32_t rank, preferred = 0, included = 0;
 					const char *tmp;
 					for (r = q; r < p && *r != opt->gene_delim; ++r) {}
 					// add gene
-					if (*r == opt->gene_delim) {
-						*r = 0;
-						if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break;
-						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
-						*r = opt->gene_delim;
-					} else {
-						if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break;
-						tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
-					}
+					if (*r == opt->gene_delim) *r = 0;
+					if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break;
+					if (opt->preferred && pg_dict_get(opt->preferred, q) >= 0)
+						preferred = 1;
+					if (opt->incl && pg_dict_get(opt->incl, q) >= 0)
+						included = 1;
+					tmp = *pg_dict_put(d->d_gene, q, pg_dict_size(d->d_gene), &gid, &absent);
+					if (*r == 0) *r = opt->gene_delim;
 					if (absent) {
 						d->n_gene++;
 						PG_GROW0(pg_gene_t, d->gene, gid, d->m_gene);
 					}
 					d->gene[gid].name = tmp;
+					d->gene[gid].preferred = preferred;
+					d->gene[gid].included = included;
 					// add protein
 					tmp = *pg_dict_put(d->d_prot, q, pg_dict_size(d->d_prot), &pid, &absent);
 					if (absent) { // protein is new

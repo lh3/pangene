@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r145-dirty"
+#define PG_VERSION "0.0-r146-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -34,7 +34,7 @@ typedef struct {
 	int32_t min_arc_cnt;
 	int32_t local_dist;
 	int32_t local_count;
-	void *excl, *incl;
+	void *excl, *incl, *preferred;
 } pg_opt_t;
 
 typedef struct {
@@ -44,13 +44,13 @@ typedef struct {
 typedef struct {
 	const char *name;
 	int32_t len;
-	uint32_t gid:30, flt:1, rep:1; // rep: if this protein is the representative isoform of the gene
+	uint32_t gid:31, rep:1; // rep: if this protein is the representative isoform of the gene
 	int32_t n, avg_score;
 } pg_prot_t;
 
 typedef struct {
 	const char *name;
-	uint32_t len:31, flt:1; // longest ORF or representative ORF
+	uint32_t len:30, preferred:1, included:1; // longest ORF or representative ORF
 	int32_t rep_pid; // pid of the representative isoform
 } pg_gene_t;
 
