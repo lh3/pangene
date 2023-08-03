@@ -51,9 +51,9 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 	}
 	free(flag);
 
-	for (j = 0; j < d->n_gene; ++j)
-		if (d->gene[j].preferred)
-			cnt[j].x |= 1ULL<<63;
+	for (i = 0; i < d->n_gene; ++i)
+		if (d->gene[i].preferred)
+			cnt[i].x |= 1ULL<<63;
 
 	// generate segments
 	radix_sort_pg128x(cnt, cnt + d->n_gene);
@@ -64,7 +64,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 			if (aux[j][gid]>>1 == d->n_gene)
 				++x, y += (aux[j][gid]&1);
 		if (opt->flag & PG_F_WRITE_VTX_SEL)
-			printf("g\t%s\t%d\t%d\t%d\t%d\t%c\n", d->gene[gid].name, (int32_t)cnt[i].x, x, y, n_sub, "NY"[d->gene[gid].included]);
+			printf("g\t%s\t%d\t%d\t%d\t%d\t%c\t%c\n", d->gene[gid].name, (int32_t)cnt[i].x, x, y, n_sub, "NY"[d->gene[gid].included], "NY"[d->gene[gid].preferred]);
 		if (d->gene[gid].included || (n_dom >= d->n_genome * opt->min_vertex_ratio && y < x)) {
 			pg_seg_t *p;
 			PG_GROW0(pg_seg_t, q->seg, q->n_seg, q->m_seg);
