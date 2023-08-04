@@ -18,7 +18,7 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		int32_t n_shadow, tot;
 		for (i = 0, tot = 0; i < g->n_hit; ++i)
 			if (!g->hit[i].flt) ++tot;
-		n_shadow = pg_flag_shadow(opt, d->prot, g);
+		n_shadow = pg_shadow(opt, d, j);
 		fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits remain, of which %d are shadowed\n",
 				__func__, pg_timestamp(), j, g->label, tot, n_shadow);
 	}
@@ -85,7 +85,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		uint32_t w, v = (uint32_t)-1;
 		int64_t vpos = -1;
 		int32_t vcid = -1, si = -1;
-		pg_flag_shadow(opt, q->d->prot, g);
+		pg_shadow(opt, q->d, j);
 		pg_hit_sort(g, 1); // sort by pg_hit_t::cm
 		n_arc1 = 0;
 		memset(seg_cnt, 0, q->n_seg * sizeof(int32_t));
