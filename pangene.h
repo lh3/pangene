@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r148-dirty"
+#define PG_VERSION "0.0-r149-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -11,6 +11,7 @@
 #define PG_F_WRITE_NO_WALK      0x8
 #define PG_F_WRITE_VTX_SEL      0x10
 #define PG_F_FRAG_MODE          0x20
+#define PG_F_NO_JOINT_PSEUDO    0x40
 
 typedef struct {
 	uint64_t x, y;
