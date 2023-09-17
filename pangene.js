@@ -103,14 +103,14 @@ class GFA {
 		}
 	}
 	#index() {
-		const n_vtx = this.selength * 2;
+		const n_vtx = this.seg.length * 2;
 		for (let v = 0; v < n_vtx; ++v)
 			this.idx[v] = { o:0, n:0 };
 		this.arc = this.arc.sort(function(a,b) { return a.v - b.v });
-		let st = 0;
-		for (let i = 1; i <= this.arc.length; ++i)
+		for (let i = 1, st = 0; i <= this.arc.length; ++i)
 			if (i == this.arc.length || this.arc[i].v != this.arc[st].v)
 				this.idx[this.arc[st].v] = { o:st, n:i-st }, st = i;
+		// reorder such that rank==0 is the first
 		for (let v = 0; v < n_vtx; ++v) {
 			const ov = this.idx[v].o;
 			const nv = this.idx[v].n;
@@ -219,10 +219,200 @@ class GFA {
 	from_string(str) {
 		for (const line of str.split("\n"))
 			this.#parse_line(line);
+		this.#index();
 	}
 	from_file(fn) {
 		for (const line of k8_readline(fn))
 			this.#parse_line(line);
+		this.#index();
+	}
+	#test_inv(v0, mark, max_ext) {
+		let q = [];
+		q.push(v0);
+		while (q.length) {
+			const v = q.shift();
+			mark[v] = v0;
+			const o = this.idx[v].o, n = this.idx[v].n;
+			for (let i = 0; i < n; ++i) {
+			}
+		}
+	}
+	collect_inv(max_ext) {
+		const n_vtx = this.seg.length * 2;
+		let mark = [];
+		for (let i = 0; i < n_vtx; ++i)
+			mark[i] = -1;
+		for (let v = 0; v < n_vtx; ++v) {
+			const n = this.idx[v].n;
+			if (n < 2) continue;
+		}
+	}
+}
+
+/**************************
+ * Program Structure Tree *
+ **************************/
+
+class LinkedList { // double linked list
+	constructor() {
+		this.size = 0;
+		this.p = null;
+		this.q = null;
+	}
+	push(data) {
+		let ptr = { data:data, p:null, q:null };
+		if (this.p == null && this.q == null) {
+			this.p = this.q = ptr;
+		} else {
+			this.q.q = ptr;
+			ptr.p = this.q;
+			this.q = ptr;
+		}
+		++this.size;
+		return this.q;
+	}
+	pop() {
+		let ptr;
+		if (this.p == null && this.q == null) return null;
+		else if (this.p == this.q) ptr = this.p, this.p = this.q = null;
+		else ptr = this.q, this.q = ptr.p, this.q.q = null;
+		--this.size;
+		return ptr.data;
+	}
+	shift() {
+		let ptr;
+		if (this.p == null && this.q == null) return null;
+		else if (this.p == this.q) ptr = this.p, this.p = this.q = null;
+		else ptr = this.p, this.p = ptr.q, this.p.p = null;
+		--this.size;
+		return ptr.data;
+	}
+	top() {
+		return this.q != null? this.q.data : null;
+	}
+	delete(ptr) {
+		ptr.p.q = ptr.q;
+		ptr.q.p = ptr.p;
+	}
+	concat(bl) {
+		for (let p = bl.p; p != null; p = p.q)
+			this.push(p.data);
+	}
+}
+
+class SegEdgeGraph {
+	constructor() {
+		this.cat = [];
+		this.n_node = 0;
+		this.arc = [];
+		this.idx = [];
+		this.dfs_time = [];
+	}
+	from_gfa(g) {
+		const n_vtx = g.seg.length * 2;
+		// collect "link" edges
+		let a = [];
+		for (let v = 0; v < n_vtx; ++v) {
+			const n = g.idx[v].n, off = g.idx[v].o;
+			for (let i = 0; i < n; ++i)
+				a.push([v^1, g.arc[off + i].w]);
+		}
+		a.sort(function(x, y) { return x[0] - y[0] });
+		// index a[]
+		let idx = [];
+		for (let v = 0; v < n_vtx; ++v)
+			idx[v] = { o:0, n:0 };
+		for (let i = 1, i0 = 0; i <= a.length; ++i)
+			if (i == a.length || a[i0][0] != a[i][0])
+				idx[a[i0][0]] = { o:i0, n:i-i0 }, i0 = i;
+		// connected components from a[]
+		let x = 0;
+		for (let v = 0; v < n_vtx; ++v) this.cat[v] = -1;
+		for (let v = 0; v < n_vtx; ++v) {
+			if (this.cat[v] >= 0) continue;
+			let stack = [v];
+			while (stack.length > 0) { // a DFS
+				const w = stack.pop();
+				this.cat[w] = x;
+				const n = idx[w].n, off = idx[w].o;
+				for (let i = 0; i < n; ++i) {
+					const u = a[off + i][1];
+					if (this.cat[u] < 0) {
+						this.cat[u] = x;
+						stack.push(u);
+					} else if (this.cat[u] != x) {
+						throw Error("Wrong!");
+					}
+				}
+			}
+			++x;
+		}
+		this.n_node = x;
+		// generate the graph
+		this.arc = [];
+		for (let i = 0; i < g.seg.length; ++i) {
+			this.arc.push({ v:this.cat[i*2],   w:this.cat[i*2|1], seg:i, ori:1,  dfs_type:0 });
+			this.arc.push({ v:this.cat[i*2|1], w:this.cat[i*2],   seg:i, ori:-1, dfs_type:0 });
+		}
+		// index arc[]
+		for (let i = 0; i < this.n_node; ++i)
+			this.idx[i] = { n:0, o:0 };
+		this.arc.sort(function(x, y) { return x.v - y.v });
+		for (let i = 1, i0 = 0; i <= this.arc.length; ++i)
+			if (i == this.arc.length || this.arc[i0].v != this.arc[i].v)
+				this.idx[this.arc[i0].v] = { o:i0, n:i-i0 }, i0 = i;
+	}
+	dfs_traverse() {
+		for (let v = 0; v < this.n_node; ++v)
+			this.dfs_time[v] = [-1, -1]; // discovery time and finishing time
+		let t_dis = 0, t_fin = 0, state = [];
+		for (let v = 0; v < this.n_node; ++v)
+			state[v] = 0; // not visited
+		for (let v = 0; v < this.n_node; ++v) {
+			if (state[v] != 0) continue; // visited before
+			this.dfs_time[v][0] = t_dis++;
+			state[v] = 2; // in stack
+			let stack = [[v, 0]];
+			while (stack.length > 0) {
+				const [w, i] = stack.pop();
+				const n = this.idx[w].n, off = this.idx[w].o;
+				if (i < n) {
+					stack.push([w, i + 1]); // repush to the stack
+					const u = this.arc[off + i].w;
+					if (state[u] == 0) { // not visited before
+						state[u] = 2; // in stack
+						this.dfs_time[u][0] = t_dis++;
+						stack.push([u, 0]);
+						this.arc[off + i].dfs_type = 1; // a tree edge
+					} else if (state[u] == 2) {
+						this.arc[off + i].dfs_type = 2; // a back edge
+					}
+				} else {
+					state[w] = 1; // out of stack
+					this.dfs_time[w][1] = t_fin++;
+				}
+			}
+		}
+		if (t_dis != this.n_node || t_fin != this.n_node)
+			throw Error("DFS bug");
+	}
+	cycle_equiv() {
+		this.dfs_traverse();
+		// set discover time
+		/*
+		let td = [];
+		for (let j = 0; j < dfs.length; ++j)
+			td[dfs[j]] = j;
+		for (let j = dfs.length - 1; j >= 0; --j) {
+			const v = dfs[j];
+			const n = this.idx[v].n, off = this.idx[v].o;
+			let hi0 = this.n_node;
+			for (let i = 0; i < n; ++i) {
+				const w = this.arc[off + i].w;
+				hi0 = hi0 < td[w]? hi0 : td[w];
+			}
+		}
+		*/
 	}
 }
 
@@ -240,6 +430,18 @@ function pg_cmd_parse_gfa(args) {
 	print(g);
 }
 
+function pg_cmd_test(args) {
+	if (args.length == 0) {
+		print("Usage: pangene.js parse-gfa <in.gfa>");
+		return;
+	}
+	let g = new GFA();
+	g.from_file(args[0]);
+	let e = new SegEdgeGraph();
+	e.from_gfa(g);
+	e.cycle_equiv();
+}
+
 /*****************
  * Main function *
  *****************/
@@ -255,6 +457,7 @@ function main(args)
 
 	var cmd = args.shift();
 	if (cmd == 'parse-gfa') pg_cmd_parse_gfa(args);
+	else if (cmd == 'test') pg_cmd_test(args);
 	else throw Error("unrecognized command: " + cmd);
 }
 
