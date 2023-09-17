@@ -226,26 +226,61 @@ class GFA {
 			this.#parse_line(line);
 		this.#index();
 	}
-	#test_inv(v0, mark, max_ext) {
-		let q = [];
-		q.push(v0);
-		while (q.length) {
-			const v = q.shift();
-			mark[v] = v0;
-			const o = this.idx[v].o, n = this.idx[v].n;
-			for (let i = 0; i < n; ++i) {
-			}
+}
+
+/********************************
+ * Intrusive double linked list *
+ ********************************/
+
+class LinkedList {
+	constructor() {
+		this.size = 0;
+		this.head = null;
+		this.tail = null;
+	}
+	push(node) { // node MUST have .prev and .next
+		if (this.head == null && this.tail == null) {
+			this.head = this.tail = node;
+		} else {
+			this.tail.next = node;
+			node.prev = this.tail;
+			this.tail = node;
+		}
+		++this.size;
+	}
+	push_list(list) {
+		if (list.head == null && list.tail == null) return;
+		if (this.head == null && this.tail == null) {
+			this.head = list.head;
+			this.tail = list.tail;
+			this.size = list.size;
+		} else {
+			this.tail.next = list.head;
+			list.head.prev = this.tail;
+			this.tail = list.tail;
+			this.size += list.size;
 		}
 	}
-	collect_inv(max_ext) {
-		const n_vtx = this.seg.length * 2;
-		let mark = [];
-		for (let i = 0; i < n_vtx; ++i)
-			mark[i] = -1;
-		for (let v = 0; v < n_vtx; ++v) {
-			const n = this.idx[v].n;
-			if (n < 2) continue;
+	pop() {
+		let node;
+		if (this.head == null && this.tail == null) return null;
+		else if (this.head == this.tail) node = this.head, this.head = this.tail = null;
+		else node = this.tail, this.tail = node.prev, this.tail.next = null;
+		--this.size;
+		return node;
+	}
+	delete(node) {
+		if (this.head == node && this.tail == node) {
+			this.head = this.tail = null;
+		} else if (this.tail == node) {
+			this.tail = node.prev, this.tail.next = null;
+		} else if (this.head == node) {
+			this.head = node.next, this.head.prev = null;
+		} else {
+			node.prev.next = node.next;
+			node.next.prev = node.prev;
 		}
+		--this.size;
 	}
 }
 
@@ -253,60 +288,25 @@ class GFA {
  * Program Structure Tree *
  **************************/
 
-class LinkedList { // double linked list
-	constructor() {
-		this.size = 0;
-		this.p = null;
-		this.q = null;
-	}
-	push(data) {
-		let ptr = { data:data, p:null, q:null };
-		if (this.p == null && this.q == null) {
-			this.p = this.q = ptr;
-		} else {
-			this.q.q = ptr;
-			ptr.p = this.q;
-			this.q = ptr;
-		}
-		++this.size;
-		return this.q;
-	}
-	pop() {
-		let ptr;
-		if (this.p == null && this.q == null) return null;
-		else if (this.p == this.q) ptr = this.p, this.p = this.q = null;
-		else ptr = this.q, this.q = ptr.p, this.q.q = null;
-		--this.size;
-		return ptr.data;
-	}
-	shift() {
-		let ptr;
-		if (this.p == null && this.q == null) return null;
-		else if (this.p == this.q) ptr = this.p, this.p = this.q = null;
-		else ptr = this.p, this.p = ptr.q, this.p.p = null;
-		--this.size;
-		return ptr.data;
-	}
-	top() {
-		return this.q != null? this.q.data : null;
-	}
-	delete(ptr) {
-		ptr.p.q = ptr.q;
-		ptr.q.p = ptr.p;
-	}
-	concat(bl) {
-		for (let p = bl.p; p != null; p = p.q)
-			this.push(p.data);
+class PSTBackEdge {
+	constructor(a) {
+		this.a = a;
+		this.recent_size = -1;
+		this.recent_cat = -1;
+		this.prev = null;
+		this.next = null;
 	}
 }
 
 class SegEdgeGraph {
 	constructor() {
-		this.cat = [];
 		this.n_node = 0;
+		this.end_cat = [];
 		this.arc = [];
 		this.idx = [];
-		this.dfs_time = [];
+		this.dfs_dis = [];
+		this.dfs_fin = [];
+		this.dfs_par = [];
 	}
 	from_gfa(g) {
 		const n_vtx = g.seg.length * 2;
@@ -327,20 +327,21 @@ class SegEdgeGraph {
 				idx[a[i0][0]] = { o:i0, n:i-i0 }, i0 = i;
 		// connected components from a[]
 		let x = 0;
-		for (let v = 0; v < n_vtx; ++v) this.cat[v] = -1;
+		for (let v = 0; v < n_vtx; ++v)
+			this.end_cat[v] = -1;
 		for (let v = 0; v < n_vtx; ++v) {
-			if (this.cat[v] >= 0) continue;
+			if (this.end_cat[v] >= 0) continue;
 			let stack = [v];
 			while (stack.length > 0) { // a DFS
 				const w = stack.pop();
-				this.cat[w] = x;
+				this.end_cat[w] = x;
 				const n = idx[w].n, off = idx[w].o;
 				for (let i = 0; i < n; ++i) {
 					const u = a[off + i][1];
-					if (this.cat[u] < 0) {
-						this.cat[u] = x;
+					if (this.end_cat[u] < 0) {
+						this.end_cat[u] = x;
 						stack.push(u);
-					} else if (this.cat[u] != x) {
+					} else if (this.end_cat[u] != x) {
 						throw Error("Wrong!");
 					}
 				}
@@ -351,8 +352,8 @@ class SegEdgeGraph {
 		// generate the graph
 		this.arc = [];
 		for (let i = 0; i < g.seg.length; ++i) {
-			this.arc.push({ v:this.cat[i*2],   w:this.cat[i*2|1], seg:i, ori:1,  dfs_type:0 });
-			this.arc.push({ v:this.cat[i*2|1], w:this.cat[i*2],   seg:i, ori:-1, dfs_type:0 });
+			this.arc.push({ v:this.end_cat[i*2],   w:this.end_cat[i*2|1], seg:i, ori:1,  pair:-1, cat:-1, dfs_type:0 });
+			this.arc.push({ v:this.end_cat[i*2|1], w:this.end_cat[i*2],   seg:i, ori:-1, pair:-1, cat:-1, dfs_type:0 });
 		}
 		// index arc[]
 		for (let i = 0; i < this.n_node; ++i)
@@ -361,58 +362,156 @@ class SegEdgeGraph {
 		for (let i = 1, i0 = 0; i <= this.arc.length; ++i)
 			if (i == this.arc.length || this.arc[i0].v != this.arc[i].v)
 				this.idx[this.arc[i0].v] = { o:i0, n:i-i0 }, i0 = i;
+		// fill vtx2arc[]
+		let vtx2arc = [];
+		for (let v = 0; v < n_vtx; ++v)
+			vtx2arc[v] = -1;
+		for (let a = 0; a < this.arc.length; ++a) {
+			const arc = this.arc[a];
+			if (arc.ori > 0) vtx2arc[arc.seg*2] = a;
+			else vtx2arc[arc.seg*2+1] = a;
+		}
+		for (let a = 0; a < this.arc.length; ++a) {
+			const arc = this.arc[a];
+			if (arc.ori > 0) arc.pair = vtx2arc[arc.seg*2+1];
+			else arc.pair = vtx2arc[arc.seg*2];
+		}
+	}
+	print_graph(g) {
+		for (let i = 0; i < this.arc.length; ++i) {
+			const x = this.arc[i];
+			print('E', i, x.v, '--', x.w, g.seg[x.seg].name, x.pair);
+		}
 	}
 	dfs_traverse() {
 		for (let v = 0; v < this.n_node; ++v)
-			this.dfs_time[v] = [-1, -1]; // discovery time and finishing time
+			this.dfs_dis[v] = this.dfs_fin[v] = this.dfs_par[v] = -1;
 		let t_dis = 0, t_fin = 0, state = [];
 		for (let v = 0; v < this.n_node; ++v)
 			state[v] = 0; // not visited
 		for (let v = 0; v < this.n_node; ++v) {
 			if (state[v] != 0) continue; // visited before
-			this.dfs_time[v][0] = t_dis++;
+			this.dfs_dis[v] = t_dis++;
 			state[v] = 2; // in stack
 			let stack = [[v, 0]];
 			while (stack.length > 0) {
 				const [w, i] = stack.pop();
 				const n = this.idx[w].n, off = this.idx[w].o;
+				let a = this.arc[off + i];
 				if (i < n) {
 					stack.push([w, i + 1]); // repush to the stack
-					const u = this.arc[off + i].w;
+					if (a.dfs_type == 3) continue;
+					const u = a.w;
 					if (state[u] == 0) { // not visited before
 						state[u] = 2; // in stack
-						this.dfs_time[u][0] = t_dis++;
+						this.dfs_dis[u] = t_dis++;
+						this.dfs_par[u] = w;
 						stack.push([u, 0]);
-						this.arc[off + i].dfs_type = 1; // a tree edge
+						a.dfs_type = 1; // a tree edge
+						this.arc[a.pair].dfs_type = 3;
 					} else if (state[u] == 2) {
-						this.arc[off + i].dfs_type = 2; // a back edge
+						a.dfs_type = 2; // a back edge
+						this.arc[a.pair].dfs_type = 3;
 					}
 				} else {
 					state[w] = 1; // out of stack
-					this.dfs_time[w][1] = t_fin++;
+					this.dfs_fin[w] = t_fin++;
 				}
 			}
 		}
 		if (t_dis != this.n_node || t_fin != this.n_node)
 			throw Error("DFS bug");
 	}
-	cycle_equiv() {
+	dfs_debug(g) {
 		this.dfs_traverse();
-		// set discover time
-		/*
-		let td = [];
-		for (let j = 0; j < dfs.length; ++j)
-			td[dfs[j]] = j;
-		for (let j = dfs.length - 1; j >= 0; --j) {
-			const v = dfs[j];
+		let v_dis = []; // vertices ordered in the discovery time order
+		for (let v = 0; v < this.dfs_dis.length; ++v)
+			v_dis[this.dfs_dis[v]] = v;
+		for (let j = v_dis.length - 1; j >= 0; --j) {
+			const v = v_dis[j];
 			const n = this.idx[v].n, off = this.idx[v].o;
-			let hi0 = this.n_node;
 			for (let i = 0; i < n; ++i) {
 				const w = this.arc[off + i].w;
-				hi0 = hi0 < td[w]? hi0 : td[w];
+				if (this.arc[off + i].dfs_type == 1)
+					print('T', w, '->', v);
+			}
+			for (let i = 0; i < n; ++i) {
+				const w = this.arc[off + i].w;
+				if (this.arc[off + i].dfs_type == 2)
+					print('B', w, '->', v);
 			}
 		}
-		*/
+	}
+	cycle_equiv() {
+		this.dfs_traverse();
+		let v_dis = []; // vertices ordered in the discovery time order
+		for (let v = 0; v < this.dfs_dis.length; ++v)
+			v_dis[this.dfs_dis[v]] = v;
+		let vs = [], cat = 0;
+		for (let v = 0; v < this.n_node; ++v)
+			vs[v] = { hi:this.n_node, blist:null, be_end:[], be_end_cap:[] };
+		for (let j = v_dis.length - 1; j >= 0; --j) {
+			const v = v_dis[j];
+			const n = this.idx[v].n, off = this.idx[v].o;
+
+			let hi0 = this.n_node; // highest vertex among back edges
+			for (let i = 0; i < n; ++i) { // traverse back edges
+				if (this.arc[off + i].dfs_type != 2) continue;
+				const w = this.arc[off + i].w;
+				hi0 = hi0 < this.dfs_dis[w]? hi0 : this.dfs_dis[w];
+			}
+
+			let hi1 = this.n_node, hi2 = this.n_node; // hi1: highest among descendants; hi2: second highest
+			let blist = new LinkedList(); // bracket list
+			for (let i = 0; i < n; ++i) { // traverse tree edges
+				if (this.arc[off + i].dfs_type != 1) continue;
+				const w = this.arc[off + i].w;
+				if (hi1 > vs[w].hi) hi2 = hi1, hi1 = vs[w].hi;
+				else if (hi2 > vs[w].hi) hi2 = vs[w].hi;
+				blist.push_list(vs[w].blist); // merge blists from v's children
+			}
+			vs[v].hi = hi0 < hi1? hi0 : hi1;
+
+			for (const b of vs[v].be_end_cap) // delete capping back edges ending at v
+				blist.delete(b);
+			for (const b of vs[v].be_end) { // delete (normal) back edges ending at v
+				blist.delete(b);
+				if (this.arc[b.a].cat < 0)
+					this.arc[b.a].cat = cat++;
+			}
+			for (let i = 0; i < n; ++i) { // traverse tree edges starting at v
+				if (this.arc[off + i].dfs_type != 2) continue;
+				const w = this.arc[off + i].w;
+				const e = new PSTBackEdge(off + i);
+				blist.push(e);
+				vs[w].be_end.push(e);
+			}
+			if (hi2 < hi0) { // then create a capping back edge
+				const w = v_dis[hi2];
+				const d = new PSTBackEdge(-1); // capping back edge
+				blist.push(d);
+				vs[w].be_end_cap.push(d);
+			}
+			vs[v].blist = blist;
+
+			// determine the category for tree edge (parent(v),v)
+			if (this.dfs_par[v] >= 0 && blist.size > 0) { // not a root (there may be multiple roots if the graph is disconnected)
+				const u = this.dfs_par[v];
+				const n = this.idx[u].n, off = this.idx[u].o;
+				let e = -1;
+				for (let i = 0; i < n; ++i)
+					if (this.arc[off + i].w == v && this.arc[off + i].dfs_type == 1)
+						e = off + i;
+				const b = blist.tail;
+				if (b.recent_size != blist.size) {
+					b.recent_size = b.size;
+					b.recent_cat = cat++;
+				}
+				this.arc[e].cat = b.recent_cat;
+				if (b.recent_size == 1) // check whether e and b.a are equivalent
+					this.arc[b.a].cat = this.arc[e].cat;
+			}
+		}
 	}
 }
 
