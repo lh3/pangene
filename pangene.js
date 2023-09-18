@@ -434,6 +434,9 @@ class SegEdgeGraph {
 		let t = { dis:0, fin:0 }, state = [];
 		for (let v = 0; v < this.n_node; ++v) state[v] = 0; // not visited
 		this.dfs1(this.n_node - 1, t, state); // we can traverse every node due to super node
+		for (let v = 0; v < this.n_node; ++v)
+			if (state[v] == 0)
+				this.dfs1(v, t, state);
 		if (t.dis != this.n_node || t.fin != this.n_node)
 			throw Error("DFS bug");
 	}
