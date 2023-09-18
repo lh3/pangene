@@ -361,12 +361,14 @@ class SegEdgeGraph {
 			this.arc.push({ v:this.end_cat[i*2|1], w:this.end_cat[i*2],   seg:i, ori:-1, pair:-1, cat:-1, dfs_type:0 });
 		}
 		// add super node
-		const super_node = this.n_node++;
-		let seg_id = g.seg.length;
-		for (const v of tip) {
-			this.arc.push({ v:super_node, w:this.end_cat[v], seg:seg_id, ori:1,  pair:-1, cat:-1, dfs_type:0 });
-			this.arc.push({ v:this.end_cat[v], w:super_node, seg:seg_id, ori:-1, pair:-1, cat:-1, dfs_type:0 });
-			++seg_id;
+		if (tip.length > 0) {
+			const super_node = this.n_node++;
+			let seg_id = g.seg.length;
+			for (const v of tip) {
+				this.arc.push({ v:super_node, w:this.end_cat[v], seg:seg_id, ori:1,  pair:-1, cat:-1, dfs_type:0 });
+				this.arc.push({ v:this.end_cat[v], w:super_node, seg:seg_id, ori:-1, pair:-1, cat:-1, dfs_type:0 });
+				++seg_id;
+			}
 		}
 		// index arc[]
 		for (let i = 0; i < this.n_node; ++i)
