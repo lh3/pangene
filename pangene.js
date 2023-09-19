@@ -253,21 +253,12 @@ class LinkedList {
 		if (this.head == null && this.tail == null) {
 			this.head = list.head;
 			this.tail = list.tail;
-			this.size = list.size;
 		} else {
 			this.tail.next = list.head;
 			list.head.prev = this.tail;
 			this.tail = list.tail;
-			this.size += list.size;
 		}
-	}
-	pop() {
-		let node;
-		if (this.head == null && this.tail == null) return null;
-		else if (this.head == this.tail) node = this.head, this.head = this.tail = null;
-		else node = this.tail, this.tail = node.prev, this.tail.next = null;
-		--this.size;
-		return node;
+		this.size += list.size;
 	}
 	delete(node) {
 		if (this.head == node && this.tail == node) {
@@ -292,7 +283,7 @@ class BackEdgeNode {
 	constructor(a) {
 		this.a = a;
 		this.recent_size = -1;
-		this.recent_cat = -1;
+		this.recent_cec = -1;
 		this.prev = null;
 		this.next = null;
 	}
@@ -357,16 +348,16 @@ class SegEdgeGraph {
 		// generate the graph
 		this.arc = [];
 		for (let i = 0; i < g.seg.length; ++i) {
-			this.arc.push({ v:this.end_cat[i*2],   w:this.end_cat[i*2|1], seg:i, ori:1,  pair:-1, cat:-1, dfs_type:0 });
-			this.arc.push({ v:this.end_cat[i*2|1], w:this.end_cat[i*2],   seg:i, ori:-1, pair:-1, cat:-1, dfs_type:0 });
+			this.arc.push({ v:this.end_cat[i*2],   w:this.end_cat[i*2|1], seg:i, ori:1,  pair:-1, cec:-1, dfs_type:0 });
+			this.arc.push({ v:this.end_cat[i*2|1], w:this.end_cat[i*2],   seg:i, ori:-1, pair:-1, cec:-1, dfs_type:0 });
 		}
 		// add super node
 		if (tip.length > 0) {
 			const super_node = this.n_node++;
 			let seg_id = g.seg.length;
 			for (const v of tip) {
-				this.arc.push({ v:super_node, w:this.end_cat[v], seg:seg_id, ori:1,  pair:-1, cat:-1, dfs_type:0 });
-				this.arc.push({ v:this.end_cat[v], w:super_node, seg:seg_id, ori:-1, pair:-1, cat:-1, dfs_type:0 });
+				this.arc.push({ v:super_node, w:this.end_cat[v], seg:seg_id, ori:1,  pair:-1, cec:-1, dfs_type:0 });
+				this.arc.push({ v:this.end_cat[v], w:super_node, seg:seg_id, ori:-1, pair:-1, cec:-1, dfs_type:0 });
 				++seg_id;
 			}
 		}
@@ -398,7 +389,7 @@ class SegEdgeGraph {
 			print('E', i, x.v, '--', x.w, g.seg[x.seg].name, x.pair);
 		}
 	}
-	dfs1(v, t, state) {
+	dfs_traverse1(v, t, state) {
 		if (state[v] != 0) return;
 		this.dfs_dis[v] = t.dis++;
 		state[v] = 2; // in stack
@@ -433,10 +424,10 @@ class SegEdgeGraph {
 			this.dfs_dis[v] = this.dfs_fin[v] = this.dfs_par[v] = -1;
 		let t = { dis:0, fin:0 }, state = [];
 		for (let v = 0; v < this.n_node; ++v) state[v] = 0; // not visited
-		this.dfs1(this.n_node - 1, t, state); // we can traverse every node due to super node
+		this.dfs_traverse1(this.n_node - 1, t, state); // we can traverse every node due to super node
 		for (let v = 0; v < this.n_node; ++v)
 			if (state[v] == 0)
-				this.dfs1(v, t, state);
+				this.dfs_traverse1(v, t, state);
 		if (t.dis != this.n_node || t.fin != this.n_node)
 			throw Error("DFS bug");
 	}
@@ -455,27 +446,60 @@ class SegEdgeGraph {
 			}
 		}
 	}
-	cycle_equiv() {
+	dfs_pst1(v, visited, cec_prev, sese) {
+		if (visited[v] != 0) return;
+		visited[v] = 1;
+		let stack = [[v, 0, -1]];
+		while (stack.length > 0) {
+			const [w, i, b] = stack.pop();
+			const n = this.idx[w].n, off = this.idx[w].o;
+			let a = this.arc[off + i];
+			if (i == n) continue;
+			stack.push([w, i + 1, b]); // repush to the stack
+			if (a.dfs_type == 3) continue;
+			const u = a.w;
+			if (visited[u] != 0) continue;
+			visited[u] = 1;
+			let b2 = b;
+			if (a.cec >= 0) {
+				if (cec_prev[a.cec] != -1)
+					sese[cec_prev[a.cec]].exit = off + i;
+				sese.push({ entry:off+i, exit:-1, parent:b });
+				b2 = cec_prev[a.cec] = sese.length - 1;
+			}
+			stack.push([u, 0, b2]);
+		}
+	}
+	pst() {
 		this.dfs_traverse();
-		let v_dis = []; // vertices ordered in the discovery time order
+
+		// put vertices in the order of their discovery time
+		let v_dis = [];
 		for (let v = 0; v < this.dfs_dis.length; ++v)
 			v_dis[this.dfs_dis[v]] = v;
-		let vs = [], cat = 0;
+
+		// vs[v] keeps track of earliest node, bracket list and back edges ending at v
+		let vs = [];
 		for (let v = 0; v < this.n_node; ++v)
 			vs[v] = { hi:this.n_node, blist:null, be_end:[], be_end_cap:[] };
-		for (let j = v_dis.length - 1; j >= 0; --j) {
-			const v = v_dis[j];
+
+		// find cycle equivalent class
+		let cec = 0; // cycle equivalent class
+		for (let t = v_dis.length - 1; t >= 0; --t) {
+			const v = v_dis[t];
 			const n = this.idx[v].n, off = this.idx[v].o;
 
-			let hi0 = this.n_node; // highest vertex among back edges
+			// compute hi0, the earliest discovery time among back edges
+			let hi0 = this.n_node;
 			for (let i = 0; i < n; ++i) { // traverse back edges
 				if (this.arc[off + i].dfs_type !== 2) continue;
 				const w = this.arc[off + i].w;
 				hi0 = hi0 < this.dfs_dis[w]? hi0 : this.dfs_dis[w];
 			}
 
-			let hi1 = this.n_node, hi2 = this.n_node; // hi1: highest among descendants; hi2: second highest
-			let blist = new LinkedList(); // bracket list
+			// compute hi1 and hi2, the earliest and the second earliest time among descendants
+			let hi1 = this.n_node, hi2 = this.n_node;
+			let blist = new LinkedList(); // initial bracket list
 			for (let i = 0; i < n; ++i) { // traverse tree edges
 				if (this.arc[off + i].dfs_type !== 1) continue;
 				const w = this.arc[off + i].w;
@@ -485,12 +509,13 @@ class SegEdgeGraph {
 			}
 			vs[v].hi = hi0 < hi1? hi0 : hi1;
 
+			// compute the final bracket list
 			for (const b of vs[v].be_end_cap) // delete capping back edges ending at v
 				blist.delete(b);
 			for (const b of vs[v].be_end) { // delete (normal) back edges ending at v
 				blist.delete(b);
-				if (this.arc[b.a].cat < 0)
-					this.arc[b.a].cat = cat++;
+				if (this.arc[b.a].cec < 0)
+					this.arc[b.a].cec = cec++;
 			}
 			for (let i = 0; i < n; ++i) { // traverse tree edges starting at v
 				if (this.arc[off + i].dfs_type != 2) continue;
@@ -519,18 +544,30 @@ class SegEdgeGraph {
 				const b = blist.tail;
 				if (b.recent_size !== blist.size) {
 					b.recent_size = blist.size;
-					b.recent_cat = cat++;
+					b.recent_cec = cec++;
 				}
-				if (b.recent_cat < 0) throw Error(`Bug: recent_cat not set when processing edge ${e}`);
-				this.arc[e].cat = b.recent_cat;
+				if (b.recent_cec < 0) throw Error(`Bug: recent_cec not set when processing edge ${e}`);
+				this.arc[e].cec = b.recent_cec;
 				if (b.recent_size === 1) // the tree edge e and back edge b.a are equivalent
-					this.arc[b.a].cat = this.arc[e].cat;
+					this.arc[b.a].cec = this.arc[e].cec;
 			}
 		}
+		/*
 		for (let i = 0; i < this.arc.length; ++i) {
 			const a = this.arc[i];
 			if (a.dfs_type == 1 || a.dfs_type == 2)
-				print(`${a.v} -> ${a.w}`, a.seg, a.dfs_type, a.cat);
+				print(`${a.v} -> ${a.w}`, a.seg, a.dfs_type, a.cec);
+		}
+		*/
+
+		// construct PST
+		let state = [], sese = [], cec_prev = [];
+		for (let v = 0; v < this.n_node; ++v) state[v] = 0; // not visited
+		for (let c = 0; c < cec; ++c) cec_prev[c] = -1;
+		for (let t = 0; t < v_dis.length; ++t) {
+			const v = v_dis[t];
+			if (state[v] == 0)
+				this.dfs_pst1(v, state, cec_prev, sese);
 		}
 	}
 }
@@ -559,7 +596,7 @@ function pg_cmd_test(args) {
 	let e = new SegEdgeGraph();
 	e.from_gfa(g);
 	//e.dfs_debug();
-	e.cycle_equiv();
+	e.pst();
 }
 
 /*****************
