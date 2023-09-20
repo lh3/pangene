@@ -292,6 +292,7 @@ class BackEdgeNode {
 class SegEdgeGraph {
 	constructor() {
 		this.n_node = 0;
+		this.n_seg = 0;
 		this.end_cat = [];
 		this.arc = [];
 		this.idx = [];
@@ -300,6 +301,7 @@ class SegEdgeGraph {
 		this.dfs_par = [];
 	}
 	from_gfa(g) {
+		this.n_seg = g.seg.length;
 		const n_vtx = g.seg.length * 2;
 		// collect tips
 		let tip = [];
@@ -520,14 +522,14 @@ class SegEdgeGraph {
 			for (let i = 0; i < n; ++i) { // traverse back edges starting at v
 				if (this.arc[off + i].dfs_type != 2) continue;
 				const w = this.arc[off + i].w;
-				if (w == v) continue;
+				if (w === v) continue; // no loop!
 				const e = new BackEdgeNode(off + i);
 				blist.push(e);
 				vs[w].be_end.push(e);
 			}
 			if (hi2 < hi0) { // then create a capping back edge
 				const w = v_dis[hi2];
-				if (w != v) {
+				if (w != v) { // no loop!
 					const d = new BackEdgeNode(-1); // capping back edge
 					blist.push(d);
 					vs[w].be_end_cap.push(d);
@@ -571,14 +573,6 @@ class SegEdgeGraph {
 					print(`${a.v} -> ${a.w}`, a.seg < g.seg.length? g.seg[a.seg].name : "*", a.dfs_type, a.cec);
 			}
 		}
-		if (0) {
-			print("segment,label");
-			for (let i = 0; i < this.arc.length; ++i) {
-				const a = this.arc[i];
-				if (a.seg < g.seg.length && (a.dfs_type == 1 || a.dfs_type == 2))
-					print(`${g.seg[a.seg].name},${a.cec}`);
-			}
-		}
 
 		// construct initial PST
 		let state = [], sese = [], cec_entry = [];
@@ -595,6 +589,7 @@ class SegEdgeGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			let b = sese[i], flt = false;
 			if (b.en < 0) flt = true; // an open bubble
+			else if (this.arc[b.st].seg >= this.n_seg || this.arc[b.en].seg >= this.n_seg) flt = true; // involving the dummy node
 			else if (this.arc[b.st].w == this.arc[b.en].v && this.idx[this.arc[b.en].v].n == 2) flt = true; // a point bubble
 			if (flt) {
 				if (b.par >= 0) b.unflt = sese[b.par].unflt;
@@ -606,14 +601,21 @@ class SegEdgeGraph {
 				sese_flt.push({ st:b.st, en:b.en, par:par });
 			}
 		}
-		sese = sese_flt;
-
-		if (1) {
-			for (let i = 0; i < sese.length; ++i) {
-				const st = `(${this.arc[sese[i].st].v},${this.arc[sese[i].st].w})`;
-				const en = sese[i].en < 0? '*' : `(${this.arc[sese[i].en].v},${this.arc[sese[i].en].w})`;
-				print(i, st, en, sese[i].par);
-			}
+		return sese_flt;
+	}
+	print_pst(sese, g) {
+		for (let i = 0; i < sese.length; ++i) {
+			const st = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
+			const en = sese[i].en < 0? "*" : this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
+			print(i, sese[i].par, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
+		}
+	}
+	print_bandage_csv(g) {
+		print("segment,label");
+		for (let i = 0; i < this.arc.length; ++i) {
+			const a = this.arc[i];
+			if (a.seg < g.seg.length && (a.dfs_type == 1 || a.dfs_type == 2))
+				print(`${g.seg[a.seg].name},${a.cec}`);
 		}
 	}
 }
@@ -643,7 +645,8 @@ function pg_cmd_test(args) {
 	e.from_gfa(g);
 	//e.print_graph(g);
 	//e.dfs_debug();
-	e.pst(g);
+	const sese = e.pst(g);
+	e.print_pst(sese, g);
 }
 
 /*****************
