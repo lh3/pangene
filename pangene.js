@@ -386,7 +386,7 @@ class SegEdgeGraph {
 	print_graph(g) {
 		for (let i = 0; i < this.arc.length; ++i) {
 			const x = this.arc[i];
-			print('E', i, x.v, '--', x.w, g.seg[x.seg].name, x.pair);
+			print('E', i, `${x.v} -- ${x.w}`, x.seg < g.seg.length? g.seg[x.seg].name : '*', x.pair);
 		}
 	}
 	dfs_traverse1(v, t, state) {
@@ -397,8 +397,8 @@ class SegEdgeGraph {
 		while (stack.length > 0) {
 			const [w, i] = stack.pop();
 			const n = this.idx[w].n, off = this.idx[w].o;
-			let a = this.arc[off + i];
 			if (i < n) {
+				let a = this.arc[off + i];
 				stack.push([w, i + 1]); // repush to the stack
 				if (a.dfs_type == 3) continue;
 				const u = a.w;
@@ -446,27 +446,27 @@ class SegEdgeGraph {
 			}
 		}
 	}
-	dfs_pst1(v, visited, cec_prev, sese) {
+	dfs_pst1(v, visited, cec_entry, sese) {
 		if (visited[v] != 0) return;
 		visited[v] = 1;
 		let stack = [[v, 0, -1]];
 		while (stack.length > 0) {
 			const [w, i, b] = stack.pop();
 			const n = this.idx[w].n, off = this.idx[w].o;
-			let a = this.arc[off + i];
 			if (i == n) continue;
 			stack.push([w, i + 1, b]); // repush to the stack
+			let a = this.arc[off + i];
 			if (a.dfs_type == 3) continue;
 			const u = a.w;
-			if (visited[u] != 0) continue;
-			visited[u] = 1;
 			let b2 = b;
 			if (a.cec >= 0) {
-				if (cec_prev[a.cec] != -1)
-					sese[cec_prev[a.cec]].exit = off + i;
-				sese.push({ entry:off+i, exit:-1, parent:b });
-				b2 = cec_prev[a.cec] = sese.length - 1;
+				if (cec_entry[a.cec] != -1) // if there is a start, close it
+					sese[cec_entry[a.cec]].en = off + i;
+				sese.push({ st:off+i, en:-1, par:b, unflt:-1, i:-1 }); // create a new entry
+				b2 = cec_entry[a.cec] = sese.length - 1;
 			}
+			if (visited[u] != 0) continue;
+			visited[u] = 1;
 			stack.push([u, 0, b2]);
 		}
 	}
@@ -560,14 +560,38 @@ class SegEdgeGraph {
 		}
 		*/
 
-		// construct PST
-		let state = [], sese = [], cec_prev = [];
+		// construct initial PST
+		let state = [], sese = [], cec_entry = [];
 		for (let v = 0; v < this.n_node; ++v) state[v] = 0; // not visited
-		for (let c = 0; c < cec; ++c) cec_prev[c] = -1;
+		for (let c = 0; c < cec; ++c) cec_entry[c] = -1;
 		for (let t = 0; t < v_dis.length; ++t) {
 			const v = v_dis[t];
 			if (state[v] == 0)
-				this.dfs_pst1(v, state, cec_prev, sese);
+				this.dfs_pst1(v, state, cec_entry, sese);
+		}
+
+		// filter out open bubbles and point bubbles
+		let sese_flt = [];
+		for (let i = 0; i < sese.length; ++i) {
+			let b = sese[i], flt = false;
+			if (b.en < 0) flt = true; // an open bubble
+			else if (this.arc[b.st].w == this.arc[b.en].v) flt = true; // a point bubble
+			if (flt) {
+				if (b.par >= 0) b.unflt = sese[b.par].unflt;
+				else b.unflt = -1;
+			} else {
+				b.unflt = i, b.par = sese[b.par].unflt;
+				b.i = sese_flt.length;
+				const par = b.par < 0? -1 : sese[b.par].i;
+				sese_flt.push({ st:b.st, en:b.en, par:par });
+			}
+		}
+		//sese = sese_flt;
+
+		for (let i = 0; i < sese.length; ++i) {
+			const st = `(${this.arc[sese[i].st].v},${this.arc[sese[i].st].w})`;
+			const en = sese[i].en < 0? '*' : `(${this.arc[sese[i].en].v},${this.arc[sese[i].en].w})`;
+			print(i, st, en, sese[i].par);
 		}
 	}
 }
@@ -595,6 +619,7 @@ function pg_cmd_test(args) {
 	g.from_file(args[0]);
 	let e = new SegEdgeGraph();
 	e.from_gfa(g);
+	//e.print_graph(g);
 	//e.dfs_debug();
 	e.pst();
 }
