@@ -561,13 +561,6 @@ class UndirectedGFA {
 					this.arc[b.a].cec = this.arc[e].cec;
 			}
 		}
-		if (0) {
-			for (let i = 0; i < this.arc.length; ++i) {
-				const a = this.arc[i];
-				if (a.dfs_type == 1 || a.dfs_type == 2)
-					print(`${a.v} -> ${a.w}`, a.seg < g.seg.length? g.seg[a.seg].name : "*", a.dfs_type, a.cec);
-			}
-		}
 
 		// construct initial PST
 		let state = [], sese = [], cec_entry = [];
@@ -615,6 +608,14 @@ class UndirectedGFA {
 				print(`${g.seg[a.seg].name},${a.cec}`);
 		}
 	}
+	print_cycle_equiv() {
+		const g = this.gfa;
+		for (let i = 0; i < this.arc.length; ++i) {
+			const a = this.arc[i];
+			if (a.dfs_type == 1 || a.dfs_type == 2)
+				print(`(${a.v},${a.w})`, (a.seg < g.seg.length? "><"[a.ori>0?0:1] + g.seg[a.seg].name : "*"), ["tree", "back"][a.dfs_type-1], a.cec);
+		}
+	}
 }
 
 /***************
@@ -632,14 +633,16 @@ function pg_cmd_parse_gfa(args) {
 }
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false };
-	for (const o of getopt(args, "b", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false };
+	for (const o of getopt(args, "be", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
+		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
 		print("Options:");
 		print("  -b       output Bandage CSV");
+		print("  -e       print cycle equivalent class");
 		return;
 	}
 	let g = new GFA();
@@ -648,6 +651,7 @@ function pg_cmd_call(args) {
 	//e.dfs_debug();
 	const sese = e.pst();
 	if (opt.print_bandage) e.print_bandage_csv();
+	if (opt.print_cec) e.print_cycle_equiv();
 	if (opt.print_pst) e.print_pst(sese);
 }
 
