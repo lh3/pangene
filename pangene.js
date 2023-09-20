@@ -466,7 +466,7 @@ class UndirectedGFA {
 			vs[v] = { hi:this.n_node, blist:null, be_end:[], be_end_cap:[] };
 
 		// find cycle equivalent class
-		let cec = 0; // cycle equivalent class
+		let cec = 1; // cycle equivalent class; class 0 is reserved for tree edges not in cycles
 		for (let t = v_dis.length - 1; t >= 0; --t) {
 			const v = v_dis[t];
 			const n = this.idx[v].n, off = this.idx[v].o;
@@ -476,6 +476,7 @@ class UndirectedGFA {
 			for (let i = 0; i < n; ++i) { // traverse back edges
 				if (this.arc[off + i].dfs_type !== 2) continue;
 				const w = this.arc[off + i].w;
+				if (v === w) continue;
 				hi0 = hi0 < this.dfs_dis[w]? hi0 : this.dfs_dis[w];
 			}
 
@@ -517,17 +518,17 @@ class UndirectedGFA {
 			}
 			vs[v].blist = blist;
 
-			if (0) {
+			if (0) { // debugging code
 				let l = [];
 				for (let p = blist.head; p != null; p = p.next) {
 					if (p.a < 0) l.push('*');
-					else l.push(`${this.arc[p.a].v}:${this.arc[p.a].w}`);
+					else l.push(`${this.arc[p.a].v},${this.arc[p.a].w}`);
 				}
-				print('X', v, `hi0=${hi0},hi1=${hi1},hi2=${hi2}`, l.join(","));
+				print('X', v, `hi0=${hi0},hi1=${hi1},hi2=${hi2}`, l.join(";"));
 			}
 
 			// determine the category for tree edge (parent(v),v)
-			if (this.dfs_par[v] >= 0 && blist.size > 0) { // not a root (there may be multiple roots if the graph is disconnected)
+			if (this.dfs_par[v] >= 0) { // not a root (there may be multiple roots if the graph is disconnected)
 				const u = this.dfs_par[v]; // v's parent
 				const n = this.idx[u].n, off = this.idx[u].o;
 				let e = -1; // the tree edge from u to v
@@ -535,15 +536,17 @@ class UndirectedGFA {
 					if (this.arc[off + i].w === v && this.arc[off + i].dfs_type === 1)
 						e = off + i;
 				if (e < 0) throw Error(`Bug: failed to find tree edge ${u}->${v}`);
-				const b = blist.tail;
-				if (b.recent_size !== blist.size) {
-					b.recent_size = blist.size;
-					b.recent_cec = cec++;
-				}
-				if (b.recent_cec < 0) throw Error(`Bug: recent_cec not set when processing edge ${e}`);
-				this.arc[e].cec = b.recent_cec;
-				if (b.recent_size === 1 && b.a >= 0) // the tree edge e and back edge b.a are equivalent
-					this.arc[b.a].cec = this.arc[e].cec;
+				if (blist.size > 0) {
+					const b = blist.tail;
+					if (b.recent_size !== blist.size) {
+						b.recent_size = blist.size;
+						b.recent_cec = cec++;
+					}
+					if (b.recent_cec < 0) throw Error(`Bug: recent_cec not set when processing edge ${e}`);
+					this.arc[e].cec = b.recent_cec;
+					if (b.recent_size === 1 && b.a >= 0) // the tree edge e and back edge b.a are equivalent
+						this.arc[b.a].cec = this.arc[e].cec;
+				} //else this.arc[e].cec = 0;
 			}
 		}
 
