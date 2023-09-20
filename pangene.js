@@ -289,19 +289,20 @@ class BackEdgeNode {
 	}
 }
 
-class SegEdgeGraph {
-	constructor() {
+class UndirectedGFA {
+	constructor(g) {
 		this.n_node = 0;
-		this.n_seg = 0;
 		this.end_cat = [];
 		this.arc = [];
 		this.idx = [];
 		this.dfs_dis = [];
 		this.dfs_fin = [];
 		this.dfs_par = [];
+		this.gfa = g;
+		this.#convert_gfa();
 	}
-	from_gfa(g) {
-		this.n_seg = g.seg.length;
+	#convert_gfa() {
+		const g = this.gfa;
 		const n_vtx = g.seg.length * 2;
 		// collect tips
 		let tip = [];
@@ -385,12 +386,6 @@ class SegEdgeGraph {
 			else arc.pair = vtx2arc[arc.seg*2];
 		}
 	}
-	print_graph(g) {
-		for (let i = 0; i < this.arc.length; ++i) {
-			const x = this.arc[i];
-			print('E', i, `${x.v} -- ${x.w}`, x.seg < g.seg.length? g.seg[x.seg].name : '*', x.pair);
-		}
-	}
 	dfs_traverse1(v, t, state) {
 		if (state[v] != 0) return;
 		this.dfs_dis[v] = t.dis++;
@@ -433,7 +428,7 @@ class SegEdgeGraph {
 		if (t.dis != this.n_node || t.fin != this.n_node)
 			throw Error("DFS bug");
 	}
-	dfs_debug(g) {
+	dfs_debug() {
 		this.dfs_traverse();
 		let v_dis = [];
 		for (let v = 0; v < this.dfs_dis.length; ++v)
@@ -472,7 +467,7 @@ class SegEdgeGraph {
 			stack.push([u, 0, b2]);
 		}
 	}
-	pst(g) {
+	pst() {
 		this.dfs_traverse();
 
 		// put vertices in the order of their discovery time
@@ -589,7 +584,7 @@ class SegEdgeGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			let b = sese[i], flt = false;
 			if (b.en < 0) flt = true; // an open bubble
-			else if (this.arc[b.st].seg >= this.n_seg || this.arc[b.en].seg >= this.n_seg) flt = true; // involving the dummy node
+			else if (this.arc[b.st].seg >= this.gfa.seg.length || this.arc[b.en].seg >= this.gfa.seg.length) flt = true; // involving the dummy node
 			else if (this.arc[b.st].w == this.arc[b.en].v && this.idx[this.arc[b.en].v].n == 2) flt = true; // a point bubble
 			if (flt) {
 				if (b.par >= 0) b.unflt = sese[b.par].unflt;
@@ -603,18 +598,20 @@ class SegEdgeGraph {
 		}
 		return sese_flt;
 	}
-	print_pst(sese, g) {
+	print_pst(sese) {
+		const g = this.gfa;
 		for (let i = 0; i < sese.length; ++i) {
 			const st = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
 			const en = sese[i].en < 0? "*" : this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
 			print(i, sese[i].par, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
 		}
 	}
-	print_bandage_csv(g) {
+	print_bandage_csv() {
+		const g = this.gfa;
 		print("segment,label");
 		for (let i = 0; i < this.arc.length; ++i) {
 			const a = this.arc[i];
-			if (a.seg < g.seg.length && (a.dfs_type == 1 || a.dfs_type == 2))
+			if (a.seg < g.seg.length && (a.dfs_type == 1 || a.dfs_type == 2) && a.cec >= 0)
 				print(`${g.seg[a.seg].name},${a.cec}`);
 		}
 	}
@@ -634,19 +631,24 @@ function pg_cmd_parse_gfa(args) {
 	print(g);
 }
 
-function pg_cmd_test(args) {
+function pg_cmd_call(args) {
+	let opt = { print_pst:true, print_bandage:false };
+	for (const o of getopt(args, "b", [])) {
+		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
+	}
 	if (args.length == 0) {
-		print("Usage: pangene.js parse-gfa <in.gfa>");
+		print("Usage: pangene.js call [options] <in.gfa>");
+		print("Options:");
+		print("  -b       output Bandage CSV");
 		return;
 	}
 	let g = new GFA();
 	g.from_file(args[0]);
-	let e = new SegEdgeGraph();
-	e.from_gfa(g);
-	//e.print_graph(g);
+	let e = new UndirectedGFA(g);
 	//e.dfs_debug();
-	const sese = e.pst(g);
-	e.print_pst(sese, g);
+	const sese = e.pst();
+	if (opt.print_bandage) e.print_bandage_csv();
+	if (opt.print_pst) e.print_pst(sese);
 }
 
 /*****************
@@ -658,13 +660,14 @@ function main(args)
 	if (args.length == 0) {
 		print("Usage: pangene.js <command> [arguments]");
 		print("Commands:");
+		print("  call          call variants from a pangene graph");
 		print("  parse-gfa     parse a GFA file (for debugging only)");
 		exit(1);
 	}
 
 	var cmd = args.shift();
 	if (cmd == 'parse-gfa') pg_cmd_parse_gfa(args);
-	else if (cmd == 'test') pg_cmd_test(args);
+	else if (cmd == 'call') pg_cmd_call(args);
 	else throw Error("unrecognized command: " + cmd);
 }
 
