@@ -527,17 +527,21 @@ class SegEdgeGraph {
 			}
 			if (hi2 < hi0) { // then create a capping back edge
 				const w = v_dis[hi2];
-				const d = new BackEdgeNode(-1); // capping back edge
-				blist.push(d);
-				vs[w].be_end_cap.push(d);
+				if (w != v) {
+					const d = new BackEdgeNode(-1); // capping back edge
+					blist.push(d);
+					vs[w].be_end_cap.push(d);
+				}
 			}
 			vs[v].blist = blist;
 
 			if (0) {
 				let l = [];
-				for (let p = blist.head; p != null; p = p.next)
-					l.push(`${this.arc[p.a].v}:${this.arc[p.a].w}`);
-				print('X', v, hi0, hi1, hi2, l.join(","));
+				for (let p = blist.head; p != null; p = p.next) {
+					if (p.a < 0) l.push('*');
+					else l.push(`${this.arc[p.a].v}:${this.arc[p.a].w}`);
+				}
+				print('X', v, `hi0=${hi0},hi1=${hi1},hi2=${hi2}`, l.join(","));
 			}
 
 			// determine the category for tree edge (parent(v),v)
