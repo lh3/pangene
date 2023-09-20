@@ -428,21 +428,6 @@ class UndirectedGFA {
 		if (t.dis != this.n_node || t.fin != this.n_node)
 			throw Error("DFS bug");
 	}
-	dfs_debug() {
-		this.dfs_traverse();
-		let v_dis = [];
-		for (let v = 0; v < this.dfs_dis.length; ++v)
-			v_dis[this.dfs_dis[v]] = v;
-		for (let j = 0; j < v_dis.length; ++j) {
-			const v = v_dis[j];
-			const n = this.idx[v].n, off = this.idx[v].o;
-			for (let i = 0; i < n; ++i) {
-				const a = this.arc[off + i];
-				if (a.dfs_type == 1 || a.dfs_type == 2)
-					print(`A${a.dfs_type} ${v} -> ${a.w}`);
-			}
-		}
-	}
 	dfs_pst1(v, visited, cec_entry, sese) {
 		if (visited[v] != 0) return;
 		visited[v] = 1;
@@ -596,7 +581,7 @@ class UndirectedGFA {
 		for (let i = 0; i < sese.length; ++i) {
 			const st = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
 			const en = sese[i].en < 0? "*" : this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
-			print(i, sese[i].par, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
+			print('BB', i, sese[i].par, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
 		}
 	}
 	print_bandage_csv() {
@@ -613,7 +598,23 @@ class UndirectedGFA {
 		for (let i = 0; i < this.arc.length; ++i) {
 			const a = this.arc[i];
 			if (a.dfs_type == 1 || a.dfs_type == 2)
-				print(`(${a.v},${a.w})`, (a.seg < g.seg.length? "><"[a.ori>0?0:1] + g.seg[a.seg].name : "*"), ["tree", "back"][a.dfs_type-1], a.cec);
+				print('EC', a.cec, ["tree", "back"][a.dfs_type-1], `${a.v},${a.w}`, (a.seg < g.seg.length? "><"[a.ori>0?0:1] + g.seg[a.seg].name : "*"));
+		}
+	}
+	print_dfs() {
+		const g = this.gfa;
+		if (this.dfs_dis.length == 0) this.dfs_traverse();
+		let v_dis = [];
+		for (let v = 0; v < this.dfs_dis.length; ++v)
+			v_dis[this.dfs_dis[v]] = v;
+		for (let j = 0; j < v_dis.length; ++j) {
+			const v = v_dis[j];
+			const n = this.idx[v].n, off = this.idx[v].o;
+			for (let i = 0; i < n; ++i) {
+				const a = this.arc[off + i];
+				if (a.dfs_type == 1 || a.dfs_type == 2)
+					print('DF', ["tree", "back"][a.dfs_type-1], `${v},${a.w}`, (a.seg < g.seg.length? "><"[a.ori>0?0:1] + g.seg[a.seg].name : "*"));
+			}
 		}
 	}
 }
@@ -633,23 +634,27 @@ function pg_cmd_parse_gfa(args) {
 }
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false };
-	for (const o of getopt(args, "be", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false };
+	for (const o of getopt(args, "bed", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
+		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
 		print("Options:");
-		print("  -b       output Bandage CSV");
-		print("  -e       print cycle equivalent class");
+		print("  General:");
+		print("    -b       output Bandage CSV");
+		print("  Debugging:");
+		print("    -d       output DFS traversal");
+		print("    -e       output cycle equivalent class");
 		return;
 	}
 	let g = new GFA();
 	g.from_file(args[0]);
 	let e = new UndirectedGFA(g);
-	//e.dfs_debug();
 	const sese = e.pst();
+	if (opt.print_dfs) e.print_dfs();
 	if (opt.print_bandage) e.print_bandage_csv();
 	if (opt.print_cec) e.print_cycle_equiv();
 	if (opt.print_pst) e.print_pst(sese);
