@@ -470,7 +470,7 @@ class SegEdgeGraph {
 			stack.push([u, 0, b2]);
 		}
 	}
-	pst() {
+	pst(g) {
 		this.dfs_traverse();
 
 		// put vertices in the order of their discovery time
@@ -517,9 +517,10 @@ class SegEdgeGraph {
 				if (this.arc[b.a].cec < 0)
 					this.arc[b.a].cec = cec++;
 			}
-			for (let i = 0; i < n; ++i) { // traverse tree edges starting at v
+			for (let i = 0; i < n; ++i) { // traverse back edges starting at v
 				if (this.arc[off + i].dfs_type != 2) continue;
 				const w = this.arc[off + i].w;
+				if (w == v) continue;
 				const e = new BackEdgeNode(off + i);
 				blist.push(e);
 				vs[w].be_end.push(e);
@@ -531,6 +532,13 @@ class SegEdgeGraph {
 				vs[w].be_end_cap.push(d);
 			}
 			vs[v].blist = blist;
+
+			if (0) {
+				let l = [];
+				for (let p = blist.head; p != null; p = p.next)
+					l.push(`${this.arc[p.a].v}:${this.arc[p.a].w}`);
+				print('X', v, hi0, hi1, hi2, l.join(","));
+			}
 
 			// determine the category for tree edge (parent(v),v)
 			if (this.dfs_par[v] >= 0 && blist.size > 0) { // not a root (there may be multiple roots if the graph is disconnected)
@@ -552,13 +560,21 @@ class SegEdgeGraph {
 					this.arc[b.a].cec = this.arc[e].cec;
 			}
 		}
-		/*
-		for (let i = 0; i < this.arc.length; ++i) {
-			const a = this.arc[i];
-			if (a.dfs_type == 1 || a.dfs_type == 2)
-				print(`${a.v} -> ${a.w}`, a.seg, a.dfs_type, a.cec);
+		if (0) {
+			for (let i = 0; i < this.arc.length; ++i) {
+				const a = this.arc[i];
+				if (a.dfs_type == 1 || a.dfs_type == 2)
+					print(`${a.v} -> ${a.w}`, a.seg < g.seg.length? g.seg[a.seg].name : "*", a.dfs_type, a.cec);
+			}
 		}
-		*/
+		if (0) {
+			print("segment,label");
+			for (let i = 0; i < this.arc.length; ++i) {
+				const a = this.arc[i];
+				if (a.seg < g.seg.length && (a.dfs_type == 1 || a.dfs_type == 2))
+					print(`${g.seg[a.seg].name},${a.cec}`);
+			}
+		}
 
 		// construct initial PST
 		let state = [], sese = [], cec_entry = [];
@@ -575,7 +591,7 @@ class SegEdgeGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			let b = sese[i], flt = false;
 			if (b.en < 0) flt = true; // an open bubble
-			else if (this.arc[b.st].w == this.arc[b.en].v) flt = true; // a point bubble
+			else if (this.arc[b.st].w == this.arc[b.en].v && this.idx[this.arc[b.en].v].n == 2) flt = true; // a point bubble
 			if (flt) {
 				if (b.par >= 0) b.unflt = sese[b.par].unflt;
 				else b.unflt = -1;
@@ -586,12 +602,14 @@ class SegEdgeGraph {
 				sese_flt.push({ st:b.st, en:b.en, par:par });
 			}
 		}
-		//sese = sese_flt;
+		sese = sese_flt;
 
-		for (let i = 0; i < sese.length; ++i) {
-			const st = `(${this.arc[sese[i].st].v},${this.arc[sese[i].st].w})`;
-			const en = sese[i].en < 0? '*' : `(${this.arc[sese[i].en].v},${this.arc[sese[i].en].w})`;
-			print(i, st, en, sese[i].par);
+		if (1) {
+			for (let i = 0; i < sese.length; ++i) {
+				const st = `(${this.arc[sese[i].st].v},${this.arc[sese[i].st].w})`;
+				const en = sese[i].en < 0? '*' : `(${this.arc[sese[i].en].v},${this.arc[sese[i].en].w})`;
+				print(i, st, en, sese[i].par);
+			}
 		}
 	}
 }
@@ -621,7 +639,7 @@ function pg_cmd_test(args) {
 	e.from_gfa(g);
 	//e.print_graph(g);
 	//e.dfs_debug();
-	e.pst();
+	e.pst(g);
 }
 
 /*****************
