@@ -556,7 +556,7 @@ class SegEdgeGraph {
 				}
 				if (b.recent_cec < 0) throw Error(`Bug: recent_cec not set when processing edge ${e}`);
 				this.arc[e].cec = b.recent_cec;
-				if (b.recent_size === 1) // the tree edge e and back edge b.a are equivalent
+				if (b.recent_size === 1 && b.a >= 0) // the tree edge e and back edge b.a are equivalent
 					this.arc[b.a].cec = this.arc[e].cec;
 			}
 		}
