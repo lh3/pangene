@@ -433,18 +433,19 @@ class UndirectedGFA {
 		visited[v] = 1;
 		let stack = [[v, 0, -1]];
 		while (stack.length > 0) {
-			const [w, i, b] = stack.pop();
+			const [w, i, b] = stack.pop(); // b: the index of the bubble that leads to w
 			const n = this.idx[w].n, off = this.idx[w].o;
 			if (i == n) continue;
 			stack.push([w, i + 1, b]); // repush to the stack
 			let a = this.arc[off + i];
-			if (a.dfs_type == 3) continue;
+			if (a.dfs_type == 3) continue; // blocked edge
 			const u = a.w;
 			let b2 = b;
 			if (a.cec >= 0) {
+				let par = b;
 				if (cec_entry[a.cec] != -1) // if there is a start, close it
-					sese[cec_entry[a.cec]].en = off + i;
-				sese.push({ st:off+i, en:-1, par:b, unflt:-1, i:-1 }); // create a new entry
+					sese[cec_entry[a.cec]].en = off + i, par = sese[cec_entry[a.cec]].par;
+				sese.push({ st:off+i, en:-1, par:par, unflt:-1, i:-1 }); // create a new entry with the same parrent
 				b2 = cec_entry[a.cec] = sese.length - 1;
 			}
 			if (visited[u] != 0) continue;
@@ -546,7 +547,7 @@ class UndirectedGFA {
 					this.arc[e].cec = b.recent_cec;
 					if (b.recent_size === 1 && b.a >= 0) // the tree edge e and back edge b.a are equivalent
 						this.arc[b.a].cec = this.arc[e].cec;
-				} //else this.arc[e].cec = 0;
+				} else this.arc[e].cec = 0;
 			}
 		}
 
@@ -571,7 +572,8 @@ class UndirectedGFA {
 				if (b.par >= 0) b.unflt = sese[b.par].unflt;
 				else b.unflt = -1;
 			} else {
-				b.unflt = i, b.par = sese[b.par].unflt;
+				b.unflt = i;
+				if (b.par >= 0) b.par = sese[b.par].unflt;
 				b.i = sese_flt.length;
 				const par = b.par < 0? -1 : sese[b.par].i;
 				sese_flt.push({ st:b.st, en:b.en, par:par });
@@ -584,7 +586,7 @@ class UndirectedGFA {
 		for (let i = 0; i < sese.length; ++i) {
 			const st = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
 			const en = sese[i].en < 0? "*" : this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
-			print('BB', i, sese[i].par, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
+			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
 		}
 	}
 	print_bandage_csv() {
