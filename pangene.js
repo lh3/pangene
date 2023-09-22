@@ -226,6 +226,30 @@ class GFA {
 			this.#parse_line(line);
 		this.#index();
 	}
+	get_bubble(vs, ve, flag, f, max_n) {
+		let cycle = false, inv = false;
+		let stack = [vs], list = [];
+		flag[vs] = f;
+		while (stack.length) {
+			const v = stack.pop();
+			const off = this.idx[v].o, n = this.idx[v].n;
+			for (let i = 0; i < n; ++i) {
+				const a = this.arc[off + i];
+				const w = a.w;
+				if (w == ve || w == (ve^1)) continue;
+				if (flag[w] == f) {
+					cycle = true;
+				} else {
+					if (flag[w^1] == f) inv = true;
+					else list.push(this.seg[w>>1].name);
+					if (a.w == (vs^1)) continue;
+					stack.push(w);
+					flag[w] = f;
+				}
+			}
+		}
+		return { cycle:cycle, inv:inv, list:list };
+	}
 }
 
 /********************************
@@ -581,10 +605,13 @@ class UndirectedGFA {
 	}
 	print_pst(sese) {
 		const g = this.gfa;
+		let flag = [];
+		for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
 		for (let i = 0; i < sese.length; ++i) {
 			const st = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
 			const en = sese[i].en < 0? "*" : this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
-			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
+			const b = this.gfa.get_bubble(st, en, flag, i, 100);
+			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, b.list.join(","));
 		}
 	}
 	print_bandage_csv() {
