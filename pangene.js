@@ -428,7 +428,7 @@ class UndirectedGFA {
 		if (t.dis != this.n_node || t.fin != this.n_node)
 			throw Error("DFS bug");
 	}
-	dfs_pst1(v, visited, cec_entry, sese) {
+	dfs_pst1(v, visited, cec_entry, sese) { // compute SESEs and their hierarchy; this is different from Johnson's PhD thesis
 		if (visited[v] != 0) return;
 		visited[v] = 1;
 		let stack = [[v, 0, -1]];
@@ -509,13 +509,11 @@ class UndirectedGFA {
 				blist.push(e);
 				vs[w].be_end.push(e);
 			}
-			if (hi2 < hi0) { // then create a capping back edge
+			if (hi2 < hi0 && hi2 < t) { // then create a capping back edge; this line is different from Johnson et al
 				const w = v_dis[hi2];
-				if (w != v) { // no loop!
-					const d = new BackEdgeNode(-1); // capping back edge
-					blist.push(d);
-					vs[w].be_end_cap.push(d);
-				}
+				const d = new BackEdgeNode(-1); // capping back edge
+				blist.push(d);
+				vs[w].be_end_cap.push(d);
 			}
 			vs[v].blist = blist;
 
@@ -547,7 +545,7 @@ class UndirectedGFA {
 					this.arc[e].cec = b.recent_cec;
 					if (b.recent_size === 1 && b.a >= 0) // the tree edge e and back edge b.a are equivalent
 						this.arc[b.a].cec = this.arc[e].cec;
-				} else this.arc[e].cec = 0;
+				} else this.arc[e].cec = 0; // we won't come here given a control flow graph
 			}
 		}
 
