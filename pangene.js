@@ -227,8 +227,7 @@ class GFA {
 		this.#index();
 	}
 	get_bubble(vs, ve, flag, f, max_n) {
-		let cycle = false, inv = false;
-		let stack = [vs], list = [];
+		let stack = [vs], list = [], inv = false;
 		flag[vs] = f;
 		while (stack.length) {
 			const v = stack.pop();
@@ -237,9 +236,7 @@ class GFA {
 				const a = this.arc[off + i];
 				const w = a.w;
 				if (w == ve || w == (ve^1)) continue;
-				if (flag[w] == f) {
-					cycle = true;
-				} else {
+				if (flag[w] != f) {
 					if (flag[w^1] == f) inv = true;
 					else list.push(this.seg[w>>1].name);
 					if (a.w == (vs^1)) continue;
@@ -247,8 +244,13 @@ class GFA {
 					flag[w] = f;
 				}
 			}
+			if (list.length > max_n) break;
 		}
-		return { cycle:cycle, inv:inv, list:list };
+		let tag = "";
+		if (inv) tag += "I";
+		if (list.length > max_n) tag += "B", list = [];
+		if (tag === "") tag = ".";
+		return { tag:tag, list:list };
 	}
 }
 
@@ -313,7 +315,7 @@ class BackEdgeNode {
 	}
 }
 
-class UndirectedGFA {
+class NetGraph {
 	constructor(g) {
 		this.n_node = 0;
 		this.end_cat = [];
@@ -611,7 +613,7 @@ class UndirectedGFA {
 			const st = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
 			const en = sese[i].en < 0? "*" : this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
 			const b = this.gfa.get_bubble(st, en, flag, i, 100);
-			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, b.list.join(","));
+			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, b.tag, b.list.join(","));
 		}
 	}
 	print_bandage_csv() {
@@ -682,7 +684,7 @@ function pg_cmd_call(args) {
 	}
 	let g = new GFA();
 	g.from_file(args[0]);
-	let e = new UndirectedGFA(g);
+	let e = new NetGraph(g);
 	const sese = e.pst();
 	if (opt.print_dfs) e.print_dfs();
 	if (opt.print_bandage) e.print_bandage_csv();
