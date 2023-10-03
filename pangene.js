@@ -106,7 +106,7 @@ class GFA {
 		const n_vtx = this.seg.length * 2;
 		for (let v = 0; v < n_vtx; ++v)
 			this.idx[v] = { o:0, n:0 };
-		this.arc = this.arc.sort(function(a,b) { return a.v - b.v });
+		this.arc.sort(function(a,b) { return a.v - b.v });
 		for (let i = 1, st = 0; i <= this.arc.length; ++i)
 			if (i == this.arc.length || this.arc[i].v != this.arc[st].v)
 				this.idx[this.arc[st].v] = { o:st, n:i-st }, st = i;
