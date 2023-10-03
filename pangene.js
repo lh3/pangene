@@ -774,12 +774,14 @@ function pg_cmd_call(args) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
+		else if (o.opt == "-m") opt.max_ext = parseInt(o.arg);
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
 		print("Options:");
 		print("  General:");
-		print("    -b       output Bandage CSV");
+		print(`    -m INT   don't output gene lists longer than INT [${opt.max_ext}]`);
+		print("    -b       output equivalent classes for Bandage visualization");
 		print("  Debugging:");
 		print("    -d       output DFS traversal");
 		print("    -e       output cycle equivalent class");
