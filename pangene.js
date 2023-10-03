@@ -696,11 +696,23 @@ class NetGraph {
 	count_allele(sese, ht, max_ext) {
 		const g = this.gfa;
 		for (let i = 0; i < sese.length; ++i) {
-			let al = {};
-			for (let j = 0; j < ht[i].length; ++j) {
+			let gene_hash = {}, gene_list = [];
+			for (let j = 0; j < ht[i].length; ++j) { // get the list of genes
 				const x = ht[i][j];
 				const w = g.walk[x.walk];
-				if (x.en_off - x.st_off - 1 > max_ext) continue;
+				for (let k = x.st_off + 1; k < x.en_off; ++k) {
+					const v = w.v[k];
+					if (gene_hash[v>>1] == null)
+						gene_hash[v>>1] = 1, gene_list.push(g.seg[v>>1].name);
+				}
+			}
+			sese[i].gene = gene_list;
+			sese[i].al = [];
+			if (gene_list.length > max_ext) continue;
+			let al = {};
+			for (let j = 0; j < ht[i].length; ++j) { // get alleles
+				const x = ht[i][j];
+				const w = g.walk[x.walk];
 				let a = [];
 				if (x.ori > 0) {
 					for (let k = x.st_off; k <= x.en_off; ++k)
@@ -713,7 +725,6 @@ class NetGraph {
 				if (al[s] == null) al[s] = { a:a.slice(0), n:0 };
 				++al[s].n;
 			}
-			sese[i].al = [];
 			for (const key in al)
 				sese[i].al.push({ n:al[key].n, a:al[key].a });
 			sese[i].al.sort(function(a,b) { return b.n - a.n });
@@ -725,16 +736,7 @@ class NetGraph {
 		for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
 		for (let i = 0; i < sese.length; ++i) {
 			const vs = sese[i].vs, ve = sese[i].ve;
-			let h = {}, gene = [];
-			for (let j = 0; j < sese[i].al.length; ++j){
-				for (let k = 0; k < sese[i].al[j].a.length; ++k) {
-					const v = sese[i].al[j].a[k];
-					if (h[v>>1] == null) {
-						gene.push(g.seg[v>>1].name);
-						h[v>>1] = 1;
-					}
-				}
-			}
+			const gene = sese[i].gene;
 			const gene_list = gene.length == 0? '0' : `${gene.length}\t${gene.join(",")}`;
 			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, sese[i].al.length, gene_list);
 			for (let j = 0; j < sese[i].al.length; ++j) {
