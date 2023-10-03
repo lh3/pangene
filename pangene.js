@@ -626,7 +626,7 @@ class NetGraph {
 			const st = sese[i].vs, en = sese[i].ve;
 			const b = this.gfa.get_bubble(st, en, flag, i, max_ext);
 			let list = b.list.length == 0? `0` : `${b.list.length}\t${b.list.join(",")}`;
-			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, b.tag, list);
+			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, list);
 		}
 	}
 	print_bandage_csv() {
@@ -706,9 +706,11 @@ class NetGraph {
 						gene_hash[v>>1] = 1, gene_list.push(g.seg[v>>1].name);
 				}
 			}
-			sese[i].gene = gene_list;
+			sese[i].n_gene = gene_list.length;
+			sese[i].gene = [];
 			sese[i].al = [];
 			if (gene_list.length > max_ext) continue;
+			sese[i].gene = gene_list;
 			let al = {};
 			for (let j = 0; j < ht[i].length; ++j) { // get alleles
 				const x = ht[i][j];
@@ -737,7 +739,7 @@ class NetGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			const vs = sese[i].vs, ve = sese[i].ve;
 			const gene = sese[i].gene;
-			const gene_list = gene.length == 0? '0' : `${gene.length}\t${gene.join(",")}`;
+			const gene_list = gene.length == 0? sese[i].n_gene : `${gene.length}\t${gene.join(",")}`;
 			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, sese[i].al.length, gene_list);
 			for (let j = 0; j < sese[i].al.length; ++j) {
 				let a = [];
