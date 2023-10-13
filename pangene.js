@@ -626,7 +626,7 @@ class NetGraph {
 			const st = sese[i].vs, en = sese[i].ve;
 			const b = this.gfa.get_bubble(st, en, flag, i, max_ext);
 			let list = b.list.length == 0? `0` : `${b.list.length}\t${b.list.join(",")}`;
-			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, list);
+			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, ".", list);
 		}
 	}
 	print_bandage_csv() {
@@ -769,12 +769,13 @@ function pg_cmd_parse_gfa(args) {
 }
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100 };
-	for (const o of getopt(args, "bed", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false };
+	for (const o of getopt(args, "bedmw", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
 		else if (o.opt == "-m") opt.max_ext = parseInt(o.arg);
+		else if (o.opt == "-w") opt.ignore_walk = true;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
@@ -795,7 +796,7 @@ function pg_cmd_call(args) {
 	if (opt.print_bandage) e.print_bandage_csv();
 	if (opt.print_cec) e.print_cycle_equiv();
 	if (opt.print_pst) {
-		if (g.walk.length > 0) {
+		if (!opt.ignore_walk && g.walk.length > 0) {
 			let ht = e.walk_ht(sese);
 			e.count_allele(sese, ht, opt.max_ext);
 			e.print_pst_walk(sese);
