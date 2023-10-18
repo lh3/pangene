@@ -71,6 +71,7 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d);
 int32_t pg_flt_subopt_isoform(const pg_prot_t *prot, int32_t n_gene, pg_genome_t *g);
 int32_t pg_flt_chain_shadow(const pg_prot_t *prot, int32_t n_prot, pg_genome_t *g);
 void pg_flag_representative(pg_data_t *d);
+void pg_cap_score_dom(pg_data_t *d);
 
 void pg_gen_g2s(pg_graph_t *q);
 void pg_graph_flag_vtx(pg_graph_t *q);
@@ -80,7 +81,7 @@ int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q);
 int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q);
 
 int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id);
-int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id);
+int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom_sc);
 
 char *pg_strdup(const char *src);
 

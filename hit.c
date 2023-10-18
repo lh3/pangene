@@ -201,7 +201,7 @@ void pg_flag_representative(pg_data_t *d) // flag representative isoform
 	}
 	for (i = 0; i < d->n_prot; ++i) {
 		d->prot[i].n = (uint32_t)z[i].x;
-		d->prot[i].avg_score = d->prot[i].n? (int32_t)((double)(z[i].x>>32) / d->prot[i].n + .499) : 0;
+		d->prot[i].avg_score_adj = d->prot[i].n? (int32_t)((double)(z[i].x>>32) / d->prot[i].n + .499) : 0;
 	}
 	radix_sort_pg128x(z, z + d->n_prot);
 	for (i = d->n_prot - 1; i >= 0; --i) {
@@ -218,5 +218,27 @@ void pg_flag_representative(pg_data_t *d) // flag representative isoform
 		for (i = 0; i < g->n_hit; ++i)
 			if (d->prot[g->hit[i].pid].rep)
 				g->hit[i].rep = 1;
+	}
+}
+
+void pg_cap_score_dom(pg_data_t *d)
+{
+	int32_t i, j;
+	for (i = 0; i < d->n_prot; ++i) d->prot[i].max_score_ori = 0;
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			pg_hit_t *a = &g->hit[i];
+			pg_prot_t *p = &d->prot[a->pid];
+			p->max_score_ori = p->max_score_ori > a->score_ori? p->max_score_ori : a->score_ori;
+		}
+	}
+	for (j = 0; j < d->n_genome; ++j) {
+		pg_genome_t *g = &d->genome[j];
+		for (i = 0; i < g->n_hit; ++i) {
+			pg_hit_t *a = &g->hit[i];
+			if (a->score_dom > d->prot[a->pid].max_score_ori)
+				a->score_dom = d->prot[a->pid].max_score_ori;
+		}
 	}
 }

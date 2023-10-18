@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "0.0-r149-dirty"
+#define PG_VERSION "0.0-r176-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -12,6 +12,7 @@
 #define PG_F_WRITE_VTX_SEL      0x10
 #define PG_F_FRAG_MODE          0x20
 #define PG_F_NO_JOINT_PSEUDO    0x40
+#define PG_F_ORI_FOR_BRANCH     0x80
 
 typedef struct {
 	uint64_t x, y;
@@ -44,9 +45,9 @@ typedef struct {
 
 typedef struct {
 	const char *name;
-	int32_t len;
-	uint32_t gid:31, rep:1; // rep: if this protein is the representative isoform of the gene
-	int32_t n, avg_score;
+	int32_t len, gid;
+	int32_t rep; // if this protein is the representative isoform of the gene
+	int32_t n, avg_score_adj, max_score_ori;
 } pg_prot_t;
 
 typedef struct {
@@ -61,7 +62,7 @@ typedef struct {
 	int32_t cid; // contig ID
 	int32_t mlen, blen, lof;
 	int32_t rank;
-	int32_t score_ori, score_adj;
+	int32_t score_ori, score_adj, score_dom;
 	int32_t n_exon, off_exon;
 	int32_t pid_dom, pid_dom0;
 	uint32_t rev:1, flt:1, flt_iso_sub_self:1, flt_iso_ov:1, flt_chain:1, pseudo:1, vtx:1, shadow:1, rep:1, weak_br:2;

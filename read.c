@@ -244,7 +244,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 		n_pseudo = pg_flag_pseudo(d->prot, g);
 		PG_SET_FILTER(d, pseudo == 1);
 		pg_hit_sort(g, 0);
-		pg_shadow(opt, d, d->n_genome - 1);
+		pg_shadow(opt, d, d->n_genome - 1, 1);
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			a->pid_dom0 = a->pid_dom;

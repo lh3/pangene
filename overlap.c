@@ -91,14 +91,19 @@ int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id)
 	return n_flt;
 }
 
+typedef struct {
+	uint64_t score;
+	int32_t aid, ov_len;
+} shadow_aux_t;
+
 // test overlap between same or different genes
-int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id)
+int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom_sc)
 {
 	const pg_prot_t *prot = d->prot;
 	pg_genome_t *g = &d->genome[id];
 	int32_t i, i0, n_shadow = 0;
-	pg128_t *tmp;
-	tmp = PG_CALLOC(pg128_t, g->n_hit);
+	shadow_aux_t *tmp;
+	tmp = PG_CALLOC(shadow_aux_t, g->n_hit);
 	for (i = 1, i0 = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		int32_t j, li, gi;
@@ -140,17 +145,30 @@ int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id)
 			}
 			if (shadow == 0) { // mark i
 				ai->shadow = 1;
-				if (tmp[i].y < sj) tmp[i].y = sj, tmp[i].x = aj->pid;
+				if (tmp[i].score < sj) tmp[i].score = sj, tmp[i].aid = j, tmp[i].ov_len = x>>32;
 			} else { // mark j
 				aj->shadow = 1;
-				if (tmp[j].y < si) tmp[j].y = si, tmp[j].x = ai->pid;
+				if (tmp[j].score < si) tmp[j].score = si, tmp[j].aid = i, tmp[j].ov_len = x>>32;
 			}
 		}
 	}
 	for (i = 0; i < g->n_hit; ++i) {
 		pg_hit_t *ai = &g->hit[i];
 		if (ai->flt) continue;
-		ai->pid_dom = tmp[i].y == 0? -1 : tmp[i].x;
+		ai->pid_dom = -1;
+		if (cal_dom_sc) ai->score_dom = -1;
+		if (tmp[i].score > 0) {
+			int32_t j = tmp[i].aid;
+			const pg_hit_t *aj = &g->hit[j];
+			ai->pid_dom = aj->pid;
+			if (cal_dom_sc) {
+				int32_t li, lj;
+				li = pg_cds_len(ai, g->exon);
+				lj = pg_cds_len(aj, g->exon);
+				ai->score_dom = (int32_t)(ai->score_ori * (1.0 - (double)tmp[i].ov_len / li) + aj->score_ori * ((double)tmp[i].ov_len / lj) + .499);
+				//printf("%d,%d; %d,%d,%d; %d,%d\n", ai->score_ori, ai->score_dom, tmp[i].ov_len, li, lj, prot[ai->pid].gid, prot[aj->pid].gid);
+			}
+		}
 		if (ai->shadow) ++n_shadow;
 	}
 	free(tmp);

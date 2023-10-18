@@ -16,7 +16,7 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q)
 	flag = PG_CALLOC(int8_t, d->n_gene);
 	cnt = PG_MALLOC(pg128_t, d->n_gene);
 	for (i = 0; i < d->n_gene; ++i)
-		cnt[i].x = d->prot[d->gene[i].rep_pid].avg_score, cnt[i].y = i;
+		cnt[i].x = d->prot[d->gene[i].rep_pid].avg_score_adj, cnt[i].y = i;
 
 	aux = PG_CALLOC(uint32_t*, d->n_genome);
 	for (j = 0; j < d->n_genome; ++j) {
