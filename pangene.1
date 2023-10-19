@@ -1,4 +1,4 @@
-.TH pangene 1 "31 July 2023" "pangene-0.0-dirty (r145)" "Bioinformatics tools"
+.TH pangene 1 "19 October 2023" "pangene-0.0-dirty (r177)" "Bioinformatics tools"
 .SH NAME
 .PP
 pangene - building pangenome gene graphs
@@ -26,8 +26,6 @@ Construct a pangenome gene graph:
 .B pangene
 .RB [ -e
 .IR minIdentity ]
-.RB [ -b
-.IR branchingThres ]
 .RB [ -d
 .IR delimGene ]
 .RB [ -a
@@ -76,6 +74,24 @@ name in a protein identifier. If a gene has multiple isoforms, pangene will
 later choose one primary isoform per gene. If pangene cannot find the delimiter,
 it will use the protein name as the gene name.
 .TP
+.BI -X \ STR
+Exclude genes in the
+.I STR
+list [].
+.I STR
+can be a comma separated string, or a file if it starts with symbol `@'.
+.TP
+.BI -I \ STR
+Include genes in the
+.I STR
+list in the output graph [].
+.TP
+.BI -P \ STR
+Prioritize genes in the
+.I STR
+list in the output graph []. When pangene selects genes as vertices in the
+graph, these genes will get higher priority.
+.TP
 .BI -e \ FLOAT
 Filter out an alignment if its identity below
 .I FLOAT
@@ -85,19 +101,6 @@ Filter out an alignment if its identity below
 Filter out an alignment if less than
 .I FLOAT
 fraction of the protein is aligned [0.5]
-.TP
-.BI -X \ STR
-Exclude genes in the
-.I STR
-list [].
-.I STR
-can be a comma separated string, or a file if it starts with symbol `@'.
-.TP
-.BI -I \ STR
-Attempt to include genes in the
-.I STR
-list []. This option only controls the vertex selection step. It does not
-guarantee to keep a gene.
 .TP
 .BI -m \ FLOAT
 Score adjustment coefficient [2]. The adjusted score is equal to
@@ -140,17 +143,48 @@ Drop a gene if it connects more than
 .I INT
 loci that are distant from each other [3]
 .TP
+.BI -J
+Do not attempt to identify pseudogenes jointly across samples.
+.TP
 .BI -b \ FLOAT
-Demote an arc if it is attached to a branching vertex and is weaker than the best
-branching arc by
+Demote a branching arc if it is weaker than the best branching arc by
 .I FLOAT
-fraction [0.02]
+fraction [0.02]. If there exist arcs
+.IR A -> B
+and
+.IR A -> C ,
+both arcs are
+.IR branching\ arcs .
+Pangene will demote
+.IR A -> B
+if the alignment score of
+.I A
+is weaker by the alignment score of
+.I A
+on the
+.IR A -> C
+arc by
+.IR FLOAT .
 .TP
 .BI -B \ FLOAT
-Cut an arc if it is attached to a branching vertex and is weaker than the best
-branching arc by
+Cut a branching arc if it is weaker than the best branching arc by
 .I FLOAT
-fraction [0.5]
+fraction [0.5]. This option is similar to
+.B -b
+but it cuts arcs.
+.TP
+.BI -y \ FLOAT
+Cut a distant branching arc if it is weaker by the best branching arc by
+.I FLOAT
+fraction [0.05]. If there exist arcs
+.IR A -> B
+and
+.IR A -> C
+and
+.I B
+and
+.I C
+are not local, this option may cut the weaker branch.
 .TP
 .BI -T \ INT
 Apply branch cutting for
@@ -167,7 +201,7 @@ Two genes are considered local if they are at most
 bp apart [2M]. This and option
 .B -C
 work together with
-.BR -b .
+.BR -y .
 Non-local branching edges will be cut.
 .TP
 .BI -C \ INT
@@ -179,6 +213,11 @@ unfiltered genes [20]
 Prune an arc if it is supported by less than
 .I INT
 number of genomes [1]
+.TP
+.BI --ori-sc
+Use original alignment score during branching arc pruning. By default, pangene
+recalculates the score using overlapping proteins that are not selected as
+vertices. The default behavior helps cross-species pangene graph construction.
 .SS Output options
 .TP 10
 .B -w
@@ -298,9 +337,6 @@ id	f	Protein identity
 
 .SH LIMITATIONS
 .TP 2
-*
-In general, more testing needed.
-.TP
 *
 Pangene only works with
 .BR miniprot 's

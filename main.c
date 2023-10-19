@@ -4,6 +4,7 @@
 
 static ko_longopt_t long_options[] = {
 	{ "bed",             ko_optional_argument, 301 },
+	{ "ori-sc",          ko_no_argument,       302 },
 	{ "version",         ko_no_argument,       401 },
 	{ 0, 0, 0 }
 };
@@ -15,7 +16,8 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  Input preprocessing:\n");
 	fprintf(fp, "    -d CHAR       gene-protein delimiter [%c]\n", opt->gene_delim);
 	fprintf(fp, "    -X STR/@FILE  exclude genes in STR list or in @FILE []\n");
-	fprintf(fp, "    -I STR/@FILE  attempt to include genes in the output graph []\n");
+	fprintf(fp, "    -I STR/@FILE  include genes in the output graph []\n");
+	fprintf(fp, "    -P STR/@FILE  prioritize genes in the output graph []\n");
 	fprintf(fp, "    -e FLOAT      drop an alignment if its identity <FLOAT [%g]\n", opt->min_prot_iden);
 	fprintf(fp, "    -l FLOAT      drop an alignment if <FLOAT fraction of the protein aligned [%g]\n", opt->min_prot_ratio);
 	fprintf(fp, "    -m FLOAT      score adjustment coefficient [%g]\n", opt->score_adj_coef);
@@ -65,32 +67,34 @@ int main(int argc, char *argv[])
 
 	pg_opt_init(&opt);
 	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:JO", long_options)) >= 0) {
+		// input options
 		if (c == 'd') opt.gene_delim = *o.arg;
-		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
-		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
-		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);
-		else if (c == 'm') opt.score_adj_coef = atof(o.arg);
-		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
-		else if (c == 'J') opt.flag |= PG_F_NO_JOINT_PSEUDO;
-		else if (c == 'b') opt.branch_diff = atof(o.arg);
-		else if (c == 'B') opt.branch_diff_cut = atof(o.arg);
-		else if (c == 'O') opt.flag |= PG_F_ORI_FOR_BRANCH;
-		else if (c == 'y') opt.branch_diff_dist = atof(o.arg);
-		else if (c == 'r') opt.max_dist_loci = atoi(o.arg);
-		else if (c == 'F') opt.flag |= PG_F_FRAG_MODE;
-		else if (c == 'T') opt.n_branch_flt = atof(o.arg);
-		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
-		else if (c == 'g') opt.max_degree = atoi(o.arg);
-		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
-		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
-		else if (c == 'G') opt.flag |= PG_F_WRITE_VTX_SEL;
-		else if (c == 'D') opt.local_dist = pg_parse_num(o.arg);
-		else if (c == 'C') opt.local_count = atoi(o.arg);
 		else if (c == 'X') opt.excl = pg_read_list_dict(o.arg);
 		else if (c == 'I') opt.incl = pg_read_list_dict(o.arg);
 		else if (c == 'P') opt.preferred = pg_read_list_dict(o.arg);
+		else if (c == 'e') opt.min_prot_iden = atof(o.arg);
+		else if (c == 'l') opt.min_prot_ratio = atof(o.arg);
+		else if (c == 'm') opt.score_adj_coef = atof(o.arg);
+		// algorithm options
+		else if (c == 'f') opt.min_ov_ratio = atof(o.arg);
+		else if (c == 'p') opt.min_vertex_ratio = atof(o.arg);
+		else if (c == 'c') opt.max_avg_occ = atoi(o.arg);
+		else if (c == 'g') opt.max_degree = atoi(o.arg);
+		else if (c == 'r') opt.max_dist_loci = atoi(o.arg);
+		else if (c == 'J') opt.flag |= PG_F_NO_JOINT_PSEUDO;
+		else if (c == 'b') opt.branch_diff = atof(o.arg);
+		else if (c == 'B') opt.branch_diff_cut = atof(o.arg);
+		else if (c == 'y') opt.branch_diff_dist = atof(o.arg);
+		else if (c == 'T') opt.n_branch_flt = atof(o.arg);
+		else if (c == 'a') opt.min_arc_cnt = atoi(o.arg);
+		else if (c == 'F') opt.flag |= PG_F_FRAG_MODE;
+		else if (c == 'D') opt.local_dist = pg_parse_num(o.arg);
+		else if (c == 'C') opt.local_count = atoi(o.arg);
+		// output options
+		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
+		else if (c == 'G') opt.flag |= PG_F_WRITE_VTX_SEL;
 		else if (c == 'v') pg_verbose = atoi(o.arg);
-		else if (c == 301) {
+		else if (c == 301) { // --bed
 			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
 			else if (strcmp(o.arg, "raw") == 0) opt.flag |= PG_F_WRITE_BED_RAW;
 			else if (strcmp(o.arg, "flag") == 0) opt.flag |= PG_F_WRITE_BED_FLAG;
@@ -98,7 +102,8 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "ERROR: unrecognized --bed argument. Should be 'raw' or 'walk'.\n");
 				return 1;
 			}
-		} else if (c == 401) {
+		} else if (c == 302) opt.flag |= PG_F_ORI_FOR_BRANCH; // --ori-sc
+		else if (c == 401) { // --version
 			puts(PG_VERSION);
 			return 0;
 		}
