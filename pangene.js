@@ -812,7 +812,7 @@ function pg_cmd_parse_ensembl(args) {
 		if (o.opt == "-s") species = o.arg;
 	}
 	if (args.length < 2) {
-		print("Usage: pangene.js parse-ensembl <anno.gtf> <proteins.faa>");
+		print("Usage: pangene.js parse-ensembl [-s speciesName] <anno.gtf> <proteins.faa>");
 		return;
 	}
 	const re = /([^\s"]+) "([^\s"]+)"/g;
