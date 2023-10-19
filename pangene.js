@@ -806,6 +806,60 @@ function pg_cmd_call(args) {
 	}
 }
 
+function pg_cmd_parse_ensembl(args) {
+	let species = null;
+	for (const o of getopt(args, "s:", [])) {
+		if (o.opt == "-s") species = o.arg;
+	}
+	if (args.length < 2) {
+		print("Usage: pangene.js parse-ensembl <anno.gtf> <proteins.faa>");
+		return;
+	}
+	const re = /([^\s"]+) "([^\s"]+)"/g;
+	let h = {};
+	for (const line of k8_readline(args[0])) { // read symbols
+		if (line[0] == '#') continue;
+		let m, t = line.split("\t");
+		if (t[2] !== "CDS") continue;
+		if (t[0] === "MT") continue;
+		let gid = null, gname = null, pid = null, pver = "0", biotype = null;
+		while ((m = re.exec(t[8])) != null) {
+			if (m[1] == "gene_id") {
+				gid = m[2];
+			} else if (m[1] == "protein_id") {
+				pid = m[2];
+			} else if (m[1] == "protein_version") {
+				pver = m[2];
+			} else if (m[1] == "gene_name") {
+				gname = m[2];
+			} else if (m[1] == "transcript_biotype") {
+				biotype = m[2];
+			}
+		}
+		if (biotype !== "protein_coding") continue;
+		let gene = gname != null? gname : gid;
+		if (gene == null) throw Error("failed to parse the gene name");
+		if (species != null) gene = `${gene}_${species}`;
+		let prot = `${pid}.${pver}`;
+		h[prot] = `${gene}:${prot}`;
+	}
+	let skip = false;
+	for (const line of k8_readline(args[1])) {
+		let m;
+		if ((m = /^>(\S+)/.exec(line)) != null) {
+			if (h[m[1]] != null) {
+				print(`>${h[m[1]]}`);
+				skip = false;
+			} else {
+				warn(`WARNING: skip "${m[1]}"`);
+				skip = true;
+			}
+		} else if (!skip) {
+			print(line);
+		}
+	}
+}
+
 /*****************
  * Main function *
  *****************/
@@ -815,14 +869,16 @@ function main(args)
 	if (args.length == 0) {
 		print("Usage: pangene.js <command> [arguments]");
 		print("Commands:");
-		print("  call          call variants from a pangene graph");
-		print("  parse-gfa     parse a GFA file (for debugging only)");
+		print("  call           call variants from a pangene graph");
+		print("  parse-ensembl  generate protein files from Ensembl annotations");
+		//print("  parse-gfa     parse a GFA file (for debugging only)");
 		exit(1);
 	}
 
 	var cmd = args.shift();
-	if (cmd == 'parse-gfa') pg_cmd_parse_gfa(args);
-	else if (cmd == 'call') pg_cmd_call(args);
+	if (cmd == 'call') pg_cmd_call(args);
+	else if (cmd == 'parse-ensembl') pg_cmd_parse_ensembl(args);
+	else if (cmd == 'parse-gfa') pg_cmd_parse_gfa(args);
 	else throw Error("unrecognized command: " + cmd);
 }
 
