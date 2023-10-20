@@ -758,16 +758,6 @@ class NetGraph {
  * Subcommands *
  ***************/
 
-function pg_cmd_parse_gfa(args) {
-	if (args.length == 0) {
-		print("Usage: pangene.js parse-gfa <in.gfa>");
-		return;
-	}
-	let g = new GFA();
-	g.from_file(args[0]);
-	print(g);
-}
-
 function pg_cmd_call(args) {
 	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false };
 	for (const o of getopt(args, "bedmw", [])) {
@@ -860,6 +850,60 @@ function pg_cmd_parse_ensembl(args) {
 	}
 }
 
+function pg_cmd_gfa2matrix(args) {
+	let copy_number = false;
+	for (const o of getopt(args, "c", []))
+		if (o.opt == "-c") copy_number = true;
+	if (args.length == 0) {
+		print("Usage: pangene.js gfa2matrix [-c] <in.gfa>");
+		return;
+	}
+	let g = new GFA();
+	g.from_file(args[0]);
+	let mat = [], asm_h = {}, asm_a = [];
+	for (const w of g.walk) {
+		if (asm_h[w.asm] == null) {
+			asm_h[w.asm] = asm_a.length;
+			asm_a.push(w.asm);
+		}
+	}
+	for (let i = 0; i < g.seg.length; ++i)
+		mat[i] = Array(asm_a.length).fill(0);
+	for (const w of g.walk) {
+		const asm_id = asm_h[w.asm];
+		for (const v of w.v)
+			++mat[v>>1][asm_id];
+	}
+	if (copy_number == false) {
+		for (let i = 0; i < mat.length; ++i)
+			for (let j = 0; j < mat[i].length; ++j)
+				if (mat[i][j] > 1) mat[i][j] = 1;
+	}
+	print('Gene', asm_a.join("\t"));
+	for (let i = 0; i < mat.length; ++i)
+		print(g.seg[i].name, mat[i].join("\t"));
+}
+
+function pg_cmd_flt_mmseqs(args) {
+	let sim = 0.97;
+	for (const o of getopt(args, "s:", [])) {
+		if (o.opt == "-s") sim = parseFloat(o.arg);
+	}
+	if (args.length == 0) {
+		print("Usage: pangene.js flt-mmseqs [-s 0.97] <mmseqs.2.txt> | cut -f1 | uniq > filtered.txt");
+		return;
+	}
+	for (const line of k8_readline(args[0])) {
+		let t = line.split("\t");
+		t[2] = parseFloat(t[2]);
+		if (t[2] < sim) continue;
+		const qal = parseInt(t[7]) - parseInt(t[6]) + 1;
+		const qlen = parseInt(t[12]);
+		if (qal < qlen * sim) continue;
+		print(line);
+	}
+}
+
 /*****************
  * Main function *
  *****************/
@@ -871,6 +915,8 @@ function main(args)
 		print("Commands:");
 		print("  call           call variants from a pangene graph");
 		print("  parse-ensembl  generate protein files from Ensembl annotations");
+		print("  gfa2matrix     generate gene_presence_absence.Rtab");
+		print("  flt-mmseqs     drop redundant proteins");
 		//print("  parse-gfa     parse a GFA file (for debugging only)");
 		exit(1);
 	}
@@ -878,7 +924,8 @@ function main(args)
 	var cmd = args.shift();
 	if (cmd == 'call') pg_cmd_call(args);
 	else if (cmd == 'parse-ensembl') pg_cmd_parse_ensembl(args);
-	else if (cmd == 'parse-gfa') pg_cmd_parse_gfa(args);
+	else if (cmd == 'gfa2matrix') pg_cmd_gfa2matrix(args);
+	else if (cmd == 'flt-mmseqs') pg_cmd_flt_mmseqs(args);
 	else throw Error("unrecognized command: " + cmd);
 }
 
