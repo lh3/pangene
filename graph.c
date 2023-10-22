@@ -26,6 +26,9 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits remain, of which %d are shadowed\n",
 				__func__, pg_timestamp(), j, g->label, tot, n_shadow);
 	}
+	for (i = j = 0; i < d->n_gene; ++i)
+		if (d->gene[i].preferred) ++j;
+	fprintf(stderr, "[M::%s] there are %d preferred genes\n", __func__, j);
 }
 
 pg_graph_t *pg_graph_init(pg_data_t *d)

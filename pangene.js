@@ -797,11 +797,16 @@ function pg_cmd_call(args) {
 }
 
 function pg_cmd_call2html(args) {
-	let endpoint = "/view";
-	for (const o of getopt(args, "", [])) {
+	let endpoint = "/view", graph = null;
+	for (const o of getopt(args, "e:g:", [])) {
+		if (o.opt == "-e") endpoint = o.arg;
+		else if (o.opt == "-g") graph = o.arg;
 	}
 	if (args.length == 0) {
-		print("Usage: pangene.js call2html <pangene-call.out>");
+		print("Usage: pangene.js call2html [options] <pangene-call.out>");
+		print("Options:");
+		print(`  -e STR     endpoint [${endpoint}]`);
+		print(`  -g STR     graph name []`);
 		return;
 	}
 	print(`<head>`);
@@ -822,7 +827,9 @@ function pg_cmd_call2html(args) {
 		const st = (t[4][0] == ">"? "&gt;" : "&lt;") + t[4].substr(1);
 		const en = (t[5][0] == ">"? "&gt;" : "&lt;") + t[5].substr(1);
 		const genes = [t[4].substr(1), t[8], t[5].substr(1)].join(",");
-		const link = `${endpoint}?gene=${genes}&step=0&ori=` + t[4].substr(1);
+		let link = `${endpoint}?`;
+		if (graph != null) link += `graph=${graph}&`;
+		link += `gene=${genes}&step=0&ori=` + t[4].substr(1);
 		const gene_space = t[8].replace(/,/g, ", ");
 		let out = `<tr><td style="text-align: right;">${t[1]}<td style="text-align: right;">${t[2]}<td style="text-align: right;">${t[6]}`;
 		out += `<td style="white-space: nowrap;"><a href="${link}" target="_blank">${st} &mdash; ${en}</a><td>${gene_space}</tr>`;
@@ -830,6 +837,36 @@ function pg_cmd_call2html(args) {
 	}
 	print(`</table>`);
 	print(`</body>`);
+}
+
+function pg_cmd_calldiff(args) {
+	for (const o of getopt(args, "", [])) {
+	}
+	if (args.length < 2) {
+		print("Usage: pangene.js calldiff <call1.out> <call2.out>");
+		return;
+	}
+	let h = {};
+	for (const line of k8_readline(args[0])) {
+		let t = line.split("\t");
+		if (t[0] != "BB") continue;
+		const g1 = t[4].substr(1), g2 = t[5].substr(1);
+		const key = g1 < g2? `${g1}\t${g2}` : `${g2}\t${g1}`;
+		h[key] = [false, t.slice(1).join("\t")];
+	}
+	for (const line of k8_readline(args[1])) {
+		let t = line.split("\t");
+		if (t[0] != "BB") continue;
+		const g1 = t[4].substr(1), g2 = t[5].substr(1);
+		const key = g1 < g2? `${g1}\t${g2}` : `${g2}\t${g1}`;
+		if (key in h)
+			h[key][0] = true;
+		else
+			print("B2", t.slice(1).join("\t"));
+	}
+	for (const key in h)
+		if (h[key][0] == false)
+			print("B1", h[key][1]);
 }
 
 function pg_cmd_parse_ensembl(args) {
@@ -951,9 +988,10 @@ function main(args)
 		print("Commands:");
 		print("  call           call variants from a pangene graph");
 		print("  call2html      generate a HTML page from call output");
+		print("  calldiff       compare two call files");
 		print("  parse-ensembl  generate protein files from Ensembl annotations");
 		print("  gfa2matrix     generate gene_presence_absence.Rtab");
-		print("  flt-mmseqs     drop redundant proteins");
+		//print("  flt-mmseqs     drop redundant proteins");
 		//print("  parse-gfa     parse a GFA file (for debugging only)");
 		exit(1);
 	}
@@ -961,6 +999,7 @@ function main(args)
 	var cmd = args.shift();
 	if (cmd == 'call') pg_cmd_call(args);
 	else if (cmd == 'call2html') pg_cmd_call2html(args);
+	else if (cmd == 'calldiff') pg_cmd_calldiff(args);
 	else if (cmd == 'parse-ensembl') pg_cmd_parse_ensembl(args);
 	else if (cmd == 'gfa2matrix') pg_cmd_gfa2matrix(args);
 	else if (cmd == 'flt-mmseqs') pg_cmd_flt_mmseqs(args);
