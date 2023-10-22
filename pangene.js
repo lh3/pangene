@@ -796,6 +796,42 @@ function pg_cmd_call(args) {
 	}
 }
 
+function pg_cmd_call2html(args) {
+	let endpoint = "/view";
+	for (const o of getopt(args, "", [])) {
+	}
+	if (args.length == 0) {
+		print("Usage: pangene.js call2html <pangene-call.out>");
+		return;
+	}
+	print(`<head>`);
+	print(`<title>List of variants</title>`);
+	print(`<style type="text/css">`);
+	print(`  table { font-family: "helvetica neue", helvetica, arial, sans-serif; font-size: 0.8em; text-align: left; }`);
+	print(`  th, td { padding: 2px; }`);
+	print(`  a { text-decoration: none; color: blue; }`);
+	print(`</style>`);
+	print(`</head>`);
+	print(`<body>`);
+	print(`<table border="1" style="border-collapse: collapse; max-width: 1024px; width: 100%;">`);
+	print(`<tr><th>VarID<th>Parent<th>#alleles<th>End genes<th>Genes</tr>`);
+	for (const line of k8_readline(args[0])) {
+		let t = line.split("\t");
+		if (t[0] != "BB") continue;
+		if (t.length < 9) continue;
+		const st = (t[4][0] == ">"? "&gt;" : "&lt;") + t[4].substr(1);
+		const en = (t[5][0] == ">"? "&gt;" : "&lt;") + t[5].substr(1);
+		const genes = [t[4].substr(1), t[8], t[5].substr(1)].join(",");
+		const link = `${endpoint}?gene=${genes}&step=0&ori=` + t[4].substr(1);
+		const gene_space = t[8].replace(/,/g, ", ");
+		let out = `<tr><td style="text-align: right;">${t[1]}<td style="text-align: right;">${t[2]}<td style="text-align: right;">${t[6]}`;
+		out += `<td style="white-space: nowrap;"><a href="${link}" target="_blank">${st} &mdash; ${en}</a><td>${gene_space}</tr>`;
+		print(out);
+	}
+	print(`</table>`);
+	print(`</body>`);
+}
+
 function pg_cmd_parse_ensembl(args) {
 	let species = null;
 	for (const o of getopt(args, "s:", [])) {
@@ -914,6 +950,7 @@ function main(args)
 		print("Usage: pangene.js <command> [arguments]");
 		print("Commands:");
 		print("  call           call variants from a pangene graph");
+		print("  call2html      generate a HTML page from call output");
 		print("  parse-ensembl  generate protein files from Ensembl annotations");
 		print("  gfa2matrix     generate gene_presence_absence.Rtab");
 		print("  flt-mmseqs     drop redundant proteins");
@@ -923,6 +960,7 @@ function main(args)
 
 	var cmd = args.shift();
 	if (cmd == 'call') pg_cmd_call(args);
+	else if (cmd == 'call2html') pg_cmd_call2html(args);
 	else if (cmd == 'parse-ensembl') pg_cmd_parse_ensembl(args);
 	else if (cmd == 'gfa2matrix') pg_cmd_gfa2matrix(args);
 	else if (cmd == 'flt-mmseqs') pg_cmd_flt_mmseqs(args);
