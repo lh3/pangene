@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r185-dirty";
+const pg_version = "r186-dirty";
 
 /**************
  * From k8.js *
@@ -884,7 +884,7 @@ function pg_cmd_getaa(args) {
 		print("Usage: pangene.js getaa [options] <anno.gtf> <proteins.faa>");
 		print("Options:");
 		print("  -s STR     species name []");
-		print("  -d         exclude transcripts that are not protein_coding");
+		print("  -e         exclude transcripts that are not protein_coding");
 		return;
 	}
 	const re = /([^\s"]+) "([^\s"]+)"/g;

@@ -141,8 +141,9 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 					const char *tmp;
 					for (r = q; r < p && *r != opt->gene_delim; ++r) {}
 					// add gene
+					if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break; // excluded by transcript name
 					if (*r == opt->gene_delim) has_delim = 1, *r = 0;
-					if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break;
+					if (opt->excl && pg_dict_get(opt->excl, q) >= 0) break; // excluded by gene name
 					if (opt->preferred && pg_dict_get(opt->preferred, q) >= 0)
 						preferred = 1;
 					if (opt->incl && pg_dict_get(opt->incl, q) >= 0)
