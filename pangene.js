@@ -1,5 +1,7 @@
 #!/usr/bin/env k8
 
+const pg_version = "r184";
+
 /**************
  * From k8.js *
  **************/
@@ -869,13 +871,17 @@ function pg_cmd_calldiff(args) {
 			print("B1", h[key][1]);
 }
 
-function pg_cmd_parse_ensembl(args) {
-	let species = null;
-	for (const o of getopt(args, "s:", [])) {
+function pg_cmd_getaa(args) {
+	let species = null, excl_decay = false;
+	for (const o of getopt(args, "s:e", [])) {
 		if (o.opt == "-s") species = o.arg;
+		else if (o.opt == "-e") excl_decay = true;
 	}
 	if (args.length < 2) {
-		print("Usage: pangene.js parse-ensembl [-s speciesName] <anno.gtf> <proteins.faa>");
+		print("Usage: pangene.js getaa [options] <anno.gtf> <proteins.faa>");
+		print("Options:");
+		print("  -s STR     species name []");
+		print("  -d         exclude transcripts that are not protein_coding");
 		return;
 	}
 	const re = /([^\s"]+) "([^\s"]+)"/g;
@@ -884,8 +890,8 @@ function pg_cmd_parse_ensembl(args) {
 		if (line[0] == '#') continue;
 		let m, t = line.split("\t");
 		if (t[2] !== "CDS") continue;
-		if (t[0] === "MT") continue;
-		let gid = null, gname = null, pid = null, pver = "0", biotype = null;
+		if (t[0] === "MT" || t[0] === "chrM" || t[0] === "chrMT") continue;
+		let gid = null, gname = null, pid = null, pver = null, ttype = null, gtype = null;
 		while ((m = re.exec(t[8])) != null) {
 			if (m[1] == "gene_id") {
 				gid = m[2];
@@ -895,22 +901,26 @@ function pg_cmd_parse_ensembl(args) {
 				pver = m[2];
 			} else if (m[1] == "gene_name") {
 				gname = m[2];
-			} else if (m[1] == "transcript_biotype") {
-				biotype = m[2];
+			} else if (m[1] == "transcript_biotype" || m[1] == "transcript_type") {
+				ttype = m[2];
+			} else if (m[1] == "gene_biotype" || m[1] == "gene_type") {
+				gtype = m[2];
 			}
 		}
-		if (biotype !== "protein_coding") continue;
+		if (gtype !== "protein_coding") continue;
+		if (excl_decay && ttype !== "protein_coding") continue;
 		let gene = gname != null? gname : gid;
 		if (gene == null) throw Error("failed to parse the gene name");
 		if (species != null) gene = `${gene}_${species}`;
-		let prot = `${pid}.${pver}`;
+		let prot = pver != null? `${pid}.${pver}` : pid;
 		h[prot] = `${gene}:${prot}`;
 	}
 	let skip = false;
 	for (const line of k8_readline(args[1])) {
 		let m;
-		if ((m = /^>(\S+)/.exec(line)) != null) {
-			if (h[m[1]] != null) {
+		if ((m = /^>([^\s\|]+)/.exec(line)) != null) {
+			const pid = m[1];
+			if (h[pid] != null) {
 				print(`>${h[m[1]]}`);
 				skip = false;
 			} else {
@@ -989,10 +999,10 @@ function main(args)
 		print("  call           call variants from a pangene graph");
 		print("  call2html      generate a HTML page from call output");
 		print("  calldiff       compare two call files");
-		print("  parse-ensembl  generate protein files from Ensembl annotations");
-		print("  gfa2matrix     generate gene_presence_absence.Rtab");
+		print("  gfa2matrix     generate gene_presence_absence.Rtab from pangene GFA");
+		print("  getaa          generate protein files from Ensembl or GenCode annotations");
+		print("  version        print version number");
 		//print("  flt-mmseqs     drop redundant proteins");
-		//print("  parse-gfa     parse a GFA file (for debugging only)");
 		exit(1);
 	}
 
@@ -1000,10 +1010,12 @@ function main(args)
 	if (cmd == 'call') pg_cmd_call(args);
 	else if (cmd == 'call2html') pg_cmd_call2html(args);
 	else if (cmd == 'calldiff') pg_cmd_calldiff(args);
-	else if (cmd == 'parse-ensembl') pg_cmd_parse_ensembl(args);
+	else if (cmd == 'getaa') pg_cmd_getaa(args);
 	else if (cmd == 'gfa2matrix') pg_cmd_gfa2matrix(args);
 	else if (cmd == 'flt-mmseqs') pg_cmd_flt_mmseqs(args);
-	else throw Error("unrecognized command: " + cmd);
+	else if (cmd == 'version') {
+		print(pg_version);
+	} else throw Error("unrecognized command: " + cmd);
 }
 
 main(arguments);
