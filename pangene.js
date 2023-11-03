@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r184";
+const pg_version = "r185-dirty";
 
 /**************
  * From k8.js *
@@ -734,7 +734,7 @@ class NetGraph {
 			sese[i].al.sort(function(a,b) { return b.n - a.n });
 		}
 	}
-	print_pst_walk(sese) {
+	print_pst_walk(sese, min_n_allele) {
 		const g = this.gfa;
 		let flag = [];
 		for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
@@ -742,6 +742,7 @@ class NetGraph {
 			const vs = sese[i].vs, ve = sese[i].ve;
 			const gene = sese[i].gene;
 			const gene_list = gene.length == 0? sese[i].n_gene : `${gene.length}\t${gene.join(",")}`;
+			if (sese[i].al.length < min_n_allele) continue;
 			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, sese[i].al.length, gene_list);
 			for (let j = 0; j < sese[i].al.length; ++j) {
 				let a = [];
@@ -761,19 +762,21 @@ class NetGraph {
  ***************/
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false };
-	for (const o of getopt(args, "bedmw", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, min_n_allele:2 };
+	for (const o of getopt(args, "bedmwc:", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
 		else if (o.opt == "-m") opt.max_ext = parseInt(o.arg);
 		else if (o.opt == "-w") opt.ignore_walk = true;
+		else if (o.opt == "-c") opt.min_n_allele = parseInt(o.arg);
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
 		print("Options:");
 		print("  General:");
 		print(`    -m INT   don't output gene lists longer than INT [${opt.max_ext}]`);
+		print(`    -c INT   min number of alleles [${opt.min_n_allele}]`);
 		print("    -b       output equivalent classes for Bandage visualization");
 		print("  Debugging:");
 		print("    -d       output DFS traversal");
@@ -791,7 +794,7 @@ function pg_cmd_call(args) {
 		if (!opt.ignore_walk && g.walk.length > 0) {
 			let ht = e.walk_ht(sese);
 			e.count_allele(sese, ht, opt.max_ext);
-			e.print_pst_walk(sese);
+			e.print_pst_walk(sese, opt.min_n_allele);
 		} else {
 			e.print_pst(sese, opt.max_ext);
 		}
