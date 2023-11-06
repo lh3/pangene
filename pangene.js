@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r186-dirty";
+const pg_version = "r187-dirty";
 
 /**************
  * From k8.js *
@@ -875,16 +875,18 @@ function pg_cmd_calldiff(args) {
 }
 
 function pg_cmd_getaa(args) {
-	let species = null, excl_decay = false;
-	for (const o of getopt(args, "s:e", [])) {
+	let species = null, excl_decay = false, keep_thru = false;
+	for (const o of getopt(args, "s:er", [])) {
 		if (o.opt == "-s") species = o.arg;
 		else if (o.opt == "-e") excl_decay = true;
+		else if (o.opt == "-r") keep_thru = true;
 	}
 	if (args.length < 2) {
 		print("Usage: pangene.js getaa [options] <anno.gtf> <proteins.faa>");
 		print("Options:");
 		print("  -s STR     species name []");
 		print("  -e         exclude transcripts that are not protein_coding");
+		print("  -r         keep readthrough transcripts");
 		return;
 	}
 	const re = /([^\s"]+) "([^\s"]+)"/g;
@@ -894,7 +896,7 @@ function pg_cmd_getaa(args) {
 		let m, t = line.split("\t");
 		if (t[2] !== "CDS") continue;
 		if (t[0] === "MT" || t[0] === "chrM" || t[0] === "chrMT") continue;
-		let gid = null, gname = null, pid = null, pver = null, ttype = null, gtype = null;
+		let gid = null, gname = null, pid = null, pver = null, ttype = null, gtype = null, thru = false;
 		while ((m = re.exec(t[8])) != null) {
 			if (m[1] == "gene_id") {
 				gid = m[2];
@@ -908,10 +910,13 @@ function pg_cmd_getaa(args) {
 				ttype = m[2];
 			} else if (m[1] == "gene_biotype" || m[1] == "gene_type") {
 				gtype = m[2];
+			} else if (m[1] === "tag" && m[2] === "readthrough_transcript") {
+				thru = true;
 			}
 		}
 		if (gtype !== "protein_coding") continue;
 		if (excl_decay && ttype !== "protein_coding") continue;
+		if (!keep_thru && thru) continue;
 		let gene = gname != null? gname : gid;
 		if (gene == null) throw Error("failed to parse the gene name");
 		if (species != null) gene = `${gene}_${species}`;
