@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r187-dirty";
+const pg_version = "r188-dirty";
 
 /**************
  * From k8.js *
@@ -995,6 +995,49 @@ function pg_cmd_flt_mmseqs(args) {
 	}
 }
 
+function pg_cmd_bed2paf(args) {
+	for (const o of getopt(args, "", [])) {
+	}
+	if (args.length < 3) {
+		print("Usage: pangene.js bed2paf <in.bed> <seq1.fai> <seq2.fai>");
+		return;
+	}
+	let s1 = {};
+	for (const line of k8_readline(args[1])) {
+		const t = line.split("\t", 2);
+		s1[t[0]] = parseInt(t[1]);
+	}
+	let s2 = {};
+	for (const line of k8_readline(args[2])) {
+		const t = line.split("\t", 2);
+		s2[t[0]] = parseInt(t[1]);
+	}
+	let h = {};
+	for (const line of k8_readline(args[0])) {
+		let t = line.split("\t", 6);
+		let k = (t[0] in s1)? 0 : (t[0] in s2)? 1 : -1;
+		if (k < 0) continue;
+		t.push(k);
+		let g = t[3].split(":")[0];
+		t[4] = parseInt(t[4]);
+		if (h[g] == null) h[g] = [];
+		h[g].push(t);
+	}
+	for (const g in h) {
+		if (h[g].length != 2) continue;
+		const a = h[g];
+		let n = [0, 0];
+		for (let i = 0; i < a.length; ++i)
+			++n[a[i][6]];
+		if (n[0] != 1 || n[1] != 1) continue;
+		const k = a[0][6] == 0? 0 : 1, l = 1 - k;
+		print(a[k][0], s1[a[k][0]], a[k][1], a[k][2], a[k][5] == a[l][5]? '+' : '-',
+			a[l][0], s2[a[l][0]], a[l][1], a[l][2],
+			a[k][4] < a[l][4]? a[k][4] : a[l][4],
+			a[k][4] < a[l][4]? a[l][4] : a[k][4], 60, `pn:Z:${g}`);
+	}
+}
+
 /*****************
  * Main function *
  *****************/
@@ -1007,6 +1050,7 @@ function main(args)
 		print("  call           call variants from a pangene graph");
 		print("  call2html      generate a HTML page from call output");
 		print("  calldiff       compare two call files");
+		print("  bed2paf        generate PAF from a pair of samples");
 		print("  gfa2matrix     generate gene_presence_absence.Rtab from pangene GFA");
 		print("  getaa          generate protein files from Ensembl or GenCode annotations");
 		print("  version        print version number");
@@ -1019,6 +1063,7 @@ function main(args)
 	else if (cmd == 'call2html') pg_cmd_call2html(args);
 	else if (cmd == 'calldiff') pg_cmd_calldiff(args);
 	else if (cmd == 'getaa') pg_cmd_getaa(args);
+	else if (cmd == 'bed2paf') pg_cmd_bed2paf(args);
 	else if (cmd == 'gfa2matrix') pg_cmd_gfa2matrix(args);
 	else if (cmd == 'flt-mmseqs') pg_cmd_flt_mmseqs(args);
 	else if (cmd == 'version') {
