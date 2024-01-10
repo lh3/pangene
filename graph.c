@@ -6,7 +6,7 @@
 
 void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 {
-	int32_t i, j;
+	int32_t i, j, check_strand = !!(opt->flag&PG_F_CHECK_STRAND);
 	if (pg_verbose >= 3)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
 	pg_cap_score_dom(d);
@@ -22,7 +22,7 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		int32_t n_shadow, tot;
 		for (i = 0, tot = 0; i < g->n_hit; ++i)
 			if (!g->hit[i].flt) ++tot;
-		n_shadow = pg_shadow(opt, d, j, 0);
+		n_shadow = pg_shadow(opt, d, j, 0, check_strand);
 		fprintf(stderr, "[M::%s::%s] genome[%d]: %s; %d hits remain, of which %d are shadowed\n",
 				__func__, pg_timestamp(), j, g->label, tot, n_shadow);
 	}
@@ -86,7 +86,7 @@ static inline int32_t pg_get_score(const pg_graph_t *q, const pg_hit_t *a, int32
 
 void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 {
-	int32_t j, i, i0, *seg_cnt = 0, use_ori = !!(opt->flag&PG_F_ORI_FOR_BRANCH);
+	int32_t j, i, i0, *seg_cnt = 0, use_ori = !!(opt->flag&PG_F_ORI_FOR_BRANCH), check_strand = !!(opt->flag&PG_F_CHECK_STRAND);
 	int64_t n_arc = 0, m_arc = 0, n_arc1 = 0, m_arc1 = 0;
 	pg_tmparc_t *p, *arc = 0, *arc1 = 0;
 
@@ -99,7 +99,7 @@ void pg_gen_arc(const pg_opt_t *opt, pg_graph_t *q)
 		uint32_t w, v = (uint32_t)-1;
 		int64_t vpos = -1;
 		int32_t vcid = -1, si = -1;
-		pg_shadow(opt, q->d, j, 0);
+		pg_shadow(opt, q->d, j, 0, check_strand);
 		pg_hit_sort(g, 1); // sort by pg_hit_t::cm
 		n_arc1 = 0;
 		memset(seg_cnt, 0, q->n_seg * sizeof(int32_t));

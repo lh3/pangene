@@ -55,7 +55,7 @@ static inline int32_t pg_cds_len(const pg_hit_t *a, const pg_exon_t *e)
  */
 
 // select among overlapping isoforms of the same gene
-int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id)
+int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t check_strand)
 {
 	const pg_prot_t *prot = d->prot;
 	pg_genome_t *g = &d->genome[id];
@@ -75,6 +75,7 @@ int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id)
 			if (aj->flt || aj->ce <= ai->cs) continue; // no overlap
 			gj = prot[aj->pid].gid;
 			if (gi != gj) continue; // ignore isoforms from different genes
+			if (check_strand && ai->rev != aj->rev) continue;
 			hj = pg_hash_uint32(aj->pid);
 			x = pg_hit_overlap(g, aj, ai);
 			if (x>>32 == 0) continue; // no overlap on CDS
@@ -97,7 +98,7 @@ typedef struct {
 } shadow_aux_t;
 
 // test overlap between same or different genes
-int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom_sc)
+int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom_sc, int32_t check_strand)
 {
 	const pg_prot_t *prot = d->prot;
 	pg_genome_t *g = &d->genome[id];
@@ -124,6 +125,7 @@ int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom
 			pg_hit_t *aj = &g->hit[j];
 			if (aj->ce <= ai->cs) continue; // no overlap
 			if (aj->flt) continue;
+			if (check_strand && ai->rev != aj->rev) continue;
 			gj = prot[aj->pid].gid;
 			hj = pg_hash_uint32(aj->pid);
 			x = pg_hit_overlap(g, aj, ai);

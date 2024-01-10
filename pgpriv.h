@@ -80,8 +80,8 @@ void pg_gen_vtx(const pg_opt_t *opt, pg_graph_t *q);
 int32_t pg_mark_branch_flt_arc(const pg_opt_t *opt, pg_graph_t *q);
 int32_t pg_mark_branch_flt_hit(const pg_opt_t *opt, pg_graph_t *q);
 
-int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id);
-int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom_sc);
+int32_t pg_flt_ov_isoform(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t check_stand);
+int32_t pg_shadow(const pg_opt_t *opt, pg_data_t *d, int32_t id, int32_t cal_dom_sc, int32_t check_strand);
 
 char *pg_strdup(const char *src);
 

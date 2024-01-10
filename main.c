@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:JO", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:JOS", long_options)) >= 0) {
 		// input options
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'X') opt.excl = pg_read_list_dict(o.arg);
@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
 		else if (c == 'F') opt.flag |= PG_F_FRAG_MODE;
 		else if (c == 'D') opt.local_dist = pg_parse_num(o.arg);
 		else if (c == 'C') opt.local_count = atoi(o.arg);
+		else if (c == 'S') opt.flag |= PG_F_CHECK_STRAND;
 		// output options
 		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
 		else if (c == 'G') opt.flag |= PG_F_WRITE_VTX_SEL;

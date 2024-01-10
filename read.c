@@ -109,7 +109,7 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 	gzFile fp;
 	kstream_t *ks;
 	kstring_t str = {0,0,0};
-	int32_t dret, absent, n_tot = 0;
+	int32_t dret, absent, n_tot = 0, check_strand = !!(opt->flag&PG_F_CHECK_STRAND);
 	void *d_ctg, *hit_rank;
 	pg_genome_t *g;
 	pg_exons_t buf = {0,0,0};
@@ -245,13 +245,13 @@ int32_t pg_read_paf(const pg_opt_t *opt, pg_data_t *d, const char *fn)
 		n_pseudo = pg_flag_pseudo(d->prot, g);
 		PG_SET_FILTER(d, pseudo == 1);
 		pg_hit_sort(g, 0);
-		pg_shadow(opt, d, d->n_genome - 1, 1);
+		pg_shadow(opt, d, d->n_genome - 1, 1, check_strand);
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			a->pid_dom0 = a->pid_dom;
 			a->pid_dom = -1, a->shadow = 0; // reset
 		}
-		n_flt_ov_iso = pg_flt_ov_isoform(opt, d, d->n_genome - 1);
+		n_flt_ov_iso = pg_flt_ov_isoform(opt, d, d->n_genome - 1, check_strand);
 		n_flt_chain = pg_flt_chain_shadow(d->prot, d->n_prot, g);
 		n_flt_subopt = pg_flt_subopt_isoform(d->prot, d->n_gene, g);
 		if (pg_verbose >= 3)
