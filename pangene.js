@@ -976,22 +976,40 @@ function pg_cmd_gfa2matrix(args) {
 }
 
 function pg_cmd_flt_mmseqs(args) {
-	let sim = 0.97;
-	for (const o of getopt(args, "s:", [])) {
+	let sim = 0.9, qonly = false, rev = false;
+	for (const o of getopt(args, "s:qv", [])) {
 		if (o.opt == "-s") sim = parseFloat(o.arg);
+		else if (o.opt == "-q") qonly = true;
+		else if (o.opt == "-v") rev = true;
 	}
 	if (args.length == 0) {
-		print("Usage: pangene.js flt-mmseqs [-s 0.97] <mmseqs.2.txt> | cut -f1 | uniq > filtered.txt");
+		print("Usage: pangene.js flt-mmseqs [-v] [-q] [-s 0.9] <mmseqs.2.txt> | cut -f1 | uniq > filtered.txt");
 		return;
 	}
 	for (const line of k8_readline(args[0])) {
 		let t = line.split("\t");
-		t[2] = parseFloat(t[2]);
-		if (t[2] < sim) continue;
-		const qal = parseInt(t[7]) - parseInt(t[6]) + 1;
-		const qlen = parseInt(t[12]);
-		if (qal < qlen * sim) continue;
-		print(line);
+		let flt = false;
+		if (qonly) {
+			t[2] = parseFloat(t[2]);
+			if (t[2] < sim) continue;
+			const qal = parseInt(t[7]) - parseInt(t[6]) + 1;
+			const qlen = parseInt(t[12]);
+			if (qal < qlen * sim) flt = true;
+		} else {
+			const qlen = parseInt(t[12]);
+			const tlen = parseInt(t[13]);
+			const qs = parseInt(t[6]) - 1, qe = parseInt(t[7]);
+			const ts = parseInt(t[8]) - 1, te = parseInt(t[9]);
+			const l0 = qs < ts? qs : ts;
+			const l1 = tlen - te < qlen - qe? tlen - te : qlen - qe;
+			const n_iden = parseInt(t[3]) - parseInt(t[4]) - parseInt(t[5]);
+			if (n_iden < (l0 + l1 + parseInt(t[3])) * sim) flt = true;
+		}
+		if (rev) {
+			if (flt) print(line);
+		} else {
+			if (!flt) print(line);
+		}
 	}
 }
 
@@ -1054,7 +1072,7 @@ function main(args)
 		print("  gfa2matrix     generate gene_presence_absence.Rtab from pangene GFA");
 		print("  getaa          generate protein files from Ensembl or GenCode annotations");
 		print("  version        print version number");
-		//print("  flt-mmseqs     drop redundant proteins");
+		print("  flt-mmseqs     compare pangene sets in mmseqs format 2");
 		exit(1);
 	}
 
