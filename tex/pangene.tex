@@ -21,7 +21,7 @@
 \begin{document}
 \firstpage{1}
 
-\title[Pangene graphs]{Studying gene content with pangenome gene graphs}
+\title[Pangene graphs]{Investigating gene content with pangenome gene graphs}
 \author[Li]{Heng Li$^{1,2}$}
 \address{$^1$Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA,
 $^2$Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
@@ -137,8 +137,10 @@ we downloaded the genomes 50 \emph{E. coli} strains with complete assemblies~\ci
 We did not run Prokka on this dataset but instead used the gene annotation provided by NCBI.
 
 We followed the same procedure to run pangenome tools.
-We noticed that pangene filtered out 627 genes that had $>$10 edges or connected $>$3 distant loci in the graph,
-so added option ``{\tt -p.001 -g50 -r10}'' to retain more genes.
+To get clean graph, pangene by default filters out genes that had $>$10 edges or connected $>$3 distant loci in the graph.
+This filter only removed six genes in \emph{M. tuberculosis} dataset but
+it filtered out 627 genes in \emph{E. coli}.
+We added option ``{\tt -p.001 -g50 -r10}'' to retain more genes.
 Although pangene collected fewer genes (Table~\ref{tab:bac}),
 only 98 Panaroo genes do not hit to genes collected by pangene.
 The differences between the tools might be determined by subtle thresholds on how to resolve homologies
