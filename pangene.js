@@ -875,11 +875,12 @@ function pg_cmd_calldiff(args) {
 }
 
 function pg_cmd_getaa(args) {
-	let species = null, excl_decay = false, keep_thru = false;
-	for (const o of getopt(args, "s:er", [])) {
+	let species = null, excl_decay = false, keep_thru = false, canon_only = false;
+	for (const o of getopt(args, "s:erc", [])) {
 		if (o.opt == "-s") species = o.arg;
 		else if (o.opt == "-e") excl_decay = true;
 		else if (o.opt == "-r") keep_thru = true;
+		else if (o.opt == "-c") canon_only = true;
 	}
 	if (args.length < 2) {
 		print("Usage: pangene.js getaa [options] <anno.gtf> <proteins.faa>");
@@ -887,6 +888,7 @@ function pg_cmd_getaa(args) {
 		print("  -s STR     species name []");
 		print("  -e         exclude transcripts that are not protein_coding");
 		print("  -r         keep readthrough transcripts");
+		print("  -c         canonical only (for GenCode)");
 		return;
 	}
 	const re = /([^\s"]+) "([^\s"]+)"/g;
@@ -896,7 +898,7 @@ function pg_cmd_getaa(args) {
 		let m, t = line.split("\t");
 		if (t[2] !== "CDS") continue;
 		if (t[0] === "MT" || t[0] === "chrM" || t[0] === "chrMT") continue;
-		let gid = null, gname = null, pid = null, pver = null, ttype = null, gtype = null, thru = false;
+		let gid = null, gname = null, pid = null, pver = null, ttype = null, gtype = null, thru = false, canon = false;
 		while ((m = re.exec(t[8])) != null) {
 			if (m[1] == "gene_id") {
 				gid = m[2];
@@ -912,16 +914,19 @@ function pg_cmd_getaa(args) {
 				gtype = m[2];
 			} else if (m[1] === "tag" && m[2] === "readthrough_transcript") {
 				thru = true;
+			} else if (m[1] === "tag" && m[2] === "Ensembl_canonical") {
+				canon = true;
 			}
 		}
 		if (gtype !== "protein_coding") continue;
+		if (canon_only && !canon) continue;
 		if (excl_decay && ttype !== "protein_coding") continue;
 		if (!keep_thru && thru) continue;
 		let gene = gname != null? gname : gid;
 		if (gene == null) throw Error("failed to parse the gene name");
 		if (species != null) gene = `${gene}_${species}`;
 		let prot = pver != null? `${pid}.${pver}` : pid;
-		h[prot] = `${gene}:${prot}`;
+		h[prot] = `${gene}:${prot} ${t[0]}`;
 	}
 	let skip = false;
 	for (const line of k8_readline(args[1])) {
