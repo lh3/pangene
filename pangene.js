@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r188-dirty";
+const pg_version = "r193-dirty";
 
 /**************
  * From k8.js *
@@ -229,12 +229,12 @@ class GFA {
 		this.#index();
 	}
 	static int_hash(x) {
-		x = ((x >> 16) ^ x) * 0x45d9f3b & 0xffffffff;
-		x = ((x >> 16) ^ x) * 0x45d9f3b & 0xffffffff;
+		x = Math.imul((x >> 16) ^ x, 0x45d9f3b) & 0xffffffff;
+		x = Math.imul((x >> 16) ^ x, 0x45d9f3b) & 0xffffffff;
 		return (x >> 16) ^ x;
 	}
-	get_bubble(vs, ve, flag, f, max_n) {
-		let stack = [vs], list = [], inv = false;
+	#traverse_bubble(vs, ve, flag, f, max_n) {
+		let stack = [vs], list = [];
 		flag[vs] = f;
 		while (stack.length) {
 			const v = stack.pop();
@@ -244,8 +244,7 @@ class GFA {
 				const w = a.w;
 				if (w == ve || w == (ve^1)) continue;
 				if (flag[w] != f) {
-					if (flag[w^1] == f) inv = true;
-					else list.push(this.seg[w>>1].name);
+					if (flag[w^1] != f) list.push(w>>1);
 					if (a.w == (vs^1)) continue;
 					stack.push(w);
 					flag[w] = f;
@@ -253,11 +252,26 @@ class GFA {
 			}
 			if (list.length > max_n) break;
 		}
-		let tag = "";
-		if (inv) tag += "I";
-		if (list.length > max_n) tag += "B", list = [];
-		if (tag === "") tag = ".";
-		return { tag:tag, list:list };
+		return list.length > max_n? [] : list;
+	}
+	get_bubble(vs, ve, flag, f, max_n) {
+		let f_for = f, f_rev = f + this.seg.length * 2;
+		let list_for = this.#traverse_bubble(vs,   ve,   flag, f_for, max_n);
+		let list_rev = this.#traverse_bubble(ve^1, vs^1, flag, f_rev, max_n);
+		let is_bb = false, list_name = [];
+		if (list_for.length == list_rev.length) {
+			let n_in = 0;
+			for (let i = 0; i < list_for.length; ++i)
+				if (flag[list_for[i]<<1|0] == f_rev || flag[list_for[i]<<1|1] == f_rev)
+					++n_in;
+			if (n_in == list_for.length) {
+				is_bb = true;
+				for (let i = 0; i < list_for.length; ++i)
+					list_name.push(this.seg[list_for[i]].name);
+			}
+		}
+		//if (!is_bb) warn("><"[vs&1] + this.seg[vs>>1].name + " -- " + "><"[ve&1] + this.seg[ve>>1].name + " is not a bubble");
+		return is_bb? list_name : [];
 	}
 }
 
@@ -627,8 +641,12 @@ class NetGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			const st = sese[i].vs, en = sese[i].ve;
 			const b = this.gfa.get_bubble(st, en, flag, i, max_ext);
-			let list = b.list.length == 0? `0` : `${b.list.length}\t${b.list.join(",")}`;
-			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, ".", list);
+			if (b.length == 0) {
+				print('FB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
+			} else {
+				let list = b.length == 0? `0` : `${b.length}\t${b.join(",")}`;
+				print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, list);
+			}
 		}
 	}
 	print_bandage_csv() {
@@ -734,12 +752,18 @@ class NetGraph {
 			sese[i].al.sort(function(a,b) { return b.n - a.n });
 		}
 	}
-	print_pst_walk(sese, min_n_allele) {
+	print_pst_walk(sese, min_n_allele, max_ext) {
 		const g = this.gfa;
 		let flag = [];
 		for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
 		for (let i = 0; i < sese.length; ++i) {
 			const vs = sese[i].vs, ve = sese[i].ve;
+			const b = this.gfa.get_bubble(vs, ve, flag, i, max_ext);
+			if (b.length == 0) {
+				print('FB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name);
+				print('//');
+				continue;
+			}
 			const gene = sese[i].gene;
 			const gene_list = gene.length == 0? sese[i].n_gene : `${gene.length}\t${gene.join(",")}`;
 			if (sese[i].al.length < min_n_allele) continue;
@@ -791,10 +815,14 @@ function pg_cmd_call(args) {
 	if (opt.print_bandage) e.print_bandage_csv();
 	if (opt.print_cec) e.print_cycle_equiv();
 	if (opt.print_pst) {
+		print("CC", "FB  bbID  parID  side1  side2  #alleles");
+		print("CC", "BB  bbID  parID  side1  side2  #alleles  #genes  geneList");
+		print("CC", "AL  #hap  walk");
+		print("CC");
 		if (!opt.ignore_walk && g.walk.length > 0) {
 			let ht = e.walk_ht(sese);
 			e.count_allele(sese, ht, opt.max_ext);
-			e.print_pst_walk(sese, opt.min_n_allele);
+			e.print_pst_walk(sese, opt.min_n_allele, opt.max_ext);
 		} else {
 			e.print_pst(sese, opt.max_ext);
 		}
