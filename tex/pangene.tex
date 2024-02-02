@@ -1,52 +1,51 @@
-\documentclass{bioinfo}
-\copyrightyear{2024}
-\pubyear{2024}
+\documentclass[unnumsec,webpdf,contemporary,large,namedate]{oup-authoring-template}%
 
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{tabularx}
 \usepackage{amsmath}
-\usepackage[ruled,vlined]{algorithm2e}
-\newcommand\mycommfont[1]{\footnotesize\rmfamily{\it #1}}
-\SetCommentSty{mycommfont}
-\SetKwComment{Comment}{$\triangleright$\ }{}
+%\usepackage[ruled,vlined]{algorithm2e}
+%\newcommand\mycommfont[1]{\footnotesize\rmfamily{\it #1}}
+%\SetCommentSty{mycommfont}
+%\SetKwComment{Comment}{$\triangleright$\ }{}
 \renewcommand{\ttdefault}{cmtt}
-
-\usepackage{natbib}
-\bibliographystyle{apalike}
 
 \DeclareMathOperator*{\argmax}{argmax}
 
 \begin{document}
+\journaltitle{Journal Title Here}
+\DOI{DOI HERE}
+\copyrightyear{2024}
+\pubyear{2024}
+\access{Advance Access Publication Date: Day Month Year}
+\appnotes{Paper}
 \firstpage{1}
 
-\title[Pangene graphs]{Investigating gene content with pangenome gene graphs}
-\author[Li]{Heng Li$^{1,2}$}
-\address{$^1$Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA,
-$^2$Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
+\title[Pangene graphs]{Exploring gene content with pangenome gene graphs}
+\author[1,2,$\ast$]{Heng Li}
+\address[1]{Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA}
+\address[2]{Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
+\corresp[$\ast$]{Corresponding author. \href{email:hli@ds.dfci.harvard.edu}{hli@ds.dfci.harvard.edu}}
+
+\abstract{
+\textbf{Motivation:}
+The gene content of an organism regulates the biology of the organism
+and varies between species and between individuals of the same species.
+Although several tools have been developed to identify gene content changes in bacterial genomes,
+no existing tools are applicable to large Eukaryotic genomes such as the human pangenome.\\
+\textbf{Results:}
+We developed pangene, a computational tool to identify gene orientation, gene order
+and gene copy-number changes in a collection of genomes.
+\textbf{Availability and implementation:}
+\href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene}
+}
 
 \maketitle
 
-\begin{abstract}
+\section{Introduction}
 
-\section{Motivation:}
-The gene content of an organism regulates its biology to a large extent. The
-gene content varies between species and between individuals of the same species
-which distinguishes species and individuals. Although several tools have been
-developed to explore the gene content changes in bacterial genomes, they are not applicable to rely
-on accurate automated gene annotations
-
-\section{Availability and implementation:}
-\href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene}
-
-\section{Contact:} hli@ds.dfci.harvard.edu
-\end{abstract}
-
-\section*{Introduction}
-
-\begin{methods}
-\section*{Methods}
+\section{Methods}
 
 Pangene graph construction takes a set of protein sequences and multiple
 genome assemblies as input, and outputs a graph in the GFA
@@ -65,11 +64,11 @@ to handle inaccurate annotation which could be caused by assembly errors,
 protein alignment errors and redundancy in input protein sequences. In
 addition, bubble finding is a challenging theoretical problem on its own.
 
-\subsection*{Notations}
+\subsection{Notations}
 
-\subsection*{Selecting proteins for alignment}
+\subsection{Selecting proteins for alignment}
 
-\subsection*{Constructing a pangene graph}
+\subsection{Constructing a pangene graph}
 
 \begin{figure}
 \centering
@@ -99,11 +98,9 @@ graph.}\label{fig:ex1}
 \caption{An example of sequence graph.}
 \end{figure}
 
-\end{methods}
+\section{Results}
 
-\section*{Results}
-
-\subsection*{Finding structural variants between two human genomes}
+\subsection{Finding structural variants between two human genomes}
 
 We downloaded GenCode comprehensive human annotation v44,
 retained the protein coding genes and filtered out readthrough transcripts and mitochondrial genes.
@@ -126,30 +123,38 @@ Some of the large gene clusters affected by structural changes, such as SMN2 and
 would not be easily captured by whole-genome alignment as they are not represented by colinear alignments.
 
 \begin{table}[!tb]
-\processtable{Bacterial pangenome analysis}
-{\footnotesize\label{tab:bac}
-\begin{tabular}{p{2.3cm}rrrr}
+\caption{Bacterial pangenome analysis\label{tab:bac}}
+%\begin{tabular}{lrrr}
+\begin{tabular*}{\columnwidth}{@{\extracolsep\fill}lrrr@{\extracolsep\fill}}
 \toprule
-& Panaroo & Panaroo & pangene & PPanGGOLiN\\
-&         & (merge) \\
+%& Panaroo & Panaroo & pangene & PPanGGOLiN\\
+%&         & (merge) \\
+%\midrule
+%Mtb: \#total genes   & 4,261  & 4,216  & 4,217  & 4,742  \\
+%Mtb: \#core genes    & 3,664  & 3,657  & 3,646  & 3,465  \\
+%Ecoli: \#total genes & 14,152 & 13,723 & 13,009 & 14,630 \\
+%Ecoli: \#core genes  & 2,890  & 2,893  & 3,081  & 2,966  \\
+& Panaroo & pangene & PPanGGOLiN\\
 \midrule
-Mtb: \#total genes   & 4,261  & 4,216  & 4,217  & 4,742  \\
-Mtb: \#core genes    & 3,664  & 3,657  & 3,646  & 3,465  \\
-Ecoli: \#total genes & 14,152 & 13,723 & 13,009 & 14,630 \\
-Ecoli: \#core genes  & 2,890  & 2,893  & 3,081  & 2,966  \\
+Mtb: \#total genes   & 4,216  & 4,217  & 4,742  \\
+Mtb: \#core genes    & 3,657  & 3,646  & 3,465  \\
+Ecoli: \#total genes & 13,723 & 13,009 & 14,630 \\
+Ecoli: \#core genes  & 2,893  & 3,081  & 2,966  \\
 \botrule
-\end{tabular}
-}{Panaroo, pangene and PPanGGOLiN were applied to two sets of gapless bacterial assemblies:
+\end{tabular*}
+\begin{tablenotes}
+\item Panaroo, pangene and PPanGGOLiN were applied to two sets of gapless bacterial assemblies:
 146 \emph{M. tuberculosis} (Mtb) strains and 50 \emph{E. coli} strains.
 Mtb genes were annotated by Prokka and Ecoli genes were annotated by NCBI and downloaded from GenBank.
 A ``core'' gene is a gene that is inferred to be present in all assemblies in each dataset.
-Panaroo was invoked in both the strict mode (option ``{\tt --clean-mode strict}'')
-and in the strict paralog merging mode (option ``{\tt --clean-mode strict --merge\_paralogs}'').}
+Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
+--clean-mode strict --merge\_paralogs}'').
+\end{tablenotes}
 \end{table}
 
-\subsection*{Analyzing 98 human haplotypes}
+\subsection{Analyzing 98 human haplotypes}
 
-\subsection*{Analyzing 146 \emph{M. tuberculosis} strains}
+\subsection{Analyzing 146 \textit{M. tuberculosis} strains}
 
 We downloaded the \emph{M. tuberculosis} reference strain H37Rv and its gene annotation from RefSeq (AC:GCF\_000195955.2),
 which included 3,906 protein sequences.
@@ -189,7 +194,7 @@ and 90\% of the aligned regions overlap with annotated CDS in RefSeq.
 PPanGGOLiN tends to select more overlapping genes in different reading frames,
 comfirming the observation by~\citet{Tonkin-Hill:2020aa}.
 
-\subsection*{Analyzing 50 \emph{E. coli} strains}
+\subsection{Analyzing 50 \textit{E. coli} strains}
 
 \emph{M. tuberculosis} has low diversity with each strain similar to each other~\citep{Marin:2022aa}.
 To understand how pangene performs given more diverse strains,
@@ -206,12 +211,13 @@ only 98 Panaroo genes do not hit to genes collected by pangene.
 The differences between the tools might be determined by subtle thresholds on how to resolve homologies
 and may not reflect the capability of each algorithm.
 
-\section*{Discussions}
+\section{Discussions}
 
-\section*{Acknowledgements}
+\section{Acknowledgements}
 
 {\bf Funding:} NHGRI R01HG010040 and Chan-Zuckerberg Initiative
 
+\bibliographystyle{abbrvnat}
 \bibliography{pangene}
 
 \end{document}
