@@ -30,6 +30,13 @@ $^2$Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
 
 \begin{abstract}
 
+\section{Motivation:}
+The gene content of an organism regulates its biology to a large extent. The
+gene content varies between species and between individuals of the same species
+which distinguishes species and individuals. Although several tools have been
+developed to explore the gene content changes in bacterial genomes, they are not applicable to rely
+on accurate automated gene annotations
+
 \section{Availability and implementation:}
 \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene}
 
@@ -40,6 +47,58 @@ $^2$Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
 
 \begin{methods}
 \section*{Methods}
+
+Pangene graph construction takes a set of protein sequences and multiple
+genome assemblies as input, and outputs a graph in the GFA
+format~\citep{Li:2020aa}. It involves two steps: aligning the set of protein
+sequences to each input assembly with miniprot~\citep{Li:2023ac}, and deriving
+a graph from the alignment with each contig encoded as a walk of genes.
+Pangene provides utilities to classify genes into core genes that are present
+in most of the input genomes, or accessory genes otherwise. Pangene can also
+identify generalized ``bubbles'' in the graph, which represent gene order, gene
+copy-number or gene orientation variations among the input genomes.
+
+Given perfect gene annotations, the graph construction algorithm is
+conceptually simple: pangene takes each gene as a node and adds an edge between
+two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}). The caveat is
+to handle inaccurate annotation which could be caused by assembly errors,
+protein alignment errors and redundancy in input protein sequences. In
+addition, bubble finding is a challenging theoretical problem on its own.
+
+\subsection*{Notations}
+
+\subsection*{Selecting proteins for alignment}
+
+\subsection*{Constructing a pangene graph}
+
+\begin{figure}
+\centering
+\includegraphics[width=.48\textwidth]{fig1}
+\caption{Examples of pangene graphs. {\bf (a)} Human haplotypes around the
+\emph{HLA-DRB1} gene. {\bf (b)} The pangene graph around \emph{HLA-DRB1}. {\bf
+(c)} Human haplotypes around the \emph{RHD} gene. \emph{RHD} has copy-number
+changes and \emph{TMEM50A} may be inverted. {\bf (d)} The corresponding pangene
+graph.}\label{fig:ex1}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=.48\textwidth]{fig2}
+\caption{An example of sequence graph.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=.48\textwidth]{fig3}
+\caption{An example of sequence graph.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=.48\textwidth]{fig4}
+\caption{An example of sequence graph.}
+\end{figure}
+
 \end{methods}
 
 \section*{Results}
