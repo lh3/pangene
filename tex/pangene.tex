@@ -1,4 +1,4 @@
-\documentclass[unnumsec,webpdf,contemporary,large,namedate]{oup-authoring-template}%
+\documentclass[webpdf,contemporary,large,namedate]{oup-authoring-template}%
 
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -33,10 +33,18 @@
 The gene content of an organism regulates the biology of the organism
 and varies between species and between individuals of the same species.
 Although several tools have been developed to identify gene content changes in bacterial genomes,
-no existing tools are applicable to large Eukaryotic genomes such as the human pangenome.\\
+no existing tools are applicable to collections of large Eukaryotic genomes such as the human pangenome.\vspace{0.5em}\\
 \textbf{Results:}
 We developed pangene, a computational tool to identify gene orientation, gene order
 and gene copy-number changes in a collection of genomes.
+Pangene aligns a set of input protein sequences to the genomes,
+resolves redundancies between protein sequences
+and constructs a gene graph with each genome represented as a walk in the graph.
+It additionally characterizes subgraphs that encodes gene content chnages.
+Applied to the human pangenome, pangene identifies known gene-level variations
+and reveals complex haplotypes that are not well studied before.
+Pangene also works with long-read bacterial pangenome and reports similar numbers of core and accessory genes
+in comparison to existing tools.\vspace{0.5em}\\
 \textbf{Availability and implementation:}
 \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene}
 }
@@ -45,24 +53,66 @@ and gene copy-number changes in a collection of genomes.
 
 \section{Introduction}
 
+A human genome contains about 20,000 protein-coding genes.
+A small fraction of them have frequent copy-number or gene order changes in the human population~\citep{Sudmant:2010aa,Handsaker:2015ur}.
+These genes are often under fast evolution
+and may be responsible for immune responses,
+affecting brain functionality~\citep{Ju:2016aa} and drug metabolism~\citep{Taylor:2020aa},
+or associated with known diseases~\citep{Mercuri:2022aa}.
+They may have profound biological and biomedical implications.
+
+Thanks to the recent advances in sequencing technologies~\citep{Wenger_2019} and assembly algorithms~\citep{Nurk:2020we,Cheng:2021aa,Rautiainen:2023aa},
+we can routinely derive haplotype-resolved assembly of genes under copy-number or order changes
+and we have developed algorithms to construct a pangenome graph encoding the variations between genomes.
+However, how to automatically identify these genes remains an unsolved problem.
+Among the three pangenome construction tools used by the Human Pangenome Reference Consortium (HPRC),
+minigraph~\citep{Li:2020aa} and minigraph-cactus~\citep{Hickey:2023aa} are
+unable to align through complex genomic regions and may miss genes in long segmental duplications;
+PGGB~\citep{Garrison2023.04.05.535718} collapses paralogous genes which makes it difficult to study individual paraplog.
+In addition, all three tools do not reveal how genomic variations affect genes.
+To study gene-level variations, HPRC
+had to manually annotate genes on each haplotype~\citep{Liao:2023aa} which is a time-consuming process.
+The current human pangenome tooling is not designed for studying gene variations.
+
+In contrast, research in bacterial pangenome
+focuses on protein-coding genes instead of genome sequences, to the point that
+in the literature, a bacterial ``pangenome'' often refers to the collection of protein-coding genes.
+Several high-quality tools have been developed for constructing the gene content of bacterial genomes~\citep{Page:2015aa,Ding:2018aa,Tonkin-Hill:2020aa,Gautreau:2020aa,Zhou:2020aa}.
+In a nutshell, they start with \emph{ab initio} gene annotation in each genome,
+cluster the restulted protein sequences,
+and then post-process clusters to identify orthoglous genes
+and to fix issues caused by imperfect assembly, annotation or clustering~\citep{Tonkin-Hill:2023aa}.
+These bacterial pangenome tools however have not considered splicing,
+multiple isoforms, frequent segmental duplications and the much larger size of the human genome.
+They have not been shown to work with human pangenome data.
+
+We therefore developed pangene, a new computational tool to explore the gene content of a pangenome.
+Unlike bacterial pangenome pipelines, pangene effectively annotates protein-coding genes
+by aligning protein sequences to each genome with miniprot~\citep{Li:2023ac}.
+As miniprot can align through in-frame stop codons and frameshifts,
+this procedure simplifies gene annotation and is robust to insertion/deletion errors in the input genomes.
+Furthermore, pangene constructs a bidirected gene graph and can capture inversions
+missed by bacterial pangenome tools.
+It also provides an approximate algorithm to directly
+identify gene copy-number or gene order variations.
+Pangene is optimized for human genomes and also works for bacterial pangenome construction.
+
 \section{Methods}
 
-Pangene graph construction takes a set of protein sequences and multiple
-genome assemblies as input, and outputs a graph in the GFA
-format~\citep{Li:2020aa}. It involves two steps: aligning the set of protein
-sequences to each input assembly with miniprot~\citep{Li:2023ac}, and deriving
-a graph from the alignment with each contig encoded as a walk of genes.
-Pangene provides utilities to classify genes into core genes that are present
-in most of the input genomes, or accessory genes otherwise. Pangene can also
-identify generalized ``bubbles'' in the graph, which represent gene order, gene
-copy-number or gene orientation variations among the input genomes.
+Pangene takes a set of protein sequences and multiple genome assemblies as input,
+and outputs a graph in the GFA format~\citep{Li:2020aa}.
+It involves two steps: aligning the set of protein sequences to each input assembly with miniprot~\citep{Li:2023ac},
+and deriving a graph from the alignment with each contig encoded as a walk of genes.
+Pangene provides utilities to classify genes into core genes that are present in most of the input genomes, or accessory genes otherwise.
+Pangene can also identify generalized ``bubbles'' in the graph, which represent gene order,
+gene copy-number or gene orientation variations among the input genomes.
 
-Given perfect gene annotations, the graph construction algorithm is
-conceptually simple: pangene takes each gene as a node and adds an edge between
-two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}). The caveat is
-to handle inaccurate annotation which could be caused by assembly errors,
-protein alignment errors and redundancy in input protein sequences. In
-addition, bubble finding is a challenging theoretical problem on its own.
+Given perfect gene annotations, the pangene graph construction algorithm is conceptually simple:
+it takes each gene as a node and adds an edge between two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}).
+The caveat is to handle inaccurate annotation which could be caused by assembly errors,
+protein alignment errors and redundancy in input protein sequences.
+In addition, bubble finding is an unsolved theoretical problem on its own
+and will be a primary topic of this article.
 
 \subsection{Notations}
 
@@ -70,7 +120,7 @@ addition, bubble finding is a challenging theoretical problem on its own.
 
 \subsection{Constructing a pangene graph}
 
-\begin{figure}
+\begin{figure}[bt!]
 \centering
 \includegraphics[width=.48\textwidth]{fig1}
 \caption{Examples of pangene graphs. {\bf (a)} Human haplotypes around the
@@ -217,7 +267,8 @@ and may not reflect the capability of each algorithm.
 
 {\bf Funding:} NHGRI R01HG010040 and Chan-Zuckerberg Initiative
 
-\bibliographystyle{abbrvnat}
+%\bibliographystyle{abbrvnat}
+\bibliographystyle{apalike}
 \bibliography{pangene}
 
 \end{document}
