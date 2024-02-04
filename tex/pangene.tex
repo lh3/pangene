@@ -109,18 +109,11 @@ gene copy-number or gene orientation variations among the input genomes.
 
 Given perfect gene annotations, the pangene graph construction algorithm is conceptually simple:
 it takes each gene as a node and adds an edge between two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}).
-The caveat is to handle inaccurate annotation which could be caused by assembly errors,
-protein alignment errors and redundancy in input protein sequences.
-In addition, bubble finding is an unsolved theoretical problem on its own
-and will be a primary topic of this article.
+The practical difficulty is to obtain accurate annotation given redundant genes, paralogous genes and errors in assembly or alignment.
+On the theoretical side, bubble finding is an unsolved problem on its own
+and will also be a major topic of this article.
 
-\subsection{Notations}
-
-\subsection{Selecting proteins for alignment}
-
-\subsection{Constructing a pangene graph}
-
-\begin{figure}[bt!]
+\begin{figure}[b!]
 \centering
 \includegraphics[width=.48\textwidth]{fig1}
 \caption{Examples of pangene graphs. {\bf (a)} Human haplotypes around the
@@ -130,23 +123,55 @@ changes and \emph{TMEM50A} may be inverted. {\bf (d)} The corresponding pangene
 graph.}\label{fig:ex1}
 \end{figure}
 
-\begin{figure}
+\subsection{Defining pangene graphs}
+
+\begin{figure}[t!]
 \centering
 \includegraphics[width=.48\textwidth]{fig2}
-\caption{An example of sequence graph.}
+\caption{An example of a gene graph. {\bf (a)} A gene graph for visualization.
+{\bf (b)} The corresponding GFA format.
+{\bf (c)} Bidirected graph.
+{\bf (d)} Biedged graph.
+{\bf (e)} Directed graph.
+{\bf (f)} Net graph, which loses information.
+{\bf (g)} A depth-first traversal of the net graph with ``0'' representing a super node
+not in the original net graph.}\label{fig:exa1}
 \end{figure}
 
-\begin{figure}
-\centering
-\includegraphics[width=.48\textwidth]{fig3}
-\caption{An example of sequence graph.}
-\end{figure}
+Let $V$ be the set of genes
+and $X=V\times\{{\rm >},{\rm <}\}$ be the set of oriented genes.
+If $v\in V$ is a gene, $x=(v,{\rm >})\in X$, or simply $x={\rm >}v$, denotes an oriented gene.
+$\overline{x}$ gives the reverse complement of $x$.
+i.e., if $x=(v,{\rm >})$, $\overline{x}=(v,{\rm <})$, and vice versa.
+Throughout this article, we will use symbol $u$, $v$ or $w$ to denote a gene
+and use $x$, $y$ or $z$ to denote an oriented gene.
 
-\begin{figure}
-\centering
-\includegraphics[width=.48\textwidth]{fig4}
-\caption{An example of sequence graph.}
-\end{figure}
+A pangene graph is usually visualized as Fig.~\ref{fig:exa1}a~\citep{Wick:2015qf}
+and can be mathematically defined in a few equivalent ways.
+It can be formulated as a directed graph $G_D=(X,E)$ where $E\subset X\times X$ is the set of edges.
+In the context of pangene graphs, $(x,y)$ is an edge if $x$ is followed by $y$ in an input genome,
+or, due to the strand symmetry of DNA, $\overline{y}$ is followed by $\overline{x}$.
+In the graph theory, this property is called the \emph{skew symmetry}.
+Fig.~\ref{fig:exa1}e shows an example of a directed pangene graph
+which can be described in the GFA format (Fig.~\ref{fig:exa1}b).
+
+A pangene graph can also be thought as a bidirected graph $G_B=(V,E)$ where the definition of $E$ is the same as above.
+An edge in $E$ is effectively associated with two directions.
+For example, $({\rm >}v,{\rm <}w)\in E$ can be written as $v{\rm ><}w$,
+suggesting the edge between $v$ and $w$ has a first direction ``${\rm >}$'' towards vertex $v$ and a second direction ``${\rm <}$'' towards vertex $w$.
+Fig.~\ref{fig:exa1}c shows the bidirected equivalence of Fig.~\ref{fig:exa1}a.
+
+In a directed graph, $x\to y\gets z$ is not a path because $x$ cannot reach $z$.
+The similar constraint is applied to the bidirected graph $G_B$.
+For example, $v{\rm >>}u{\rm <<}w$ is not a path because both $v$ and $w$ go into $u$.
+$v{\rm >>}u{\rm ><}w$ is a path, which can also be expressed as a path in $G_D$: $({\rm >}v,{\rm >}u,{\rm <}w)$.
+
+Biedged graph~\citep{Paten:2018aa} is a third way to formulate a pangene graph (Fig.~\ref{fig:exa1}d).
+We will come back to this formulation after we describe the graph construction algorithm.
+
+\subsection{Selecting proteins for alignment}
+
+\subsection{Constructing a pangene graph}
 
 \section{Results}
 
