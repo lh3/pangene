@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r193-dirty";
+const pg_version = "r194-dirty";
 
 /**************
  * From k8.js *
@@ -337,7 +337,7 @@ class BackEdgeNode {
 }
 
 class NetGraph {
-	constructor(g) {
+	constructor(g, ref) {
 		this.n_node = 0;
 		this.end_cat = [];
 		this.arc = [];
@@ -346,16 +346,12 @@ class NetGraph {
 		this.dfs_fin = [];
 		this.dfs_par = [];
 		this.gfa = g;
+		this.ref = ref;
 		this.#convert_gfa();
 	}
 	#convert_gfa() {
 		const g = this.gfa;
 		const n_vtx = g.seg.length * 2;
-		// collect tips
-		let tip = [];
-		for (let v = 0; v < n_vtx; ++v)
-			if (g.idx[v].n == 0)
-				tip.push(v^1);
 		// collect "link" edges
 		let a = [];
 		for (let v = 0; v < n_vtx; ++v) {
@@ -400,6 +396,25 @@ class NetGraph {
 		for (let i = 0; i < g.seg.length; ++i) {
 			this.arc.push({ v:this.end_cat[i*2],   w:this.end_cat[i*2|1], seg:i, ori:1,  pair:-1, cec:-1, dfs_type:0 });
 			this.arc.push({ v:this.end_cat[i*2|1], w:this.end_cat[i*2],   seg:i, ori:-1, pair:-1, cec:-1, dfs_type:0 });
+		}
+		// collect tips
+		let tip = [];
+		for (let v = 0; v < n_vtx; ++v)
+			if (g.idx[v].n == 0)
+				tip.push(v^1);
+		if (this.ref && g.walk.length > 0) {
+			let f = [];
+			for (let v = 0; v < n_vtx; ++v) f[v] = 0;
+			for (let i = 0; i < tip.length; ++i) f[tip[i]] = 1;
+			for (const w of g.walk) {
+				if (w.asm != this.ref || w.v.length < 2) continue;
+				let t1 = w.v[0], t2 = w.v[w.v.length-1]^1;
+				if (f[t1] == 0) f[t1] = 2;
+				if (f[t2] == 0) f[t2] = 2;
+			}
+			for (let v = 0; v < n_vtx; ++v)
+				if (f[v] == 2)
+					tip.push(v);
 		}
 		// add super node
 		if (tip.length > 0) {
@@ -786,14 +801,15 @@ class NetGraph {
  ***************/
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, min_n_allele:2 };
-	for (const o of getopt(args, "bedmwc:", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, min_n_allele:2, ref:null };
+	for (const o of getopt(args, "bedmwc:r:", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
 		else if (o.opt == "-m") opt.max_ext = parseInt(o.arg);
 		else if (o.opt == "-w") opt.ignore_walk = true;
 		else if (o.opt == "-c") opt.min_n_allele = parseInt(o.arg);
+		else if (o.opt == "-r") opt.ref = o.arg;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
@@ -802,6 +818,7 @@ function pg_cmd_call(args) {
 		print(`    -m INT   don't output gene lists longer than INT [${opt.max_ext}]`);
 		print(`    -c INT   min number of alleles [${opt.min_n_allele}]`);
 		print("    -b       output equivalent classes for Bandage visualization");
+		print("    -r INT   reference assembly []");
 		print("  Debugging:");
 		print("    -d       output DFS traversal");
 		print("    -e       output cycle equivalent class");
@@ -809,7 +826,7 @@ function pg_cmd_call(args) {
 	}
 	let g = new GFA();
 	g.from_file(args[0]);
-	let e = new NetGraph(g);
+	let e = new NetGraph(g, opt.ref);
 	const sese = e.pst();
 	if (opt.print_dfs) e.print_dfs();
 	if (opt.print_bandage) e.print_bandage_csv();
