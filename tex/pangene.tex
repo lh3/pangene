@@ -109,7 +109,7 @@ gene copy-number or gene orientation variations among the input genomes.
 
 Given perfect gene annotations, the pangene graph construction algorithm is conceptually simple:
 it takes each gene as a node and adds an edge between two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}).
-The practical difficulty is to obtain accurate annotation given redundant genes, paralogous genes and errors in assembly or alignment.
+The practical difficulty is to obtain accurate annotation in the presence of redundant sequences, paralogous genes and errors in assembly or alignment.
 On the theoretical side, bubble finding is an unsolved problem on its own
 and will also be a major topic of this article.
 
@@ -140,17 +140,23 @@ not in the original net graph.}\label{fig:exa1}
 
 Let $V$ be the set of genes
 and $X=V\times\{{\rm >},{\rm <}\}$ be the set of oriented genes.
-If $v\in V$ is a gene, $x=(v,{\rm >})\in X$, or simply $x={\rm >}v$, denotes an oriented gene.
+If $v\in V$ is a gene, $x=(v,{\rm >})\in X$, or simply $x={\rm >}v$, denotes an oriented gene
+and $\nu(x)=v$ gives the underlying gene behind an oriented gene.
 $\overline{x}$ gives the reverse complement of $x$.
 i.e., if $x=(v,{\rm >})$, $\overline{x}=(v,{\rm <})$, and vice versa.
 Throughout this article, we will use symbol $u$, $v$ or $w$ to denote a gene
 and use $x$, $y$ or $z$ to denote an oriented gene.
 
+Let $T$ be the set of input contigs.
+They harbor oriented genes in $X$.
+2-tuple $(x,y)\in X\times X$ is said to be supported by contig $t\in T$
+if $y$ immediately follows $x$ on $t$ or, due to the strand symmetry of DNA, $\overline{x}$ immediately follows $\overline{y}$.
+
 A pangene graph is usually visualized as Fig.~\ref{fig:exa1}a~\citep{Wick:2015qf}
 and can be mathematically defined in a few equivalent ways.
 It can be formulated as a directed graph $G_D=(X,E)$ where $E\subset X\times X$ is the set of edges.
-In the context of pangene graphs, $(x,y)$ is an edge if $x$ is followed by $y$ in an input genome,
-or, due to the strand symmetry of DNA, $\overline{y}$ is followed by $\overline{x}$.
+In the context of pangene graphs, $(x,y)$ is an edge, also written as $x\to y$, if $(x,y)$ is supported by a contig.
+Notably, if $x\to y$ is an edge, $\overline{y}\to\overline{x}$ must also be an edge.
 In the graph theory, this property is called the \emph{skew symmetry}.
 Fig.~\ref{fig:exa1}e shows an example of a directed pangene graph
 which can be described in the GFA format (Fig.~\ref{fig:exa1}b).
@@ -167,11 +173,161 @@ For example, $v{\rm >>}u{\rm <<}w$ is not a path because both $v$ and $w$ go int
 $v{\rm >>}u{\rm ><}w$ is a path, which can also be expressed as a path in $G_D$: $({\rm >}v,{\rm >}u,{\rm <}w)$.
 
 Biedged graph~\citep{Paten:2018aa} is a third way to formulate a pangene graph (Fig.~\ref{fig:exa1}d).
-We will come back to this formulation after we describe the graph construction algorithm.
+We will come back to this formulation when we describe the approximate bubble finding algorithm.
 
-\subsection{Selecting proteins for alignment}
+As a pangene graph is constructed from the protein-to-genome alignment,
+pangene attaches alignment scores to edges.
+Let $T_{x\to y}\subset T$ be the set of contigs that support $x\to y$
+and $S(x, y,t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
+$S(x\to y)$ is calculated as
+$$
+S(x, y)=\frac{1}{|T_{x\to y}|}\sum_{t\in T_{x\to y}}S(x, y,t)
+$$
+which is the average score of $x$ among contigs supporting $x\to y$.
 
-\subsection{Constructing a pangene graph}
+\subsection{Obtaining the protein set}
+
+Pangene requires a set of protein sequences as input.
+The protein set may have redundancies.
+In principle, if every input genome is annotated, we may merge all annotated protein sequences
+and align to all genomes with miniprot.
+This strategy is preferred when there are a small number of diverged genomes.
+If there are many similar genomes, all with annotations,
+a faster way is to cluster protein sequences with CD-HIT~\citep{Li:2006aa} or MMseqs2~\citep{Schneider:2017aa},
+and take a representative protein sequence from each cluster to generate the protein set.
+
+Most human genomes do not have high-quality gene annotation.
+We may generate the protein set from the reference gene annotation supplemented
+with protein-coding genes or diverged alleles not present in the reference genome, such as \emph{HLA-DRB3}.
+Pangene works with proteins resulted from alternative splicing.
+If protein names follow format {\tt <GeneID>:<ProteinID>},
+pangene will select one protein for each {\tt <GeneID>} and use {\tt <GeneID>} as the segment name in the output GFA file.
+
+\subsection{Selecting non-orthologous genes}
+
+The central problem in graph construction is how to consistently annotate multiple genomes with a subset of input proteins.
+A naive way to annotate a genome is to align all protein sequences to the genome
+and if there are multiple proteins mapped to the same locus, to selec the best scoring protein as the annotation.
+This simple strategy does not work if there are orthologous proteins in the input protein set.
+For example, suppose gene $v$ and $w$ are orthologous to each other and are thus aligned to the the same locus in each genome.
+When some genomes match $v$ better and the rest match $w$ better,
+both $v$ and $w$ will be considered as accessory genes that are not present in all genomes.
+However, the preferred choice is to elect one of them as a core gene.
+
+Pangene selects non-orthologous genes as follows.
+For gene $v$, pangene inspects its best hit in each genome (hashes of gene names are used to break ties).
+It counts $b(v)$ the number of genomes where $v$ is aligned better than all other genes overlapping with $v$.
+Pangene then traverses each gene $v$ in the descending order of current $b(v)$.
+If $b(v)>0$, select $v$ as a non-orthologous gene and for each genome where the best mapping of $w$ overlaps with $v$ but is aligned better than $v$, reduce $b(w)$ by one.
+This way, if $v$ and $w$ are orthologs, their best mapping positions likely overlap and thus only one of them will be selected;
+if $v$ and $w$ are paralogs, their best mapping positions usually differ and thus both will be selected.
+
+\subsection{Adjusting pangene graphs}
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.48\textwidth]{fig3}
+\caption{Graph-based annotation adjustment.
+{\bf (a)} \emph{MSL3} is located on chromosome X but has a weaker hit on chromosome 2 when the gene
+is aligned to a male haplotype without chromosome X.
+{\bf (b)} The initial pangene graph. Percentages indicate alignment identity.
+{\bf (c)} The adjusted graph after filtering out the \emph{MSL3} hit on chr2.
+{\bf (d)} Two haplotypes involving \emph{CYP2D6} and \emph{CYP2D7} which are paralogous genes.
+The second haplotype should have \emph{CYP2D7} only but because \emph{CYP2D6} is longer, the \emph{CYP2D6} alignment score is higher than the \emph{CYP2D7} score.
+{\bf (e)} The initial pangene graph assuming the second haplotype has \emph{CYP2D6}.
+{\bf (f)} The adjusted graph.
+}\label{fig:resolve}
+\end{figure}
+
+Pangene constructs an initial graph using genes selected from the last section.
+It applies additional heuristics to improve gene annotations based on the graph topology and alignment scoring
+in two special cases.
+
+First, a gene may be wrongly mapped to its paralogs if its best position is missing.
+Suppose a gene on chromosome X has a second best hit on an autosome.
+If the alignment score of the autosomal hit is lower than the hit to chromosome X by 3\%
+miniprot will only report the hit on chromosome X.
+However, a phased male human assembly does not have chromosome X,
+the gene will be mapped to the autosome (Fig.~\ref{fig:resolve}a).
+This false hit will lead to spurious edges in the initial graph (Fig.~\ref{fig:resolve}b).
+To solve this problem, pangene marks $x\to y$ as a false edge
+if there exists $x\to z$ such that $y$ and $z$ are on different contigs in every input genome and $S(x,y)<S(x,z)\cdot 95\%$.
+Pangene then filters out all $x$ alignment that are incident to a false edge $x\to y$ (Fig.~\ref{fig:resolve}c).
+
+Second, similar to the first case, if the best position of a gene is missing due to real deletion in evolution,
+this gene may interfere with the alignment of paralogous genes (Fig.~\ref{fig:resolve}d)
+and leads to an undesired graph (Fig.~\ref{fig:resolve}e).
+To improve this case, pangene marks $x\to y$ to be low priority
+if there exists $x\to z$ such that $y$ and $z$ are on the same contig in every input genome and $S(x,y)<S(x,z)\cdot 98\%$.
+Pangene then marks all $x$ alignment that are incident to a low-priority edge $x\to y$ to have low priority as well
+and prefers a gene without the low-priority mark.
+In Fig.~\ref{fig:resolve}e, $x={\rm <}$\emph{CYP2D6}, $y={\rm <}$\emph{TCF20} and $z={\rm <}$\emph{CYP2D7}.
+${\rm <}$\emph{CYP2D6} is marked to have low priority on the second contig.
+This results in a graph in Fig.~\ref{fig:resolve}f that is more consistent with the known evolution at this locus~\citep{Liao:2023aa}.
+
+\subsection{Defining generalized bubbles}
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.48\textwidth]{fig4}
+\caption{Example of gene graphs with inversions.
+{\bf (a)} A gene graph for visualization. ({\tt >A},{\tt <C}) is a generlized bubble.
+{\bf (b)} The corresponding GFA format.
+{\bf (c)} Bidirected graph.
+{\bf (d)} Biedged graph.
+{\bf (e)} Net graph, which loses information.
+{\bf (f)} Directed graph.
+{\bf (g)} Another gene graph with ({\tt >A},{\tt >D}) being a generlized bubble.
+}\label{fig:inv}
+\end{figure}
+
+The concept of bubble is perhaps first coined by \citet{Zerbino:2008uq} in the context of assembly graphs.
+A bubble was initially meant to be simple in that paths through a bubble do not share vertices except the start and the end vertices.
+\citet{DBLP:conf/wabi/OnoderaSS13} introduced superbubble to allow more complex acyclic topology.
+
+A generalized bubble is a superbubble but without the acyclic constraint.
+Formally, in a directed graph $G_D$, $z$ is said to be reachable from $x$ without passing through $y$
+if there is a walk from $x$ to $z$ that does not involve $y$.
+Let $U_D(x,y)\subset X$ be the set of vertices that are reachable from $x$ without passing through $y$
+and similarly $U'_D(y,x)$ be the set of vertices that can reach $y$ without passing through $x$.
+A \emph{generalized bubble}  is a pair of vertices $(x,y)$ such that
+i) $x$ reaches $y$; ii) $U_D(x,y)=U'_D(y,x)$ and iii) there does not exist $z\in U_D(x,y)$
+that satisfies $U_D(x,z)=U'_D(z,x)$ or $U_D(z,y)=U'_D(y,z)$.
+A bi-bubble is a \emph{superbubble} if the subgraph induced by $\{x,y\}\cup U_D(x,y)$ is acyclic.
+
+The definition above is applied to directed graphs only but can be extended to bidirected graphs.
+Given a vertex $v$ in a bidirected graph $G_B=(V,E)$,
+a walk can either start from ${\rm >}v$ or from ${\rm <}v$.
+Let $U(x,y)\subset V$ be the set of vertices that are reachable from $x$ without passing through $x$, $\overline{x}$ or $y$.
+A \emph{generalized bidirected bubble}, or a \emph{generalized bibubble} in short, is a pair $(x,y)\in X\times X$ such that
+i) there exists a walk from $x$ to $y$;
+ii) $U(x,y)=U(\overline{y},\overline{x})\not=\emptyset$;
+and iii) there does not exist $z\in U(x,y)\times\{{\rm >},{\rm <}\}$
+that satisfies $U(x,z)=U(\overline{z},\overline{x})$ or $U(z,y)=U(\overline{y},\overline{z})$.
+Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\overline{x})$ is also a generalized bibubble.
+
+In Fig.~\ref{fig:exa1}a, ({\tt >A},{\tt <E}) is both a generalized bibubble in the bidirected graph
+and a generalized bubble in the equivalent directed graph.
+This is however not the case in Fig.~\ref{fig:inv}a:
+({\tt >A},{\tt <C}) is a generalized bibubble but is not a generalized bubble in the directed graph.
+
+For a generalized bibubble $(x,y)$, removing the genes associated with $x$ and $y$ would separate $U(x,y)$ from the rest of the graph.
+\citet{Paten:2018aa} uses such separability to define snarls in a bidirected graph.
+A generalized bibubble is a snarl but a snarl is not always a bibubble because a snarl does not require reachability.
+
+\subsection{Identifying generalized bibubbles}
+
+Although there are linear algorithms for identifying all superbubbles in a directed graph~\citep{DBLP:journals/corr/BrankovicIKMPV15},
+they do not work with generalized bubbles with cycles, let alone generalized bibubbles.
+\citet{Paten:2018aa} described an algorithm to find snarls but
+this is not a linear algorithm and a snarl is not always a generalized bibubble.
+This algorithm is also complex to implement.
+
+A naive algorithm to identify all generalized bibubbles is to enumerate each pair of oriented genes
+and then test whether the pair forms a generalized bibubble based on the definition.
+This gives an $O(|V|^2\cdot(|V|+|E|))$ algorithm, which is impractical for large graphs.
+
+Inspired by \citet{DBLP:conf/pldi/JohnsonPP94}, we implemented an approximate algorithm to identify bibubbles.
 
 \section{Results}
 
