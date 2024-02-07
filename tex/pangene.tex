@@ -331,11 +331,59 @@ Inspired by \citet{DBLP:conf/pldi/JohnsonPP94}, we implemented an approximate al
 Let $Z=V\times\{{\rm s},{\rm e}\}$, where symbol ``${\rm s}$'' represents the start of a gene
 and symbol ``${\rm e}$'' represents the end.
 Given a bidirected graph $G_B=(V,E)$, a \emph{biedged graph} $G_E=(Z,E_g,E_l)$ is constructed
-with $E_g=\big\{\{(v,{\rm s}),(v,{\rm e})\}|v\in V\big\}$ and $E_l$ being the set of unordered connections between starts or ends of genes in $Z$.
+with $E_g=\big\{\{(v,{\rm s}),(v,{\rm e})\}|v\in V\big\}$ and $E_l$ being the set of undirected connections between starts or ends of genes in $Z$.
 Fig.~\ref{fig:exa1}d shows an example.
-A \emph{net graph} $G_N$ is constructed by contracting all edges in $E_l$.
-As a result, vertices in $G_N$ are components connected by edges in $E_l$
-and edges represent genes (Fig.~\ref{fig:exa1}e and Fig.~\ref{fig:inv}e).
+A valid walk in a biedged graph cannot pass two consecutive edges in $E_l$.
+Due to this restriction, many classical algorithms in graph theory cannot be easily applied to a biedged graph.
+
+A \emph{net graph} $G_N=(P,E_n)$ is constructed by contracting all edges in $E_l$.
+As a result, a vertex in $P$ is a component connected by edges in $E_l$
+and an edge represents a gene in $V$ with $|E_n|=|V|$ (Fig.~\ref{fig:exa1}e and Fig.~\ref{fig:inv}e).
+A net graph is an undirected graph that is not equivalent to the bidirected graph $G_B$.
+For example in Fig.~\ref{fig:exa1}a, there is not a walk that goes through both gene {\tt C} and {\tt D},
+but in Fig.~\ref{fig:exa1}f, there is a walk involving both genes.
+Nonetheless, Fig.~\ref{fig:exa1}f still implies a bubble-like subgraph even with the loss of directionality.
+This is the base of our approximate algorithm.
+
+To define bubble-like subgraphs, we need to introduce a dummy vertex $p_0$.
+For now, we let $p_0$ connect every vertex that has degree one.
+This will put most vertices in cycles containing $p_0$.
+The net graph augmented with $p_0$ is $G'_N=(P\cup\{p_0\},E'_n)$.
+A \emph{single-entry-single-exit (SESE) region} in $G'_N$ is an unordered pair of edges $\{v,w\}$
+such that every cycle containing $v$ also contains $w$ and vice versa.
+Intuitively, a SESE region often corresponds to a generalized bibubble.
+SESE regions can be found in linear time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.48\textwidth]{fig5}
+\caption{Example of gene graphs that complicate net graph based bubble finding.
+{\bf (a)} Gene annotation on a contig.
+{\bf (b)} The corresponding pangene graph.
+{\bf (c)} Net graph with the dummy vertex ``0'' connected to ``1'' only.
+{\bf (d)} Net graph with the dummy vertex connected to genes at the ends of the contig.
+{\bf (e)} Another pangene graph.
+{\bf (f)} The corresponding net graph.
+}\label{fig:complex}
+\end{figure}
+
+Importantly, we emphasize that the bubble finding algorithm based on net graph is approximate although the algorithm by \citet{DBLP:conf/pldi/JohnsonPP94} is exact.
+This is caused by the loss of directionality.
+In Fig.~\ref{fig:complex}c, dummey vertex ``0'' only connects vertex ``1'' and thus
+edges ``{\tt A}'', ``{\tt B}'' and ``{\tt D}'' are not contained in any cycles.
+By definition, \{{\tt A},{\tt B}\}, \{{\tt A},{\tt D}\} and \{{\tt B},{\tt D}\} are all SESE regions.
+However, in the original graph Fig.~\ref{fig:complex}b, only ({\tt >A},{\tt >D}) is a generalized bibubble.
+We alleviate this issue by connecting the dummy vertex to genes at the chromosome ends on a reference genome.
+This identifies the desired SESE region (Fig.~\ref{fig:complex}d).
+Nonetheless, the heuristic does not always work.
+For example, ({\tt <B},{\tt >E}) is not a generalized bibubble in Fig.~\ref{fig:complex}e
+but \{{\tt B},{\tt E}\} is a SESE region in Fig.~\ref{fig:complex}f.
+
+We could not theoretically prove on what condition a SESE region exactly corresponds to a generalized bibubble or vice versa.
+In actual implementation, we only extract SESE regions that involve no more than 100 genes
+and test whether a SESE region is a generalized bibubble using the definition.
+The overall time complexity is $O(|V|+|E|+b\cdot m)$ where $b$ is the number of bubbles and $m$ is the maximal number of genes contained in a bubble.
+Note that the snarl-finding algorithm~\citep{Paten:2018aa} also operates on net graphs and suffers from the same problem due to the loss of directionality.
 
 \section{Results}
 
