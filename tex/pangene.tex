@@ -326,8 +326,16 @@ This algorithm is also complex to implement.
 A naive algorithm to identify all generalized bibubbles is to enumerate each pair of oriented genes
 and then test whether the pair forms a generalized bibubble based on the definition.
 This gives an $O(|V|^2\cdot(|V|+|E|))$ algorithm, which is impractical for large graphs.
-
 Inspired by \citet{DBLP:conf/pldi/JohnsonPP94}, we implemented an approximate algorithm to identify bibubbles.
+
+Let $Z=V\times\{{\rm s},{\rm e}\}$, where symbol ``${\rm s}$'' represents the start of a gene
+and symbol ``${\rm e}$'' represents the end.
+Given a bidirected graph $G_B=(V,E)$, a \emph{biedged graph} $G_E=(Z,E_g,E_l)$ is constructed
+with $E_g=\big\{\{(v,{\rm s}),(v,{\rm e})\}|v\in V\big\}$ and $E_l$ being the set of unordered connections between starts or ends of genes in $Z$.
+Fig.~\ref{fig:exa1}d shows an example.
+A \emph{net graph} $G_N$ is constructed by contracting all edges in $E_l$.
+As a result, vertices in $G_N$ are components connected by edges in $E_l$
+and edges represent genes (Fig.~\ref{fig:exa1}e and Fig.~\ref{fig:inv}e).
 
 \section{Results}
 
