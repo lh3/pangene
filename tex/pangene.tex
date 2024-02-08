@@ -99,6 +99,23 @@ Pangene is optimized for human genomes and also works for bacterial pangenome co
 
 \section{Methods}
 
+\begin{table}[!tb]
+\caption{Notations\label{tab:sym}}
+\begin{tabular*}{\columnwidth}{@{\extracolsep\fill}ll@{\extracolsep\fill}}
+\toprule
+Notation & Description \\
+\midrule
+$V$ & Set of genes \\
+$v,w,u$ & Genes; vertices in a bidirected graph \\
+$X$ & Set of oriented genes; $X=V\times({\rm >},{\rm <})$ \\
+$x,y,z$ & Oriented genes; vertices in a directed graph \\
+${\rm >}v,{\rm <}v$ & Oriented genes \\
+$\overline{x}$ & Reverse complement of $x$; $\overline{{\rm >}v}={\rm <}v,\overline{{\rm <}v}={\rm >}v$ \\
+$\nu(x)$ & The gene behind $x$; $\nu({\rm >}v)=\nu({\rm <}v)=v$ \\
+\botrule
+\end{tabular*}
+\end{table}
+
 Pangene takes a set of protein sequences and multiple genome assemblies as input,
 and outputs a graph in the GFA format~\citep{Li:2020aa}.
 It involves two steps: aligning the set of protein sequences to each input assembly with miniprot~\citep{Li:2023ac},
@@ -141,11 +158,11 @@ not in the original net graph.}\label{fig:exa1}
 Let $V$ be the set of genes
 and $X=V\times\{{\rm >},{\rm <}\}$ be the set of oriented genes.
 If $v\in V$ is a gene, $x=(v,{\rm >})\in X$, or simply $x={\rm >}v$, denotes an oriented gene
-and $\nu(x)=v$ gives the underlying gene behind an oriented gene.
+and $\nu(x)=v$ gives the underlying gene behind oriented gene $x$.
 $\overline{x}$ gives the reverse complement of $x$.
-i.e., if $x=(v,{\rm >})$, $\overline{x}=(v,{\rm <})$, and vice versa.
+i.e., if $x={\rm >}v$, $\overline{x}={\rm <}v$, and vice versa.
 Throughout this article, we will use symbol $u$, $v$ or $w$ to denote a gene
-and use $x$, $y$ or $z$ to denote an oriented gene.
+and use $x$, $y$ or $z$ to denote an oriented gene (Table~\ref{tab:sym}).
 
 Let $T$ be the set of input contigs.
 They harbor oriented genes in $X$.
@@ -160,6 +177,8 @@ Notably, if $x\to y$ is an edge, $\overline{y}\to\overline{x}$ must also be an e
 In the graph theory, this property is called the \emph{skew symmetry}.
 Fig.~\ref{fig:exa1}e shows an example of a directed pangene graph
 which can be described in the GFA format (Fig.~\ref{fig:exa1}b).
+In $G_D$, it is possible that $x$ can reach $\overline{x}$.
+When this happens, $x$ is said to be an \emph{inversion}.
 
 A pangene graph can also be thought as a bidirected graph $G_B=(V,E)$ where the definition of $E$ is the same as above.
 An edge in $E$ is effectively associated with two directions.
@@ -173,15 +192,15 @@ For example, $v{\rm >>}u{\rm <<}w$ is not a path because both $v$ and $w$ go int
 $v{\rm >>}u{\rm ><}w$ is a path, which can also be expressed as a path in $G_D$: $({\rm >}v,{\rm >}u,{\rm <}w)$.
 
 Biedged graph~\citep{Paten:2018aa} is a third way to formulate a pangene graph (Fig.~\ref{fig:exa1}d).
-We will come back to this formulation when we describe the approximate bubble finding algorithm.
+We will come back to this formulation when we describe the bubble finding algorithm.
 
 As a pangene graph is constructed from the protein-to-genome alignment,
 pangene attaches alignment scores to edges.
 Let $T_{x\to y}\subset T$ be the set of contigs that support $x\to y$
-and $S(x, y,t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
+and $S(x,y|t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
 $S(x\to y)$ is calculated as
 $$
-S(x, y)=\frac{1}{|T_{x\to y}|}\sum_{t\in T_{x\to y}}S(x, y,t)
+S(x, y)=\frac{1}{|T_{x\to y}|}\sum_{t\in T_{x\to y}}S(x,y|t)
 $$
 which is the average score of $x$ among contigs supporting $x\to y$.
 
@@ -222,9 +241,7 @@ If $b(v)>0$, select $v$ as a non-orthologous gene and for each genome where the 
 This way, if $v$ and $w$ are orthologs, their best mapping positions likely overlap and thus only one of them will be selected;
 if $v$ and $w$ are paralogs, their best mapping positions usually differ and thus both will be selected.
 
-\subsection{Adjusting pangene graphs}
-
-\begin{figure}[t!]
+\begin{figure}[tb!]
 \centering
 \includegraphics[width=.48\textwidth]{fig3}
 \caption{Graph-based annotation adjustment.
@@ -238,6 +255,8 @@ The second haplotype should have \emph{CYP2D7} only but because \emph{CYP2D6} is
 {\bf (f)} The adjusted graph.
 }\label{fig:resolve}
 \end{figure}
+
+\subsection{Adjusting pangene graphs}
 
 Pangene constructs an initial graph using genes selected from the last section.
 It applies additional heuristics to improve gene annotations based on the graph topology and alignment scoring
@@ -265,7 +284,56 @@ In Fig.~\ref{fig:resolve}e, $x={\rm <}$\emph{CYP2D6}, $y={\rm <}$\emph{TCF20} an
 ${\rm <}$\emph{CYP2D6} is marked to have low priority on the second contig.
 This results in a graph in Fig.~\ref{fig:resolve}f that is more consistent with the known evolution at this locus~\citep{Liao:2023aa}.
 
+\subsection{Past work on bubble finding}
+
+The concept of bubble is perhaps first coined by \citet{Zerbino:2008uq} in the context of assembly graphs.
+A bubble was initially meant to be simple in that paths through a bubble do not share vertices except the start and the end vertices.
+\citet{DBLP:conf/wabi/OnoderaSS13} introduced superbubble to allow more complex acyclic topology (see the next subsection for a precise definition)
+and found a quadratic algorithm to identify all superbubbles.
+The time complexity was improved to $O(|E|\log|E|)$ by \citet{Sung:2015aa}
+and then to linear by \citet{DBLP:journals/tcs/BrankovicIKMPV16}.
+
+A subgraph induced by a superbubble is acyclic, but in a pangene graph or a variation graph,
+we also care about cyclic subgraph.
+\citet{Gartner:2018aa} defined weak superbubble without the acyclic condition,
+and presented a linear algorithm to identify all weak superbubbles~\citep{DBLP:journals/algorithms/GartnerS19}.
+Interestingly, more than 20 years before this work,
+\citet{DBLP:conf/pldi/JohnsonPP94} had already come up with a linear algorithm to effectively find weak superbubbles in the context of compiler design,
+which will be the basis of our algorithm.
+
+Weak superbubble is defined on directed graphs, not on bidirected graphs.
+If we apply the previous algorithms to directed graph $G_D$,
+we will find most superbubbles twice on separate strands.
+Superbubble cannot capture the visual intuition in the presence of inversions, either (Fig.~\ref{fig:inv}).
+\citet{Dabbaghie:2022aa} implemented the algorithm by \citet{DBLP:conf/wabi/OnoderaSS13} for sequence graphs,
+but how issues above are handled is not apparent.
+The closest concept to weak superbubble in bidirected graphs is snarl~\citep{Paten:2018aa},
+which leads to a bidirected subgraph that can be separated from the rest of the graph.
+Snarl does not require reachability which is necessary in defining superbubbles.
+To this end, there are no equivalent definition of weak superbubble in directed graphs.
+
 \subsection{Defining generalized bubbles}
+
+In a directed graph $G_D$, $z$ is said to be reachable from $x$ without passing through $y$
+if there is a walk from $x$ to $z$ that does not involve $y$.
+Let $U_D(x,y)\subset X$ be the set of vertices that are reachable from $x$ without passing through $y$
+and similarly $U'_D(y,x)$ be the set of vertices that can reach $y$ without passing through $x$.
+A \emph{generalized bubble} is a pair of vertices $(x,y)$ such that
+i) $x$ reaches $y$; ii) $U_D(x,y)=U'_D(y,x)$ and iii) there does not exist $z\in U_D(x,y)$
+that satisfies $U_D(x,z)=U'_D(z,x)$ or $U_D(z,y)=U'_D(y,z)$.
+A generalized bubble is a \emph{superbubble} if the subgraph induced by $\{x,y\}\cup U_D(x,y)$ is acyclic.
+A generalized bubble is equivalent to a weak superbubble~\citep{Gartner:2018aa}.
+
+The definition above is applied to directed graphs only but can be extended to bidirected graphs.
+Given a vertex $v$ in a bidirected graph $G_B=(V,E)$,
+a walk can either start from ${\rm >}v$ or from ${\rm <}v$.
+Let $U(x,y)\subset V$ be the set of vertices that are reachable from $x$ without passing through $x$, $\overline{x}$ or $y$.
+A \emph{generalized bidirected bubble}, or a \emph{generalized bibubble} in short, is a pair $(x,y)\in X\times X$ such that
+i) there exists a walk from $x$ to $y$;
+ii) $U(x,y)=U(\overline{y},\overline{x})\not=\emptyset$;
+and iii) there does not exist $z\in U(x,y)\times\{{\rm >},{\rm <}\}$
+that satisfies $U(x,z)=U(\overline{z},\overline{x})$ or $U(z,y)=U(\overline{y},\overline{z})$.
+Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\overline{x})$ is also a generalized bibubble.
 
 \begin{figure}[t!]
 \centering
@@ -281,78 +349,68 @@ This results in a graph in Fig.~\ref{fig:resolve}f that is more consistent with 
 }\label{fig:inv}
 \end{figure}
 
-The concept of bubble is perhaps first coined by \citet{Zerbino:2008uq} in the context of assembly graphs.
-A bubble was initially meant to be simple in that paths through a bubble do not share vertices except the start and the end vertices.
-\citet{DBLP:conf/wabi/OnoderaSS13} introduced superbubble to allow more complex acyclic topology.
-
-A generalized bubble is a superbubble but without the acyclic constraint.
-Formally, in a directed graph $G_D$, $z$ is said to be reachable from $x$ without passing through $y$
-if there is a walk from $x$ to $z$ that does not involve $y$.
-Let $U_D(x,y)\subset X$ be the set of vertices that are reachable from $x$ without passing through $y$
-and similarly $U'_D(y,x)$ be the set of vertices that can reach $y$ without passing through $x$.
-A \emph{generalized bubble}  is a pair of vertices $(x,y)$ such that
-i) $x$ reaches $y$; ii) $U_D(x,y)=U'_D(y,x)$ and iii) there does not exist $z\in U_D(x,y)$
-that satisfies $U_D(x,z)=U'_D(z,x)$ or $U_D(z,y)=U'_D(y,z)$.
-A bi-bubble is a \emph{superbubble} if the subgraph induced by $\{x,y\}\cup U_D(x,y)$ is acyclic.
-
-The definition above is applied to directed graphs only but can be extended to bidirected graphs.
-Given a vertex $v$ in a bidirected graph $G_B=(V,E)$,
-a walk can either start from ${\rm >}v$ or from ${\rm <}v$.
-Let $U(x,y)\subset V$ be the set of vertices that are reachable from $x$ without passing through $x$, $\overline{x}$ or $y$.
-A \emph{generalized bidirected bubble}, or a \emph{generalized bibubble} in short, is a pair $(x,y)\in X\times X$ such that
-i) there exists a walk from $x$ to $y$;
-ii) $U(x,y)=U(\overline{y},\overline{x})\not=\emptyset$;
-and iii) there does not exist $z\in U(x,y)\times\{{\rm >},{\rm <}\}$
-that satisfies $U(x,z)=U(\overline{z},\overline{x})$ or $U(z,y)=U(\overline{y},\overline{z})$.
-Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\overline{x})$ is also a generalized bibubble.
-
 In Fig.~\ref{fig:exa1}a, ({\tt >A},{\tt <E}) is both a generalized bibubble in the bidirected graph
 and a generalized bubble in the equivalent directed graph.
-This is however not the case in Fig.~\ref{fig:inv}a:
+This is however not the case in Fig.~\ref{fig:inv}a where
 ({\tt >A},{\tt <C}) is a generalized bibubble but is not a generalized bubble in the directed graph.
 
-For a generalized bibubble $(x,y)$, removing the genes associated with $x$ and $y$ would separate $U(x,y)$ from the rest of the graph.
-\citet{Paten:2018aa} uses such separability to define snarls in a bidirected graph.
-A generalized bibubble is a snarl but a snarl is not always a bibubble because a snarl does not require reachability.
-
-\subsection{Identifying generalized bibubbles}
-
-Although there are linear algorithms for identifying all superbubbles in a directed graph~\citep{DBLP:journals/corr/BrankovicIKMPV15},
-they do not work with generalized bubbles with cycles, let alone generalized bibubbles.
-\citet{Paten:2018aa} described an algorithm to find snarls but
-this is not a linear algorithm and a snarl is not always a generalized bibubble.
-This algorithm is also complex to implement.
+For a generalized bibubble $(x,y)$, let $\overline{U}(x,y)=V\setminus(U(x,y)\cup\{\nu(x),\nu(y)\})$.
+Then no vertex in $\overline{U}(x,y)$ can reach vertices $U(x,y)$
+because otherwise $w\in\overline{U}(x,y)$ reachable from $x$ (or from $\overline{y}$)
+would not pass through $y$ (or $\overline{x}$) and would be added to $U(x,y)$ (or $U(\overline{y},\overline{x})$)
+-- this would violate the definition of $U(x,y)$.
+This observation indicates that removing $\nu(x)$ and $\nu(y)$ would separate $U(x,y)$ from the rest of the graph.
 
 A naive algorithm to identify all generalized bibubbles is to enumerate each pair of oriented genes
 and then test whether the pair forms a generalized bibubble based on the definition.
 This gives an $O(|V|^2\cdot(|V|+|E|))$ algorithm, which is impractical for large graphs.
-Inspired by \citet{DBLP:conf/pldi/JohnsonPP94}, we implemented an approximate algorithm to identify bibubbles.
+To describe a new algorithm for bubble finding, we will first introduce net graphs and cycle equivalence.
+
+\subsection{Biedged graphs and net graphs}
 
 Let $Z=V\times\{{\rm s},{\rm e}\}$, where symbol ``${\rm s}$'' represents the start of a gene
 and symbol ``${\rm e}$'' represents the end.
 Given a bidirected graph $G_B=(V,E)$, a \emph{biedged graph} $G_E=(Z,E_g,E_l)$ is constructed
-with $E_g=\big\{\{(v,{\rm s}),(v,{\rm e})\}|v\in V\big\}$ and $E_l$ being the set of undirected connections between starts or ends of genes in $Z$.
+with $E_g=\big\{\{(v,{\rm s}),(v,{\rm e})\}|v\in V\big\}$ and $E_l$ being the set of undirected connections between starts or ends of genes in $Z$~\citep{Paten:2018aa}.
 Fig.~\ref{fig:exa1}d shows an example.
-A valid walk in a biedged graph cannot pass two consecutive edges in $E_l$.
-Due to this restriction, many classical algorithms in graph theory cannot be easily applied to a biedged graph.
+Note that a valid walk in a biedged graph cannot pass two consecutive edges in $E_l$.
+Due to this restriction, many classical algorithms in graph theory are not applicable to a biedged graph.
 
 A \emph{net graph} $G_N=(P,E_n)$ is constructed by contracting all edges in $E_l$.
 As a result, a vertex in $P$ is a component connected by edges in $E_l$
-and an edge represents a gene in $V$ with $|E_n|=|V|$ (Fig.~\ref{fig:exa1}e and Fig.~\ref{fig:inv}e).
-A net graph is an undirected graph that is not equivalent to the bidirected graph $G_B$.
+and an edge represents a gene in $V$ (Fig.~\ref{fig:exa1}e and Fig.~\ref{fig:inv}e).
+Because $E_n$ and $V$ has one-to-one relationship, we will also use $v$ to denote an edge in $G_N$.
+A net graph is an undirected graph and is not equivalent to the bidirected graph $G_B$.
 For example in Fig.~\ref{fig:exa1}a, there is not a walk that goes through both gene {\tt C} and {\tt D},
 but in Fig.~\ref{fig:exa1}f, there is a walk involving both genes.
-Nonetheless, Fig.~\ref{fig:exa1}f still implies a bubble-like subgraph even with the loss of directionality.
-This is the base of our approximate algorithm.
 
-To define bubble-like subgraphs, we need to introduce a dummy vertex $p_0$.
-For now, we let $p_0$ connect every vertex that has degree one.
-This will put most vertices in cycles containing $p_0$.
-The net graph augmented with $p_0$ is $G'_N=(P\cup\{p_0\},E'_n)$.
-A \emph{single-entry-single-exit (SESE) region} in $G'_N$ is an unordered pair of edges $\{v,w\}$
-such that every cycle containing $v$ also contains $w$ and vice versa.
-Intuitively, a SESE region often corresponds to a generalized bibubble.
-SESE regions can be found in linear time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+In graph theory, a set of edges in $G_N$ is a \emph{cut-set} if cutting through these edges
+partitions $G_N$ into two disconnected subgraphs.
+A key observation is that if $(x,y)$ is a bibubble in bidirected graph $G_B$,
+$\{\nu(x),\nu(y)\}$ is a cut-set in $G_N$.
+
+\subsection{Cycle equivalence}
+
+Two edges $e_1$ and $e_2$ in $G_N$ are said to be \emph{cycle equivalent}
+if every cycle containing $e_1$ contains $e_2$ and vice versa.
+For any pair of $e_1$ and $e_2$ that are cycle equivalent, $\{e_1,e_2\}$ is a cut-set.
+To see this, let $p_{11}$ and $p_{12}$ are the two vertices incident to $e_1$.
+Without losing generality, suppose $G_n$ is a connected graph.
+If $G_n$ remained connected after removing $e_1$ and $e_2$,
+there would exist a vertex $q$ that can reach both $p_{11}$ and $p_{12}$ without passing through $e_2$ (because $e_2$ has been removed).
+Then $e_1$ would be in a cycle with $q$ in the original $G_N$ but without passing through $e_2$,
+violating the cycle equivalence of $e_1$ and $e_2$.
+
+Conversely, if $\{e_1,e_2\}$ is a cut-set, $e_1$ and $e_2$ are cycle equivalent.
+To prove this, let $\{e_1,e_2\}$ partition the vertex set $P$ into $P_1$ and $P_2$.
+If $e_1$ and $e_2$ were not cycle equivalent, there must exist a cycle that only contains $e_1$ but not $e_2$.
+Then cutting both $e_1$ and $e_2$ would still keep $P_1$ and $P_2$ connected due to this cycle,
+violating that $\{e_1,e_2\}$ is a cut-set.
+To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle equivalent.
+$G_B$ can be converted to $G_N$ in $O(|V|+|E|)$ time
+and cycle equivalent classes can be identified in $O(|V|)$ time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+
+\subsection{Identifying generalized bibubbles}
 
 \begin{figure}[t!]
 \centering
@@ -366,6 +424,21 @@ SESE regions can be found in linear time~\citep{DBLP:conf/pldi/JohnsonPP94}.
 {\bf (f)} The corresponding net graph.
 }\label{fig:complex}
 \end{figure}
+
+Now we see that if $(x,y)$ is a generalized bibubble in $G_B$,
+$\nu(x)$ and $\nu(y)$ are cycle equivalent in $G_N$.
+The reverse is not always ture.
+In Fig.~\ref{fig:complex}c, ``{\tt A}'' and ``{\tt B}'' are not contained in cycles and thus cycle equivalent,
+but ({\tt >A},{\tt >B}) is not a generalized bibubble in Fig.~\ref{fig:complex}b.
+
+To define bubble-like subgraphs, we need to introduce a dummy vertex $p_0$.
+For now, we let $p_0$ connect every vertex that has degree one.
+This will put most vertices in cycles containing $p_0$.
+The net graph augmented with $p_0$ is $G'_N=(P\cup\{p_0\},E'_n)$.
+A \emph{single-entry-single-exit (SESE) region} in $G'_N$ is an unordered pair of edges $\{v,w\}$
+such that every cycle containing $v$ also contains $w$ and vice versa.
+Intuitively, a SESE region often corresponds to a generalized bibubble.
+SESE regions can be found in linear time~\citep{DBLP:conf/pldi/JohnsonPP94}.
 
 Importantly, we emphasize that the bubble finding algorithm based on net graph is approximate although the algorithm by \citet{DBLP:conf/pldi/JohnsonPP94} is exact.
 This is caused by the loss of directionality.
