@@ -270,23 +270,10 @@ class GFA {
 		return [];
 	}
 	get_bubble(vs, ve, flag, f, max_n) {
-		let f_for = f, f_rev = f + this.seg.length * 2;
-		let list_for = this.#traverse_bubble(vs,   ve,   flag, f_for, max_n);
-		let list_rev = this.#traverse_bubble(ve^1, vs^1, flag, f_rev, max_n);
-		let is_bb = false, list_name = [];
-		if (list_for.length == list_rev.length) {
-			let n_in = 0;
-			for (let i = 0; i < list_for.length; ++i)
-				if (flag[list_for[i]<<1|0] == f_rev || flag[list_for[i]<<1|1] == f_rev)
-					++n_in;
-			if (n_in == list_for.length) {
-				is_bb = true;
-				for (let i = 0; i < list_for.length; ++i)
-					list_name.push(this.seg[list_for[i]].name);
-			}
-		}
-		//if (!is_bb) warn("><"[vs&1] + this.seg[vs>>1].name + " -- " + "><"[ve&1] + this.seg[ve>>1].name + " is not a bubble");
-		return is_bb? list_name : [];
+		let b = [], a = this.get_bubble_id(vs, ve, flag, f, max_n);
+		for (let i = 0; i < a.length; ++i)
+			b[i] = this.seg[a[i]].name;
+		return b;
 	}
 	get_bubble_all(max_ext) {
 		// initialize cec_par[]
@@ -357,7 +344,7 @@ class GFA {
 		for (let i = 0; i < bb.length; ++i)
 			bb[i].cec_par = cec_par[bb[i].cec];
 		for (let i = 0; i < bb.length; ++i)
-			print("BX", bb[i].cec, bb[i].cec_par, bb[i].cec, "><"[bb[i].vs&1] + this.seg[bb[i].vs>>1].name, "><"[bb[i].ve&1] + this.seg[bb[i].ve>>1].name, bb[i].list.length, bb[i].list.join(","));
+			print("BB", bb[i].cec, bb[i].cec_par, bb[i].cec, "><"[bb[i].vs&1] + this.seg[bb[i].vs>>1].name, "><"[bb[i].ve&1] + this.seg[bb[i].ve>>1].name, bb[i].list.length, bb[i].list.join(","));
 		return bb;
 	}
 }
@@ -602,7 +589,15 @@ class NetGraph {
 			stack.push([u, 0, b2]);
 		}
 	}
-	pst() {
+	#dbg_blist(blist) {
+		let l = [];
+		for (let p = blist.head; p != null; p = p.next) {
+			if (p.a < 0) l.push('*');
+			else l.push(`${this.arc[p.a].v},${this.arc[p.a].w}`);
+		}
+		print('X', v, `hi0=${hi0},hi1=${hi1},hi2=${hi2}`, l.join(";"));
+	}
+	mark_cec() {
 		this.dfs_traverse();
 
 		// put vertices in the order of their discovery time
@@ -665,15 +660,7 @@ class NetGraph {
 				vs[w].be_end_cap.push(d);
 			}
 			vs[v].blist = blist;
-
-			if (0) { // debugging code
-				let l = [];
-				for (let p = blist.head; p != null; p = p.next) {
-					if (p.a < 0) l.push('*');
-					else l.push(`${this.arc[p.a].v},${this.arc[p.a].w}`);
-				}
-				print('X', v, `hi0=${hi0},hi1=${hi1},hi2=${hi2}`, l.join(";"));
-			}
+			if (0) this.#dbg_blist(blist);
 
 			// determine the category for tree edge (parent(v),v)
 			if (this.dfs_par[v] >= 0) { // not a root (there may be multiple roots if the graph is disconnected)
@@ -698,11 +685,19 @@ class NetGraph {
 			}
 		}
 
+		// mark cycle equivalence classes on the original GFA
 		for (let e = 0; e < this.arc.length; ++e) {
 			const a = this.arc[e];
 			if (a.seg < this.gfa.seg.length && (a.dfs_type == 1 || a.dfs_type == 2))
 				this.gfa.seg[a.seg].cec = a.cec;
 		}
+		return cec;
+	}
+	pst() {
+		const cec = this.mark_cec();
+		let v_dis = [];
+		for (let v = 0; v < this.dfs_dis.length; ++v)
+			v_dis[this.dfs_dis[v]] = v;
 
 		// construct initial PST
 		let state = [], sese = [], cec_entry = [];
@@ -749,10 +744,10 @@ class NetGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			const st = sese[i].vs, en = sese[i].ve;
 			const b = this.gfa.get_bubble(st, en, flag, i, max_ext);
-			if (b.length == 0) {
+			if (b.length > 0) {
 				print('FB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
 			} else {
-				let list = b.length == 0? `0` : `${b.length}\t${b.join(",")}`;
+				let list = `0\t${b.length}\t${b.join(",")}`;
 				print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, list);
 			}
 		}
@@ -894,8 +889,8 @@ class NetGraph {
  ***************/
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, min_n_allele:2, ref:null };
-	for (const o of getopt(args, "bedmwc:r:", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, use_algo2:false, min_n_allele:2, ref:null };
+	for (const o of getopt(args, "bedamwc:r:", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
@@ -903,6 +898,7 @@ function pg_cmd_call(args) {
 		else if (o.opt == "-w") opt.ignore_walk = true;
 		else if (o.opt == "-c") opt.min_n_allele = parseInt(o.arg);
 		else if (o.opt == "-r") opt.ref = o.arg;
+		else if (o.opt == "-a") opt.use_algo2 = true;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
@@ -912,7 +908,9 @@ function pg_cmd_call(args) {
 		print(`    -c INT   min number of alleles [${opt.min_n_allele}]`);
 		print("    -b       output equivalent classes for Bandage visualization");
 		print("    -r INT   reference assembly []");
+		print("    -w       ignore walks");
 		print("  Debugging:");
+		print("    -a       alternative algorithm for bubble finding (no alleles)");
 		print("    -d       output DFS traversal");
 		print("    -e       output cycle equivalent class");
 		return;
@@ -925,18 +923,19 @@ function pg_cmd_call(args) {
 	if (opt.print_bandage) e.print_bandage_csv();
 	if (opt.print_cec) e.print_cycle_equiv();
 	if (opt.print_pst) {
-		print("CC", "FB  bbID  parID  side1  side2  #alleles");
+		print("CC", "FB  bbID  parID  side1  side2");
 		print("CC", "BB  bbID  parID  side1  side2  #alleles  #genes  geneList");
 		print("CC", "AL  #hap  walk");
 		print("CC");
-		if (!opt.ignore_walk && g.walk.length > 0) {
+		if (opt.use_algo2) {
+			g.get_bubble_all(opt.max_ext);
+		} else if (!opt.ignore_walk && g.walk.length > 0) {
 			let ht = e.walk_ht(sese);
 			e.count_allele(sese, ht, opt.max_ext);
 			e.print_pst_walk(sese, opt.min_n_allele, opt.max_ext);
 		} else {
 			e.print_pst(sese, opt.max_ext);
 		}
-		//g.get_bubble_all(opt.max_ext);
 	}
 }
 
