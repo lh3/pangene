@@ -407,8 +407,8 @@ If $e_1$ and $e_2$ were not cycle equivalent, there must exist a cycle that only
 Then cutting both $e_1$ and $e_2$ would still keep $P_1$ and $P_2$ connected due to this cycle,
 violating that $\{e_1,e_2\}$ is a cut-set.
 To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle equivalent.
-$G_B$ can be converted to $G_N$ in $O(|V|+|E|)$ time
-and cycle equivalent classes can be identified in $O(|V|)$ time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+%$G_B$ can be converted to $G_N$ in $O(|V|+|E|)$ time
+%and cycle equivalent classes can be identified in $O(|V|)$ time~\citep{DBLP:conf/pldi/JohnsonPP94}.
 
 \subsection{Identifying generalized bibubbles}
 
@@ -428,35 +428,30 @@ and cycle equivalent classes can be identified in $O(|V|)$ time~\citep{DBLP:conf
 Now we see that if $(x,y)$ is a generalized bibubble in $G_B$,
 $\nu(x)$ and $\nu(y)$ are cycle equivalent in $G_N$.
 The reverse is not always ture.
-In Fig.~\ref{fig:complex}c, ``{\tt A}'' and ``{\tt B}'' are not contained in cycles and thus cycle equivalent,
-but ({\tt >A},{\tt >B}) is not a generalized bibubble in Fig.~\ref{fig:complex}b.
+For example, in Fig.~\ref{fig:exa1}f, ``{\tt C}'' and ``{\tt D}'' are cycle equivalent,
+but ({\tt >C},{\tt >D}) or in any orientation is not a generalized bibubble.
+Similarly, ``{\tt A}'' and ``{\tt B}'' are cycle equivalent in Fig.~\ref{fig:complex}c but they do not bracket generalized bibubbles.
 
-To define bubble-like subgraphs, we need to introduce a dummy vertex $p_0$.
-For now, we let $p_0$ connect every vertex that has degree one.
-This will put most vertices in cycles containing $p_0$.
-The net graph augmented with $p_0$ is $G'_N=(P\cup\{p_0\},E'_n)$.
-A \emph{single-entry-single-exit (SESE) region} in $G'_N$ is an unordered pair of edges $\{v,w\}$
-such that every cycle containing $v$ also contains $w$ and vice versa.
-Intuitively, a SESE region often corresponds to a generalized bibubble.
-SESE regions can be found in linear time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+Pangene alleviates this issue by introducing a dummy vertex $p_0$ to the net graph $G_N$.
+$p_0$ connects all vertices in $G_N$ with degree one and, in the presence of a reference genome,
+also connects the genes at the ends of each chromosome.
+This way, ``{\tt C}'' and ``{\tt D}'' are no longer cycle equivalent in Fig.~\ref{fig:exa1}g
+and ``{\tt A}'' and ``{\tt B}'' are not equivalent in Fig.~\ref{fig:complex}d.
+However, some cycle equivalent edges still do not correspond to bibubbles, such as ``{\tt B}'' and ``{\tt E}'' in Fig.~\ref{fig:complex}f.
+Pangene still needs to check if two equivalent edges in $G_N$ enclose a bibubble in $G_B$.
 
-Importantly, we emphasize that the bubble finding algorithm based on net graph is approximate although the algorithm by \citet{DBLP:conf/pldi/JohnsonPP94} is exact.
-This is caused by the loss of directionality.
-In Fig.~\ref{fig:complex}c, dummey vertex ``0'' only connects vertex ``1'' and thus
-edges ``{\tt A}'', ``{\tt B}'' and ``{\tt D}'' are not contained in any cycles.
-By definition, \{{\tt A},{\tt B}\}, \{{\tt A},{\tt D}\} and \{{\tt B},{\tt D}\} are all SESE regions.
-However, in the original graph Fig.~\ref{fig:complex}b, only ({\tt >A},{\tt >D}) is a generalized bibubble.
-We alleviate this issue by connecting the dummy vertex to genes at the chromosome ends on a reference genome.
-This identifies the desired SESE region (Fig.~\ref{fig:complex}d).
-Nonetheless, the heuristic does not always work.
-For example, ({\tt <B},{\tt >E}) is not a generalized bibubble in Fig.~\ref{fig:complex}e
-but \{{\tt B},{\tt E}\} is a SESE region in Fig.~\ref{fig:complex}f.
-
-We could not theoretically prove on what condition a SESE region exactly corresponds to a generalized bibubble or vice versa.
-In actual implementation, we only extract SESE regions that involve no more than 100 genes
-and test whether a SESE region is a generalized bibubble using the definition.
-The overall time complexity is $O(|V|+|E|+b\cdot m)$ where $b$ is the number of bubbles and $m$ is the maximal number of genes contained in a bubble.
-Note that the snarl-finding algorithm~\citep{Paten:2018aa} also operates on net graphs and suffers from the same problem due to the loss of directionality.
+To find generalized bibubbles in $G_B$,
+pangene converts $G_B$ to $G_N$,
+identifies all single-entry-single-exit (SESE) regions in $G_N$ with an algorithm by \citet{DBLP:conf/pldi/JohnsonPP94},
+test each identified gene pairs in $G_B$ using the definition of generalized bibubbles,
+and then outputs them.
+The first two steps can be done in $O(|V|+|E|)$ time.
+When testing bibubbles,
+pangene traverses up to $m=100$ genes.
+The total time complexity is $O(|V|+|E|+b\cdot m)$ where $b$ is the number of SESE regions.
+We emphasize that this algorithm is approximate.
+Although it does not identify false bibubbles by testing every SESE,
+it in theory might miss bibubbles if the dummy vertex in $G_N$ is wrongly placed.
 
 \section{Results}
 
