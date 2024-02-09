@@ -355,23 +355,37 @@ class GFA {
 				let r = this.get_bubble_id(vs, ve[i], flag2, f2, max_ext);
 				if (r.length > 0 && vs < ve[i]) {
 					let name_list = [];
-					for (let j = 0; j < r.length; ++j) {
-						if (this.seg[r[j]].cec >= 0)
-							cec_par[this.seg[r[j]].cec] = cec;
+					for (let j = 0; j < r.length; ++j)
 						name_list.push(this.seg[r[j]].name);
-					}
-					bb.push({ cec:cec, cec_par:-1, vs:vs, ve:ve[i], list:name_list });
+					bb.push({ cec:cec, par:-1, vs:vs, ve:ve[i], seg:r, list:name_list });
 				}
 				++f2;
 			}
 			++f1;
 		}
 
+		// calculate parent
+		let aux = [], flag3 = [];
+		for (let i = 0; i < bb.length; ++i)
+			aux.push([i, bb[i].seg.length]);
+		aux.sort(function(a, b) { return b[1] - a[1] });
+		for (let i = 0; i < this.seg.length; ++i)
+			flag3[i] = -1;
+		for (let i = 0; i < bb.length; ++i) {
+			const bid = aux[i][0];
+			let b = bb[bid], par = -2, nested = true;
+			for (let j = 0; j < b.seg.length; ++j) {
+				const seg = b.seg[j];
+				if (par == -2) par = flag3[seg];
+				else if (par != flag3[seg]) nested = false;
+				flag3[seg] = bid;
+			}
+			b.par = nested? par : -2; // -2 if not nested
+		}
+
 		// update parent cec
 		for (let i = 0; i < bb.length; ++i)
-			bb[i].cec_par = cec_par[bb[i].cec];
-		for (let i = 0; i < bb.length; ++i)
-			print("BB", bb[i].cec, bb[i].cec_par, bb[i].cec, "><"[bb[i].vs&1] + this.seg[bb[i].vs>>1].name, "><"[bb[i].ve&1] + this.seg[bb[i].ve>>1].name, bb[i].list.length, bb[i].list.join(","));
+			print("BB", i, bb[i].par, bb[i].cec, "><"[bb[i].vs&1] + this.seg[bb[i].vs>>1].name, "><"[bb[i].ve&1] + this.seg[bb[i].ve>>1].name, bb[i].list.length, bb[i].list.join(","));
 		return bb;
 	}
 }
