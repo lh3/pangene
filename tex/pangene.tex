@@ -1,0 +1,579 @@
+\documentclass[webpdf,contemporary,large,namedate]{oup-authoring-template}%
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{tabularx}
+\usepackage{amsmath}
+%\usepackage[ruled,vlined]{algorithm2e}
+%\newcommand\mycommfont[1]{\footnotesize\rmfamily{\it #1}}
+%\SetCommentSty{mycommfont}
+%\SetKwComment{Comment}{$\triangleright$\ }{}
+\renewcommand{\ttdefault}{cmtt}
+
+\DeclareMathOperator*{\argmax}{argmax}
+
+\begin{document}
+\journaltitle{Journal Title Here}
+\DOI{DOI HERE}
+\copyrightyear{2024}
+\pubyear{2024}
+\access{Advance Access Publication Date: Day Month Year}
+\appnotes{Paper}
+\firstpage{1}
+
+\title[Pangene graphs]{Exploring gene content with pangenome gene graphs}
+\author[1,2,$\ast$]{Heng Li}
+\address[1]{Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA}
+\address[2]{Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
+\corresp[$\ast$]{Corresponding author. \href{email:hli@ds.dfci.harvard.edu}{hli@ds.dfci.harvard.edu}}
+
+\abstract{
+\textbf{Motivation:}
+The gene content of an organism regulates the biology of the organism
+and varies between species and between individuals of the same species.
+Although several tools have been developed to identify gene content changes in bacterial genomes,
+no existing tools are applicable to collections of large Eukaryotic genomes such as the human pangenome.\vspace{0.5em}\\
+\textbf{Results:}
+We developed pangene, a computational tool to identify gene orientation, gene order
+and gene copy-number changes in a collection of genomes.
+Pangene aligns a set of input protein sequences to the genomes,
+resolves redundancies between protein sequences
+and constructs a gene graph with each genome represented as a walk in the graph.
+It additionally characterizes subgraphs that encodes gene content chnages.
+Applied to the human pangenome, pangene identifies known gene-level variations
+and reveals complex haplotypes that are not well studied before.
+Pangene also works with long-read bacterial pangenome and reports similar numbers of core and accessory genes
+in comparison to existing tools.\vspace{0.5em}\\
+\textbf{Availability and implementation:}
+\href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene}
+}
+
+\maketitle
+
+\section{Introduction}
+
+A human genome contains about 20,000 protein-coding genes.
+A small fraction of them have frequent copy-number or gene order changes in the human population~\citep{Sudmant:2010aa,Handsaker:2015ur}.
+These genes are often under fast evolution
+and may be responsible for immune responses,
+affecting brain functionality~\citep{Ju:2016aa} and drug metabolism~\citep{Taylor:2020aa},
+or associated with known diseases~\citep{Mercuri:2022aa}.
+They may have profound biological and biomedical implications.
+
+Thanks to the recent advances in sequencing technologies~\citep{Wenger_2019} and assembly algorithms~\citep{Nurk:2020we,Cheng:2021aa,Rautiainen:2023aa},
+we can routinely derive haplotype-resolved assembly of genes under copy-number or order changes
+and we have developed algorithms to construct a pangenome graph encoding the variations between genomes.
+However, how to automatically identify these genes remains an unsolved problem.
+Among the three pangenome construction tools used by the Human Pangenome Reference Consortium (HPRC),
+minigraph~\citep{Li:2020aa} and minigraph-cactus~\citep{Hickey:2023aa} are
+unable to align through complex genomic regions and may miss genes in long segmental duplications;
+PGGB~\citep{Garrison2023.04.05.535718} collapses paralogous genes which makes it difficult to study individual paraplog.
+In addition, all three tools do not reveal how genomic variations affect genes.
+To study gene-level variations, HPRC
+had to manually annotate genes on each haplotype~\citep{Liao:2023aa} which is a time-consuming process.
+The current human pangenome tooling is not designed for studying gene variations.
+
+In contrast, research in bacterial pangenome
+focuses on protein-coding genes instead of genome sequences, to the point that
+in the literature, a bacterial ``pangenome'' often refers to the collection of protein-coding genes.
+Several high-quality tools have been developed for constructing the gene content of bacterial genomes~\citep{Page:2015aa,Ding:2018aa,Tonkin-Hill:2020aa,Gautreau:2020aa,Zhou:2020aa}.
+In a nutshell, they start with \emph{ab initio} gene annotation in each genome,
+cluster the restulted protein sequences,
+and then post-process clusters to identify orthoglous genes
+and to fix issues caused by imperfect assembly, annotation or clustering~\citep{Tonkin-Hill:2023aa}.
+These bacterial pangenome tools however have not considered splicing,
+multiple isoforms, frequent segmental duplications and the much larger size of the human genome.
+They have not been shown to work with human pangenome data.
+
+We therefore developed pangene, a new computational tool to explore the gene content of a pangenome.
+Unlike bacterial pangenome pipelines, pangene effectively annotates protein-coding genes
+by aligning protein sequences to each genome with miniprot~\citep{Li:2023ac}.
+As miniprot can align through in-frame stop codons and frameshifts,
+this procedure simplifies gene annotation and is robust to insertion/deletion errors in the input genomes.
+Furthermore, pangene constructs a bidirected gene graph and can capture inversions
+missed by bacterial pangenome tools.
+It also provides an approximate algorithm to directly
+identify gene copy-number or gene order variations.
+Pangene is optimized for human genomes and also works for bacterial pangenome construction.
+
+\section{Methods}
+
+\begin{table}[!tb]
+\caption{Notations\label{tab:sym}}
+\begin{tabular*}{\columnwidth}{@{\extracolsep\fill}ll@{\extracolsep\fill}}
+\toprule
+Notation & Description \\
+\midrule
+$V$ & Set of genes \\
+$v,w,u$ & Genes; vertices in a bidirected graph \\
+$X$ & Set of oriented genes; $X=V\times({\rm >},{\rm <})$ \\
+$x,y,z$ & Oriented genes; vertices in a directed graph \\
+${\rm >}v,{\rm <}v$ & Oriented genes \\
+$\overline{x}$ & Reverse complement of $x$; $\overline{{\rm >}v}={\rm <}v,\overline{{\rm <}v}={\rm >}v$ \\
+$\nu(x)$ & The gene behind $x$; $\nu({\rm >}v)=\nu({\rm <}v)=v$ \\
+\botrule
+\end{tabular*}
+\end{table}
+
+Pangene takes a set of protein sequences and multiple genome assemblies as input,
+and outputs a graph in the GFA format~\citep{Li:2020aa}.
+It involves two steps: aligning the set of protein sequences to each input assembly with miniprot~\citep{Li:2023ac},
+and deriving a graph from the alignment with each contig encoded as a walk of genes.
+Pangene provides utilities to classify genes into core genes that are present in most of the input genomes, or accessory genes otherwise.
+Pangene can also identify generalized ``bubbles'' in the graph, which represent gene order,
+gene copy-number or gene orientation variations among the input genomes.
+
+Given perfect gene annotations, the pangene graph construction algorithm is conceptually simple:
+it takes each gene as a node and adds an edge between two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}).
+The practical difficulty is to obtain accurate annotation in the presence of redundant sequences, paralogous genes and errors in assembly or alignment.
+On the theoretical side, bubble finding is an unsolved problem on its own
+and will also be a major topic of this article.
+
+\begin{figure}[b!]
+\centering
+\includegraphics[width=.48\textwidth]{fig1}
+\caption{Examples of pangene graphs. {\bf (a)} Human haplotypes around the
+\emph{HLA-DRB1} gene. {\bf (b)} The pangene graph around \emph{HLA-DRB1}. {\bf
+(c)} Human haplotypes around the \emph{RHD} gene. \emph{RHD} has copy-number
+changes and \emph{TMEM50A} may be inverted. {\bf (d)} The corresponding pangene
+graph.}\label{fig:ex1}
+\end{figure}
+
+\subsection{Defining pangene graphs}
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.48\textwidth]{fig2}
+\caption{An example of a gene graph. {\bf (a)} A gene graph for visualization.
+{\bf (b)} The corresponding GFA format.
+{\bf (c)} Bidirected graph.
+{\bf (d)} Biedged graph.
+{\bf (e)} Directed graph.
+{\bf (f)} Net graph, which loses information.
+{\bf (g)} A depth-first traversal of the net graph with ``0'' representing a super node
+not in the original net graph.}\label{fig:exa1}
+\end{figure}
+
+Let $V$ be the set of genes
+and $X=V\times\{{\rm >},{\rm <}\}$ be the set of oriented genes.
+If $v\in V$ is a gene, $x=(v,{\rm >})\in X$, or simply $x={\rm >}v$, denotes an oriented gene
+and $\nu(x)=v$ gives the underlying gene behind oriented gene $x$.
+$\overline{x}$ gives the reverse complement of $x$.
+i.e., if $x={\rm >}v$, $\overline{x}={\rm <}v$, and vice versa.
+Throughout this article, we will use symbol $u$, $v$ or $w$ to denote a gene
+and use $x$, $y$ or $z$ to denote an oriented gene (Table~\ref{tab:sym}).
+
+Let $T$ be the set of input contigs.
+They harbor oriented genes in $X$.
+2-tuple $(x,y)\in X\times X$ is said to be supported by contig $t\in T$
+if $y$ immediately follows $x$ on $t$ or, due to the strand symmetry of DNA, $\overline{x}$ immediately follows $\overline{y}$.
+
+A pangene graph is usually visualized as Fig.~\ref{fig:exa1}a~\citep{Wick:2015qf}
+and can be mathematically defined in a few equivalent ways.
+It can be formulated as a directed graph $G_D=(X,E)$ where $E\subset X\times X$ is the set of edges.
+In the context of pangene graphs, $(x,y)$ is an edge, also written as $x\to y$, if $(x,y)$ is supported by a contig.
+Notably, if $x\to y$ is an edge, $\overline{y}\to\overline{x}$ must also be an edge.
+In the graph theory, this property is called the \emph{skew symmetry}.
+Fig.~\ref{fig:exa1}e shows an example of a directed pangene graph
+which can be described in the GFA format (Fig.~\ref{fig:exa1}b).
+In $G_D$, it is possible that $x$ can reach $\overline{x}$.
+When this happens, $x$ is said to be an \emph{inversion}.
+
+A pangene graph can also be thought as a bidirected graph $G_B=(V,E)$ where the definition of $E$ is the same as above.
+An edge in $E$ is effectively associated with two directions.
+For example, $({\rm >}v,{\rm <}w)\in E$ can be written as $v{\rm ><}w$,
+suggesting the edge between $v$ and $w$ has a first direction ``${\rm >}$'' towards vertex $v$ and a second direction ``${\rm <}$'' towards vertex $w$.
+Fig.~\ref{fig:exa1}c shows the bidirected equivalence of Fig.~\ref{fig:exa1}a.
+
+In a directed graph, $x\to y\gets z$ is not a path because $x$ cannot reach $z$.
+The similar constraint is applied to the bidirected graph $G_B$.
+For example, $v{\rm >>}u{\rm <<}w$ is not a path because both $v$ and $w$ go into $u$.
+$v{\rm >>}u{\rm ><}w$ is a path, which can also be expressed as a path in $G_D$: $({\rm >}v,{\rm >}u,{\rm <}w)$.
+
+Biedged graph~\citep{Paten:2018aa} is a third way to formulate a pangene graph (Fig.~\ref{fig:exa1}d).
+We will come back to this formulation when we describe the bubble finding algorithm.
+
+As a pangene graph is constructed from the protein-to-genome alignment,
+pangene attaches alignment scores to edges.
+Let $T_{x\to y}\subset T$ be the set of contigs that support $x\to y$
+and $S(x,y|t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
+$S(x\to y)$ is calculated as
+$$
+S(x, y)=\frac{1}{|T_{x\to y}|}\sum_{t\in T_{x\to y}}S(x,y|t)
+$$
+which is the average score of $x$ among contigs supporting $x\to y$.
+
+\subsection{Obtaining the protein set}
+
+Pangene requires a set of protein sequences as input.
+The protein set may have redundancies.
+In principle, if every input genome is annotated, we may merge all annotated protein sequences
+and align to all genomes with miniprot.
+This strategy is preferred when there are a small number of diverged genomes.
+If there are many similar genomes, all with annotations,
+a faster way is to cluster protein sequences with CD-HIT~\citep{Li:2006aa} or MMseqs2~\citep{Schneider:2017aa},
+and take a representative protein sequence from each cluster to generate the protein set.
+
+Most human genomes do not have high-quality gene annotation.
+We may generate the protein set from the reference gene annotation supplemented
+with protein-coding genes or diverged alleles not present in the reference genome, such as \emph{HLA-DRB3}.
+Pangene works with proteins resulted from alternative splicing.
+If protein names follow format {\tt <GeneID>:<ProteinID>},
+pangene will select one protein for each {\tt <GeneID>} and use {\tt <GeneID>} as the segment name in the output GFA file.
+
+\subsection{Selecting non-orthologous genes}
+
+The central problem in graph construction is how to consistently annotate multiple genomes with a subset of input proteins.
+A naive way to annotate a genome is to align all protein sequences to the genome
+and if there are multiple proteins mapped to the same locus, to selec the best scoring protein as the annotation.
+This simple strategy does not work if there are orthologous proteins in the input protein set.
+For example, suppose gene $v$ and $w$ are orthologous to each other and are thus aligned to the the same locus in each genome.
+When some genomes match $v$ better and the rest match $w$ better,
+both $v$ and $w$ will be considered as accessory genes that are not present in all genomes.
+However, the preferred choice is to elect one of them as a core gene.
+
+Pangene selects non-orthologous genes as follows.
+For gene $v$, pangene inspects its best hit in each genome (hashes of gene names are used to break ties).
+It counts $b(v)$ the number of genomes where $v$ is aligned better than all other genes overlapping with $v$.
+Pangene then traverses each gene $v$ in the descending order of current $b(v)$.
+If $b(v)>0$, select $v$ as a non-orthologous gene and for each genome where the best mapping of $w$ overlaps with $v$ but is aligned better than $v$, reduce $b(w)$ by one.
+This way, if $v$ and $w$ are orthologs, their best mapping positions likely overlap and thus only one of them will be selected;
+if $v$ and $w$ are paralogs, their best mapping positions usually differ and thus both will be selected.
+
+\begin{figure}[tb!]
+\centering
+\includegraphics[width=.48\textwidth]{fig3}
+\caption{Graph-based annotation adjustment.
+{\bf (a)} \emph{MSL3} is located on chromosome X but has a weaker hit on chromosome 2 when the gene
+is aligned to a male haplotype without chromosome X.
+{\bf (b)} The initial pangene graph. Percentages indicate alignment identity.
+{\bf (c)} The adjusted graph after filtering out the \emph{MSL3} hit on chr2.
+{\bf (d)} Two haplotypes involving \emph{CYP2D6} and \emph{CYP2D7} which are paralogous genes.
+The second haplotype should have \emph{CYP2D7} only but because \emph{CYP2D6} is longer, the \emph{CYP2D6} alignment score is higher than the \emph{CYP2D7} score.
+{\bf (e)} The initial pangene graph assuming the second haplotype has \emph{CYP2D6}.
+{\bf (f)} The adjusted graph.
+}\label{fig:resolve}
+\end{figure}
+
+\subsection{Adjusting pangene graphs}
+
+Pangene constructs an initial graph using genes selected from the last section.
+It applies additional heuristics to improve gene annotations based on the graph topology and alignment scoring
+in two special cases.
+
+First, a gene may be wrongly mapped to its paralogs if its best position is missing.
+Suppose a gene on chromosome X has a second best hit on an autosome.
+If the alignment score of the autosomal hit is lower than the hit to chromosome X by 3\%
+miniprot will only report the hit on chromosome X.
+However, a phased male human assembly does not have chromosome X,
+the gene will be mapped to the autosome (Fig.~\ref{fig:resolve}a).
+This false hit will lead to spurious edges in the initial graph (Fig.~\ref{fig:resolve}b).
+To solve this problem, pangene marks $x\to y$ as a false edge
+if there exists $x\to z$ such that $y$ and $z$ are on different contigs in every input genome and $S(x,y)<S(x,z)\cdot 95\%$.
+Pangene then filters out all $x$ alignment that are incident to a false edge $x\to y$ (Fig.~\ref{fig:resolve}c).
+
+Second, similar to the first case, if the best position of a gene is missing due to real deletion in evolution,
+this gene may interfere with the alignment of paralogous genes (Fig.~\ref{fig:resolve}d)
+and leads to an undesired graph (Fig.~\ref{fig:resolve}e).
+To improve this case, pangene marks $x\to y$ to be low priority
+if there exists $x\to z$ such that $y$ and $z$ are on the same contig in every input genome and $S(x,y)<S(x,z)\cdot 98\%$.
+Pangene then marks all $x$ alignment that are incident to a low-priority edge $x\to y$ to have low priority as well
+and prefers a gene without the low-priority mark.
+In Fig.~\ref{fig:resolve}e, $x={\rm <}$\emph{CYP2D6}, $y={\rm <}$\emph{TCF20} and $z={\rm <}$\emph{CYP2D7}.
+${\rm <}$\emph{CYP2D6} is marked to have low priority on the second contig.
+This results in a graph in Fig.~\ref{fig:resolve}f that is more consistent with the known evolution at this locus~\citep{Liao:2023aa}.
+
+\subsection{Past work on bubble finding}
+
+The concept of bubble is perhaps first coined by \citet{Zerbino:2008uq} in the context of assembly graphs.
+A bubble was initially meant to be simple in that paths through a bubble do not share vertices except the start and the end vertices.
+\citet{DBLP:conf/wabi/OnoderaSS13} introduced superbubble to allow more complex acyclic topology (see the next subsection for a precise definition)
+and found a quadratic algorithm to identify all superbubbles.
+The time complexity was improved to $O(|E|\log|E|)$ by \citet{Sung:2015aa}
+and then to linear by \citet{DBLP:journals/tcs/BrankovicIKMPV16}.
+
+A subgraph induced by a superbubble is acyclic, but in a pangene graph or a variation graph,
+we also care about cyclic subgraph.
+\citet{Gartner:2018aa} defined weak superbubble without the acyclic condition,
+and presented a linear algorithm to identify all weak superbubbles~\citep{DBLP:journals/algorithms/GartnerS19}.
+Interestingly, more than 20 years before this work,
+\citet{DBLP:conf/pldi/JohnsonPP94} had already come up with a linear algorithm to effectively find weak superbubbles in the context of compiler design,
+which will be the basis of our algorithm.
+
+Weak superbubble is defined on directed graphs, not on bidirected graphs.
+If we apply the previous algorithms to directed graph $G_D$,
+we will find most superbubbles twice on separate strands.
+Superbubble cannot capture the visual intuition in the presence of inversions, either (Fig.~\ref{fig:inv}).
+\citet{Dabbaghie:2022aa} implemented the algorithm by \citet{DBLP:conf/wabi/OnoderaSS13} for sequence graphs,
+but how issues above are handled is not apparent.
+The closest concept to weak superbubble in bidirected graphs is snarl~\citep{Paten:2018aa},
+which leads to a bidirected subgraph that can be separated from the rest of the graph.
+Snarl does not require reachability which is necessary in defining superbubbles.
+To this end, there are no equivalent definition of weak superbubble in directed graphs.
+
+\subsection{Defining generalized bubbles}
+
+In a directed graph $G_D$, $z$ is said to be reachable from $x$ without passing through $y$
+if there is a walk from $x$ to $z$ that does not involve $y$.
+Let $U_D(x,y)\subset X$ be the set of vertices that are reachable from $x$ without passing through $y$
+and similarly $U'_D(y,x)$ be the set of vertices that can reach $y$ without passing through $x$.
+A \emph{generalized bubble} is a pair of vertices $(x,y)$ such that
+i) $x$ reaches $y$; ii) $U_D(x,y)=U'_D(y,x)$ and iii) there does not exist $z\in U_D(x,y)$
+that satisfies $U_D(x,z)=U'_D(z,x)$ or $U_D(z,y)=U'_D(y,z)$.
+A generalized bubble is a \emph{superbubble} if the subgraph induced by $\{x,y\}\cup U_D(x,y)$ is acyclic.
+A generalized bubble is equivalent to a weak superbubble~\citep{Gartner:2018aa}.
+
+The definition above is applied to directed graphs only but can be extended to bidirected graphs.
+Given a vertex $v$ in a bidirected graph $G_B=(V,E)$,
+a walk can either start from ${\rm >}v$ or from ${\rm <}v$.
+Let $U(x,y)\subset V$ be the set of vertices that are reachable from $x$ without passing through $x$, $\overline{x}$ or $y$.
+A \emph{generalized bidirected bubble}, or a \emph{generalized bibubble} in short, is a pair $(x,y)\in X\times X$ such that
+i) there exists a walk from $x$ to $y$;
+ii) $U(x,y)=U(\overline{y},\overline{x})\not=\emptyset$;
+and iii) there does not exist $z\in U(x,y)\times\{{\rm >},{\rm <}\}$
+that satisfies $U(x,z)=U(\overline{z},\overline{x})$ or $U(z,y)=U(\overline{y},\overline{z})$.
+Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\overline{x})$ is also a generalized bibubble.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.48\textwidth]{fig4}
+\caption{Example of gene graphs with inversions.
+{\bf (a)} A gene graph for visualization. ({\tt >A},{\tt <C}) is a generlized bubble.
+{\bf (b)} The corresponding GFA format.
+{\bf (c)} Bidirected graph.
+{\bf (d)} Biedged graph.
+{\bf (e)} Net graph, which loses information.
+{\bf (f)} Directed graph.
+{\bf (g)} Another gene graph with ({\tt >A},{\tt >D}) being a generlized bubble.
+}\label{fig:inv}
+\end{figure}
+
+In Fig.~\ref{fig:exa1}a, ({\tt >A},{\tt <E}) is both a generalized bibubble in the bidirected graph
+and a generalized bubble in the equivalent directed graph.
+This is however not the case in Fig.~\ref{fig:inv}a where
+({\tt >A},{\tt <C}) is a generalized bibubble but is not a generalized bubble in the directed graph.
+
+For a generalized bibubble $(x,y)$, let $\overline{U}(x,y)=V\setminus(U(x,y)\cup\{\nu(x),\nu(y)\})$.
+Then no vertex in $\overline{U}(x,y)$ can reach vertices $U(x,y)$
+because otherwise $w\in\overline{U}(x,y)$ reachable from $x$ (or from $\overline{y}$)
+would not pass through $y$ (or $\overline{x}$) and would be added to $U(x,y)$ (or $U(\overline{y},\overline{x})$)
+-- this would violate the definition of $U(x,y)$.
+This observation indicates that removing $\nu(x)$ and $\nu(y)$ would separate $U(x,y)$ from the rest of the graph.
+
+A naive algorithm to identify all generalized bibubbles is to enumerate each pair of oriented genes
+and then test whether the pair forms a generalized bibubble based on the definition.
+This gives an $O(|V|^2\cdot(|V|+|E|))$ algorithm, which is impractical for large graphs.
+To describe a new algorithm for bubble finding, we will first introduce net graphs and cycle equivalence.
+
+\subsection{Biedged graphs and net graphs}
+
+Let $Z=V\times\{{\rm s},{\rm e}\}$, where symbol ``${\rm s}$'' represents the start of a gene
+and symbol ``${\rm e}$'' represents the end.
+Given a bidirected graph $G_B=(V,E)$, a \emph{biedged graph} $G_E=(Z,E_g,E_l)$ is constructed
+with $E_g=\big\{\{(v,{\rm s}),(v,{\rm e})\}|v\in V\big\}$ and $E_l$ being the set of undirected connections between starts or ends of genes in $Z$~\citep{Paten:2018aa}.
+Fig.~\ref{fig:exa1}d shows an example.
+Note that a valid walk in a biedged graph cannot pass two consecutive edges in $E_l$.
+Due to this restriction, many classical algorithms in graph theory are not applicable to a biedged graph.
+
+A \emph{net graph} $G_N=(P,E_n)$ is constructed by contracting all edges in $E_l$.
+As a result, a vertex in $P$ is a component connected by edges in $E_l$
+and an edge represents a gene in $V$ (Fig.~\ref{fig:exa1}e and Fig.~\ref{fig:inv}e).
+Because $E_n$ and $V$ has one-to-one relationship, we will also use $v$ to denote an edge in $G_N$.
+A net graph is an undirected graph and is not equivalent to the bidirected graph $G_B$.
+For example in Fig.~\ref{fig:exa1}a, there is not a walk that goes through both gene {\tt C} and {\tt D},
+but in Fig.~\ref{fig:exa1}f, there is a walk involving both genes.
+
+In graph theory, a set of edges in $G_N$ is a \emph{cut-set} if cutting through these edges
+partitions $G_N$ into two disconnected subgraphs.
+A key observation is that if $(x,y)$ is a bibubble in bidirected graph $G_B$,
+$\{\nu(x),\nu(y)\}$ is a cut-set in $G_N$.
+
+\subsection{Cycle equivalence}
+
+Two edges $e_1$ and $e_2$ in $G_N$ are said to be \emph{cycle equivalent}
+if every cycle containing $e_1$ contains $e_2$ and vice versa.
+For any pair of $e_1$ and $e_2$ that are cycle equivalent, $\{e_1,e_2\}$ is a cut-set.
+To see this, let $p_{11}$ and $p_{12}$ are the two vertices incident to $e_1$.
+Without losing generality, suppose $G_n$ is a connected graph.
+If $G_n$ remained connected after removing $e_1$ and $e_2$,
+there would exist a vertex $q$ that can reach both $p_{11}$ and $p_{12}$ without passing through $e_2$ (because $e_2$ has been removed).
+Then $e_1$ would be in a cycle with $q$ in the original $G_N$ but without passing through $e_2$,
+violating the cycle equivalence of $e_1$ and $e_2$.
+
+Conversely, if $\{e_1,e_2\}$ is a cut-set, $e_1$ and $e_2$ are cycle equivalent.
+To prove this, let $\{e_1,e_2\}$ partition the vertex set $P$ into $P_1$ and $P_2$.
+If $e_1$ and $e_2$ were not cycle equivalent, there must exist a cycle that only contains $e_1$ but not $e_2$.
+Then cutting both $e_1$ and $e_2$ would still keep $P_1$ and $P_2$ connected due to this cycle,
+violating that $\{e_1,e_2\}$ is a cut-set.
+To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle equivalent.
+%$G_B$ can be converted to $G_N$ in $O(|V|+|E|)$ time
+%and cycle equivalent classes can be identified in $O(|V|)$ time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+
+\subsection{Identifying generalized bibubbles}
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.48\textwidth]{fig5}
+\caption{Example of gene graphs that complicate net graph based bubble finding.
+{\bf (a)} Gene annotation on a contig.
+{\bf (b)} The corresponding pangene graph.
+{\bf (c)} Net graph with the dummy vertex ``0'' connected to ``1'' only.
+{\bf (d)} Net graph with the dummy vertex connected to genes at the ends of the contig.
+{\bf (e)} Another pangene graph.
+{\bf (f)} The corresponding net graph.
+}\label{fig:complex}
+\end{figure}
+
+Now we see that if $(x,y)$ is a generalized bibubble in $G_B$,
+$\nu(x)$ and $\nu(y)$ are cycle equivalent in $G_N$.
+The reverse is not always ture.
+For example, in Fig.~\ref{fig:exa1}f, ``{\tt C}'' and ``{\tt D}'' are cycle equivalent,
+but ({\tt >C},{\tt >D}) or in any orientation is not a generalized bibubble.
+Similarly, ``{\tt A}'' and ``{\tt B}'' are cycle equivalent in Fig.~\ref{fig:complex}c but they do not bracket generalized bibubbles.
+
+Pangene alleviates this issue by introducing a dummy vertex $p_0$ to the net graph $G_N$.
+$p_0$ connects all vertices in $G_N$ with degree one and, in the presence of a reference genome,
+also connects the genes at the ends of each chromosome.
+This way, ``{\tt C}'' and ``{\tt D}'' are no longer cycle equivalent in Fig.~\ref{fig:exa1}g
+and ``{\tt A}'' and ``{\tt B}'' are not equivalent in Fig.~\ref{fig:complex}d.
+However, some cycle equivalent edges still do not correspond to bibubbles, such as ``{\tt B}'' and ``{\tt E}'' in Fig.~\ref{fig:complex}f.
+Pangene still needs to check if two equivalent edges in $G_N$ enclose a bibubble in $G_B$.
+
+To find generalized bibubbles in $G_B$,
+pangene converts $G_B$ to $G_N$,
+identifies all single-entry-single-exit (SESE) regions in $G_N$ with an algorithm by \citet{DBLP:conf/pldi/JohnsonPP94},
+test each identified gene pairs in $G_B$ using the definition of generalized bibubbles,
+and then outputs them.
+The first two steps can be done in $O(|V|+|E|)$ time.
+When testing bibubbles,
+pangene traverses up to $m=100$ genes.
+The total time complexity is $O(|V|+|E|+b\cdot m)$ where $b$ is the number of SESE regions.
+We emphasize that this algorithm is approximate.
+Although it does not identify false bibubbles by testing every SESE,
+it in theory might miss bibubbles if the dummy vertex in $G_N$ is wrongly placed.
+
+\section{Results}
+
+\subsection{Finding structural variants between two human genomes}
+
+We downloaded GenCode comprehensive human annotation v44,
+retained the protein coding genes and filtered out readthrough transcripts and mitochondrial genes.
+Because GenCode does not include HLA-DRB3, HLA-DRB4 and several KIR genes,
+we manually added 20 {\it HLA-DRB} genes from the IPD-IMGT/HLA database and
+15 KIR genes from the IPD-KIR database.
+In the end, we constructed a protein set with 109,317 proteins, representing 19,335 protein coding genes.
+
+We aligned the proteins to the human reference genome GRCh38~\citep{Schneider:2017aa} and T2T-CHM13~\citep{Nurk:2022up}
+with miniprot~\citep{Li:2023ac} v0.12 under option ``{\tt --outs=0.97 -Iu}''
+and constructed a pangene graph.
+The resulting graph contains 19,058 genes and 19,361 edges.
+We identified 104 large-scale variants, represented by ``bubbles'' in the graph,
+involving 1,026 protein coding genes affected by gene copy, gene order or gene orientation changes between the two genome.
+These genes include many known events such as {\it PDPR}, {\it SMN2}, {\it CTAGE9}, {\it HPR}, {\it ORM1}, {\it CCL4}, {\it NCF1} and Amylase~\citep{Handsaker:2015ur,Sudmant:2010aa}
+as well as new events.
+We manually checked the miniprot alignment of 20 relatively small events
+and believed pangene is reporting the desired haplotype structures.
+Some of the large gene clusters affected by structural changes, such as SMN2 and Amylase,
+would not be easily captured by whole-genome alignment as they are not represented by colinear alignments.
+
+\begin{table}[!tb]
+\caption{Bacterial pangenome analysis\label{tab:bac}}
+%\begin{tabular}{lrrr}
+\begin{tabular*}{\columnwidth}{@{\extracolsep\fill}lrrr@{\extracolsep\fill}}
+\toprule
+%& Panaroo & Panaroo & pangene & PPanGGOLiN\\
+%&         & (merge) \\
+%\midrule
+%Mtb: \#total genes   & 4,261  & 4,216  & 4,217  & 4,742  \\
+%Mtb: \#core genes    & 3,664  & 3,657  & 3,646  & 3,465  \\
+%Ecoli: \#total genes & 14,152 & 13,723 & 13,009 & 14,630 \\
+%Ecoli: \#core genes  & 2,890  & 2,893  & 3,081  & 2,966  \\
+& Panaroo & pangene & PPanGGOLiN\\
+\midrule
+Mtb: \#total genes   & 4,216  & 4,217  & 4,742  \\
+Mtb: \#core genes    & 3,657  & 3,646  & 3,465  \\
+Ecoli: \#total genes & 13,723 & 13,009 & 14,630 \\
+Ecoli: \#core genes  & 2,893  & 3,081  & 2,966  \\
+\botrule
+\end{tabular*}
+\begin{tablenotes}
+\item Panaroo, pangene and PPanGGOLiN were applied to two sets of gapless bacterial assemblies:
+146 \emph{M. tuberculosis} (Mtb) strains and 50 \emph{E. coli} strains.
+Mtb genes were annotated by Prokka and Ecoli genes were annotated by NCBI and downloaded from GenBank.
+A ``core'' gene is a gene that is inferred to be present in all assemblies in each dataset.
+Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
+--clean-mode strict --merge\_paralogs}'').
+\end{tablenotes}
+\end{table}
+
+\subsection{Analyzing 98 human haplotypes}
+
+\subsection{Analyzing 146 \textit{M. tuberculosis} strains}
+
+We downloaded the \emph{M. tuberculosis} reference strain H37Rv and its gene annotation from RefSeq (AC:GCF\_000195955.2),
+which included 3,906 protein sequences.
+We obtained the complete long-read assemblies of 145 other strains from \citet{Marin:2022aa}.
+Following the instruction of Panaroo~\citep{Tonkin-Hill:2020aa},
+we ran Prodigal~\citep{Hyatt:2010aa} v2.6.3 on the reference strain to train the Prodigal model
+and ran Prokka~\citep{Seemann:2014aa} v1.14.6 with the pretrained model to predict protein coding genes
+in the 145 non-reference strains.
+We used CD-HIT~\citep{Li:2006aa,Fu:2012aa} v4.8.1 with option ``{\tt -c 0.98}'' to cluster non-reference protein sequences,
+which resulted in 6,750 clusters.
+We mapped these proteins to each \emph{M. tuberculosis} genome using miniprot with option ``{\tt -S}'' to disable splicing.
+We finally ran pangene with ``{\tt -p.001}''
+to keep all genes regardless of their frequency in the pangenome.
+
+Pangene constructed a graph consisting of 4,217 genes,
+3,646 of which were considered to be present in all 146 genomes (Table~\ref{tab:bac}).
+To check if pangene captured the gene content in these strains,
+we compared the pangene result to Panaroo v1.3.4 in the strict mode.
+We aligned the Panaroo proteins to the pangene proteins with mmseqs2~\citep{Steinegger:2017aa} v13.45111
+and identified 63 Panaroo proteins do not hit to pangene proteins.
+We mapped the 63 proteins to H37Rv with miniprot
+and found 60 of them can be aligned
+and 76\% of the aligned regions overlap with annotated CDS in RefSeq.
+Manually investigating the overlaps revealed that most of the 60 proteins
+were aligned to the opposite strand of some RefSeq genes or in different reading frames.
+Identifying homology based on the genomic locations of input proteins,
+pangene did not include them into the final graph.
+According to the RefSeq annotation,
+only 0.2\% of coding regions in H37Rv are present in more than one genes --
+overlapping genes are rare in \emph{M. tuberculosis}.
+
+We additionally ran PPanGGOLiN~\citep{Gautreau:2020aa} v1.2.105 with the Prokka annotation as the input.
+PPanGGOLiN collected 4,742 genes in the pangenome with 3,465 present in all.
+279 genes did not hit to genes selected by pangene.
+276 of these genes could be aligned to H37Rv by miniprot
+and 90\% of the aligned regions overlap with annotated CDS in RefSeq.
+PPanGGOLiN tends to select more overlapping genes in different reading frames,
+comfirming the observation by~\citet{Tonkin-Hill:2020aa}.
+
+\subsection{Analyzing 50 \textit{E. coli} strains}
+
+\emph{M. tuberculosis} has low diversity with each strain similar to each other~\citep{Marin:2022aa}.
+To understand how pangene performs given more diverse strains,
+we downloaded the genomes 50 \emph{E. coli} strains with complete assemblies~\citep{Shaw:2021aa}.
+We did not run Prokka on this dataset but instead used the gene annotation provided by NCBI.
+
+We followed the same procedure to run pangenome tools.
+To get clean graph, pangene by default filters out genes that had $>$10 edges or connected $>$3 distant loci in the graph.
+This filter only removed six genes in \emph{M. tuberculosis} dataset but
+it filtered out 627 genes in \emph{E. coli}.
+We added option ``{\tt -p.001 -g50 -r10}'' to retain more genes.
+Although pangene collected fewer genes (Table~\ref{tab:bac}),
+only 98 Panaroo genes do not hit to genes collected by pangene.
+The differences between the tools might be determined by subtle thresholds on how to resolve homologies
+and may not reflect the capability of each algorithm.
+
+\section{Discussions}
+
+\section{Acknowledgements}
+
+{\bf Funding:} NHGRI R01HG010040 and Chan-Zuckerberg Initiative
+
+%\bibliographystyle{abbrvnat}
+\bibliographystyle{apalike}
+\bibliography{pangene}
+
+\end{document}
