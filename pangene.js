@@ -240,14 +240,14 @@ class GFA {
 			const v = stack.pop();
 			const off = this.idx[v].o, n = this.idx[v].n;
 			for (let i = 0; i < n; ++i) {
-				const a = this.arc[off + i];
-				const w = a.w;
-				if (w == ve) continue;
+				const a = this.arc[off + i], w = a.w;
+				if (w == (vs^1)) continue; // don't pass the starting vertex on either strand
+				if (w == (ve^1)) return []; // if reaching the reverse complement of ve, there is no bubble
 				if (flag[w] != f) {
-					if (flag[w^1] != f) list.push(w>>1);
-					if (a.w == (vs^1)) continue;
-					stack.push(w);
 					flag[w] = f;
+					if (w == ve) continue; // reaching the end vertex; flag it but don't add to list[] or stack[]
+					if (flag[w^1] != f) list.push(w>>1);
+					stack.push(w);
 				}
 			}
 			if (list.length > max_n) break;
@@ -258,16 +258,24 @@ class GFA {
 		let f_for = f, f_rev = f + this.seg.length * 2;
 		let list_for = this.#traverse_bubble(vs,   ve,   flag, f_for, max_n);
 		let list_rev = this.#traverse_bubble(ve^1, vs^1, flag, f_rev, max_n);
-		let list = [];
-		if (list_for.length == list_rev.length) {
-			let n_in = 0;
-			for (let i = 0; i < list_for.length; ++i)
-				if (flag[list_for[i]<<1|0] == f_rev || flag[list_for[i]<<1|1] == f_rev)
-					++n_in;
-			if (n_in == list_for.length)
-				return list_for;
+		if (list_for.length != list_rev.length) return [];
+		let n_in = 0;
+		for (let i = 0; i < list_for.length; ++i)
+			if (flag[list_for[i]<<1|0] == f_rev || flag[list_for[i]<<1|1] == f_rev)
+				++n_in;
+		if (n_in != list_for.length) return [];
+		for (let i = 0; i < list_for.length; ++i) {
+			for (let rev = 0; rev < 2; ++rev) {
+				const v = list_for[i]<<1 | rev;
+				const off = this.idx[v].o, n = this.idx[v].n;
+				for (let j = 0; j < n; ++j) {
+					const a = this.arc[off + j];
+					if (flag[a.w] != f_for && flag[a.w] != f_rev) // if reaching other vertices not reachable from start or end, there is no bubble
+						return [];
+				}
+			}
 		}
-		return [];
+		return list_for;
 	}
 	get_bubble(vs, ve, flag, f, max_n) {
 		let b = [], a = this.get_bubble_id(vs, ve, flag, f, max_n);
@@ -744,11 +752,10 @@ class NetGraph {
 		for (let i = 0; i < sese.length; ++i) {
 			const st = sese[i].vs, en = sese[i].ve;
 			const b = this.gfa.get_bubble(st, en, flag, i, max_ext);
-			if (b.length > 0) {
+			if (b.length == 0) {
 				print('FB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
 			} else {
-				let list = `0\t${b.length}\t${b.join(",")}`;
-				print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, list);
+				print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, 0, b.length, b.join(","));
 			}
 		}
 	}
