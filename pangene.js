@@ -283,6 +283,26 @@ class GFA {
 			b[i] = this.seg[a[i]].name;
 		return b;
 	}
+	#get_undirected_neighbor(v) {
+		let a = [];
+		const off_v = this.idx[v].o, n_v = this.idx[v].n;
+		for (let i = 0; i < n_v; ++i) {
+			const w = this.arc[off_v + i].w;
+			a.push(w);
+			const off_w = this.idx[w^1].o, n_w = this.idx[w^1].n;
+			for (let j = 0; j < n_w; ++j) {
+				const u = this.arc[off_w + j].w;
+				if (u != (v^1)) a.push(u);
+			}
+		}
+		if (a.length == 0) return [];
+		a.sort();
+		let k = 0;
+		for (let i = 1; i < a.length; ++i)
+			if (a[i] != a[k]) a[++k] = a[i];
+		a.length = k + 1;
+		return a;
+	}
 	get_bubble_all(max_ext) {
 		// initialize cec_par[]
 		let max_cec = -1, cec_par = []; // parent cec
@@ -314,9 +334,8 @@ class GFA {
 			flag1[vs] = f1;
 			while (queue.length) { // this loop is similar to the loop in #traverse_bubble()
 				const v = queue.shift();
-				const off = this.idx[v].o, n = this.idx[v].n;
-				for (let i = 0; i < n; ++i) {
-					const a = this.arc[off + i], w = a.w;
+				const nei = this.#get_undirected_neighbor(v);
+				for (const w of nei) {
 					if (flag1[w] != f1) {
 						if (flag1[w^1] != f1) ++ext;
 						if (w == (vs^1)) continue;
@@ -419,7 +438,7 @@ class BackEdgeNode {
 }
 
 class NetGraph {
-	constructor(g, ref) {
+	constructor(g, add_super, ref) {
 		this.n_node = 0;
 		this.end_cat = [];
 		this.arc = [];
@@ -428,7 +447,8 @@ class NetGraph {
 		this.dfs_fin = [];
 		this.dfs_par = [];
 		this.gfa = g;
-		this.ref = ref;
+		this.add_super = add_super;
+		this.ref = typeof ref == "string"? ref : null;
 		this.#convert_gfa();
 	}
 	#convert_gfa() {
@@ -479,33 +499,35 @@ class NetGraph {
 			this.arc.push({ v:this.end_cat[i*2],   w:this.end_cat[i*2|1], seg:i, ori:1,  pair:-1, cec:-1, dfs_type:0 });
 			this.arc.push({ v:this.end_cat[i*2|1], w:this.end_cat[i*2],   seg:i, ori:-1, pair:-1, cec:-1, dfs_type:0 });
 		}
-		// collect tips
-		let tip = [];
-		for (let v = 0; v < n_vtx; ++v)
-			if (g.idx[v].n == 0)
-				tip.push(v^1);
-		if (this.ref && g.walk.length > 0) {
-			let f = [];
-			for (let v = 0; v < n_vtx; ++v) f[v] = 0;
-			for (let i = 0; i < tip.length; ++i) f[tip[i]] = 1;
-			for (const w of g.walk) {
-				if (w.asm != this.ref || w.v.length < 2) continue;
-				let t1 = w.v[0], t2 = w.v[w.v.length-1]^1;
-				if (f[t1] == 0) f[t1] = 2;
-				if (f[t2] == 0) f[t2] = 2;
-			}
+		if (this.add_super) {
+			// collect tips
+			let tip = [];
 			for (let v = 0; v < n_vtx; ++v)
-				if (f[v] == 2)
-					tip.push(v);
-		}
-		// add super node
-		if (tip.length > 0) {
-			const super_node = this.n_node++;
-			let seg_id = g.seg.length;
-			for (const v of tip) {
-				this.arc.push({ v:super_node, w:this.end_cat[v], seg:seg_id, ori:1,  pair:-1, cec:-1, dfs_type:0 });
-				this.arc.push({ v:this.end_cat[v], w:super_node, seg:seg_id, ori:-1, pair:-1, cec:-1, dfs_type:0 });
-				++seg_id;
+				if (g.idx[v].n == 0)
+					tip.push(v^1);
+			if (this.ref && g.walk.length > 0) {
+				let f = [];
+				for (let v = 0; v < n_vtx; ++v) f[v] = 0;
+				for (let i = 0; i < tip.length; ++i) f[tip[i]] = 1;
+				for (const w of g.walk) {
+					if (w.asm != this.ref || w.v.length < 2) continue;
+					let t1 = w.v[0], t2 = w.v[w.v.length-1]^1;
+					if (f[t1] == 0) f[t1] = 2;
+					if (f[t2] == 0) f[t2] = 2;
+				}
+				for (let v = 0; v < n_vtx; ++v)
+					if (f[v] == 2)
+						tip.push(v);
+			}
+			// add super node
+			if (tip.length > 0) {
+				const super_node = this.n_node++;
+				let seg_id = g.seg.length;
+				for (const v of tip) {
+					this.arc.push({ v:super_node, w:this.end_cat[v], seg:seg_id, ori:1,  pair:-1, cec:-1, dfs_type:0 });
+					this.arc.push({ v:this.end_cat[v], w:super_node, seg:seg_id, ori:-1, pair:-1, cec:-1, dfs_type:0 });
+					++seg_id;
+				}
 			}
 		}
 		// index arc[]
@@ -896,8 +918,8 @@ class NetGraph {
  ***************/
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, use_algo2:false, min_n_allele:2, ref:null };
-	for (const o of getopt(args, "bedamwc:r:", [])) {
+	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, use_algo2:false, add_super:true, min_n_allele:2, ref:null };
+	for (const o of getopt(args, "bedamwc:r:s", [])) {
 		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
 		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
 		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
@@ -906,6 +928,7 @@ function pg_cmd_call(args) {
 		else if (o.opt == "-c") opt.min_n_allele = parseInt(o.arg);
 		else if (o.opt == "-r") opt.ref = o.arg;
 		else if (o.opt == "-a") opt.use_algo2 = true;
+		else if (o.opt == "-s") opt.add_super = false;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
@@ -924,7 +947,7 @@ function pg_cmd_call(args) {
 	}
 	let g = new GFA();
 	g.from_file(args[0]);
-	let e = new NetGraph(g, opt.ref);
+	let e = new NetGraph(g, opt.add_super, opt.ref);
 	const sese = e.pst();
 	if (opt.print_dfs) e.print_dfs();
 	if (opt.print_bandage) e.print_bandage_csv();
