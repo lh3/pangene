@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r194-dirty";
+const pg_version = "r215-dirty";
 
 /**************
  * From k8.js *
@@ -164,7 +164,7 @@ class GFA {
 					rank = parseInt(m[2]);
 		}
 		this.arc.push({ v:v,   w:w,   ov:ov, ow:ow, rank:rank, ori:true });
-		//this.arc.push({ v:w^1, w:v^1, ov:ow, ow:ov, rank:rank, ori:false });
+		//this.arc.push({ v:w^1, w:v^1, ov:ow, ow:ov, rank:rank, ori:false }); // TODO: add and dedup dual links
 	}
 	#parse_W(line) {
 		const t = line.split("\t");
@@ -357,7 +357,7 @@ class GFA {
 					let name_list = [];
 					for (let j = 0; j < r.length; ++j)
 						name_list.push(this.seg[r[j]].name);
-					bb.push({ cec:cec, par:-1, vs:vs, ve:ve[i], seg:r, list:name_list });
+					bb.push({ cec:cec, par:-1, vs:vs, ve:ve[i], flt:false, seg:r, list:name_list });
 				}
 				++f2;
 			}
@@ -382,10 +382,6 @@ class GFA {
 			}
 			b.par = nested? par : -2; // -2 if not nested
 		}
-
-		// update parent cec
-		for (let i = 0; i < bb.length; ++i)
-			print("BB", i, bb[i].par, bb[i].cec, "><"[bb[i].vs&1] + this.seg[bb[i].vs>>1].name, "><"[bb[i].ve&1] + this.seg[bb[i].ve>>1].name, bb[i].list.length, bb[i].list.join(","));
 		return bb;
 	}
 }
@@ -625,7 +621,7 @@ class NetGraph {
 				let par = b;
 				if (cec_entry[a.cec] != -1) // if there is a start, close it
 					sese[cec_entry[a.cec]].en = off + i, par = sese[cec_entry[a.cec]].par;
-				sese.push({ st:off+i, en:-1, par:par, unflt:-1, i:-1 }); // create a new entry with the same parrent
+				sese.push({ cec:a.cec, st:off+i, en:-1, par:par, unflt:-1, i:-1 }); // create a new entry with the same parrent
 				b2 = cec_entry[a.cec] = sese.length - 1;
 			}
 			if (visited[u] != 0) continue;
@@ -768,31 +764,40 @@ class NetGraph {
 				if (b.par >= 0) b.par = sese[b.par].unflt;
 				b.i = sese_flt.length;
 				const par = b.par < 0? -1 : sese[b.par].i;
-				sese_flt.push({ st:b.st, en:b.en, par:par, vs:-1, ve:-1 });
+				sese_flt.push({ cec:b.cec, st:b.st, en:b.en, par:par, vs:-1, ve:-1, flt:false });
 			}
 		}
 		this.#cal_vs_ve(sese_flt);
 		return sese_flt;
+	}
+	get_bb(max_ext, use_pst, ignore_walk) {
+		const g = this.gfa;
+		let bb;
+		if (use_pst) {
+			bb = this.pst();
+			let flag = [];
+			for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
+			for (let i = 0; i < bb.length; ++i) {
+				const st = bb[i].vs, en = bb[i].ve;
+				const b = this.gfa.get_bubble(bb[i].vs, bb[i].ve, flag, i, max_ext);
+				if (b.length == 0) bb[i].flt = true;
+				else bb[i].list = b;
+			}
+		} else {
+			this.mark_cec();
+			bb = g.get_bubble_all(max_ext);
+		}
+		if (!ignore_walk && g.walk.length > 0) {
+			let ht = this.walk_ht(bb);
+			this.count_allele(bb, ht, max_ext);
+		}
+		return bb;
 	}
 	#cal_vs_ve(sese) {
 		for (let i = 0; i < sese.length; ++i) {
 			if (sese[i].en < 0) continue;
 			sese[i].vs = this.arc[sese[i].st].seg * 2 + (this.arc[sese[i].st].ori > 0? 0 : 1);
 			sese[i].ve = this.arc[sese[i].en].seg * 2 + (this.arc[sese[i].en].ori > 0? 0 : 1);
-		}
-	}
-	print_pst(sese, max_ext) {
-		const g = this.gfa;
-		let flag = [];
-		for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
-		for (let i = 0; i < sese.length; ++i) {
-			const st = sese[i].vs, en = sese[i].ve;
-			const b = this.gfa.get_bubble(st, en, flag, i, max_ext);
-			if (b.length == 0) {
-				print('FB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name);
-			} else {
-				print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[st&1] + g.seg[st>>1].name, "><"[en&1] + g.seg[en>>1].name, 0, b.length, b.join(","));
-			}
 		}
 	}
 	print_bandage_csv() {
@@ -898,31 +903,29 @@ class NetGraph {
 			sese[i].al.sort(function(a,b) { return b.n - a.n });
 		}
 	}
-	print_pst_walk(sese, min_n_allele, max_ext) {
+	print_bb(bb) {
 		const g = this.gfa;
-		let flag = [];
-		for (let v = 0; v < g.seg.length; ++v) flag[v] = -1;
-		for (let i = 0; i < sese.length; ++i) {
-			const vs = sese[i].vs, ve = sese[i].ve;
-			const b = this.gfa.get_bubble(vs, ve, flag, i, max_ext);
-			if (b.length == 0) {
-				print('FB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name);
-				print('//');
-				continue;
-			}
-			const gene = sese[i].gene;
-			const gene_list = gene.length == 0? sese[i].n_gene : `${gene.length}\t${gene.join(",")}`;
-			if (sese[i].al.length < min_n_allele) continue;
-			print('BB', i, sese[i].par, this.arc[sese[i].st].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, sese[i].al.length, gene_list);
-			for (let j = 0; j < sese[i].al.length; ++j) {
-				let a = [];
-				for (let k = 0; k < sese[i].al[j].a.length; ++k) {
-					const v = sese[i].al[j].a[k];
-					a.push("><"[v&1], g.seg[v>>1].name);
+		for (let i = 0; i < bb.length; ++i) {
+			const vs = bb[i].vs, ve = bb[i].ve;
+			if (bb[i].flt) {
+				print('FB', i, bb[i].par, bb[i].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name);
+			} else if (bb[i].gene && bb[i].al) {
+				const gene = bb[i].gene;
+				const gene_list = gene.length == 0? bb[i].n_gene : `${gene.length}\t${gene.join(",")}`;
+				if (bb[i].al.length < 2) continue;
+				print('BB', i, bb[i].par, bb[i].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, bb[i].al.length, gene_list);
+				for (let j = 0; j < bb[i].al.length; ++j) {
+					let a = [];
+					for (let k = 0; k < bb[i].al[j].a.length; ++k) {
+						const v = bb[i].al[j].a[k];
+						a.push("><"[v&1], g.seg[v>>1].name);
+					}
+					print('AL', bb[i].al[j].n, a.join(""));
 				}
-				print('AL', sese[i].al[j].n, a.join(""));
+			} else {
+				print('BB', i, bb[i].par, bb[i].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, -1, bb[i].list.length, bb[i].list.join(","));
 			}
-			print('//');
+			if (bb[i].gene && bb[i].al) print('//');
 		}
 	}
 }
@@ -932,54 +935,46 @@ class NetGraph {
  ***************/
 
 function pg_cmd_call(args) {
-	let opt = { print_pst:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, use_algo2:false, add_super:true, min_n_allele:2, ref:null };
-	for (const o of getopt(args, "bedamwc:r:s", [])) {
-		if (o.opt == "-b") opt.print_bandage = true, opt.print_pst = false;
-		else if (o.opt == "-e") opt.print_cec = true, opt.print_pst = false;
-		else if (o.opt == "-d") opt.print_dfs = true, opt.print_pst = false;
+	let opt = { print_bb:true, print_bandage:false, print_cec:false, print_dfs:false, max_ext:100, ignore_walk:false, use_pst:false, add_super:false, ref:null };
+	for (const o of getopt(args, "bedpm:wr:s", [])) {
+		if (o.opt == "-b") opt.print_bandage = true, opt.print_bb = false;
+		else if (o.opt == "-e") opt.print_cec = true, opt.print_bb = false;
+		else if (o.opt == "-d") opt.print_dfs = true, opt.print_bb = false;
 		else if (o.opt == "-m") opt.max_ext = parseInt(o.arg);
 		else if (o.opt == "-w") opt.ignore_walk = true;
-		else if (o.opt == "-c") opt.min_n_allele = parseInt(o.arg);
 		else if (o.opt == "-r") opt.ref = o.arg;
-		else if (o.opt == "-a") opt.use_algo2 = true;
-		else if (o.opt == "-s") opt.add_super = false;
+		else if (o.opt == "-p") opt.use_pst = true;
+		else if (o.opt == "-s") opt.add_super = true;
 	}
 	if (args.length == 0) {
 		print("Usage: pangene.js call [options] <in.gfa>");
 		print("Options:");
 		print("  General:");
 		print(`    -m INT   don't output gene lists longer than INT [${opt.max_ext}]`);
-		print(`    -c INT   min number of alleles [${opt.min_n_allele}]`);
-		print("    -b       output equivalent classes for Bandage visualization");
-		print("    -r INT   reference assembly []");
 		print("    -w       ignore walks");
+		print("    -b       output equivalent classes for Bandage visualization");
+		print("  Use PST:");
+		print("    -p       use program structure tree (PST) to find bubbles");
+		print("    -s       add a super node (preferred and only effectively with -p)");
+		print("    -r INT   reference assembly for additional edges to the super node []");
 		print("  Debugging:");
-		print("    -a       alternative algorithm for bubble finding (no alleles)");
 		print("    -d       output DFS traversal");
 		print("    -e       output cycle equivalent class");
 		return;
 	}
 	let g = new GFA();
 	g.from_file(args[0]);
-	let e = new NetGraph(g, opt.add_super, opt.ref);
-	const sese = e.pst();
-	if (opt.print_dfs) e.print_dfs();
-	if (opt.print_bandage) e.print_bandage_csv();
-	if (opt.print_cec) e.print_cycle_equiv();
-	if (opt.print_pst) {
+	let net = new NetGraph(g, opt.add_super, opt.ref);
+	const bb = net.get_bb(opt.max_ext, opt.use_pst, opt.ignore_walk);
+	if (opt.print_dfs) net.print_dfs();
+	if (opt.print_bandage) net.print_bandage_csv();
+	if (opt.print_cec) net.print_cycle_equiv();
+	if (opt.print_bb) {
 		print("CC", "FB  bbID  parID  side1  side2");
 		print("CC", "BB  bbID  parID  side1  side2  #alleles  #genes  geneList");
 		print("CC", "AL  #hap  walk");
 		print("CC");
-		if (opt.use_algo2) {
-			g.get_bubble_all(opt.max_ext);
-		} else if (!opt.ignore_walk && g.walk.length > 0) {
-			let ht = e.walk_ht(sese);
-			e.count_allele(sese, ht, opt.max_ext);
-			e.print_pst_walk(sese, opt.min_n_allele, opt.max_ext);
-		} else {
-			e.print_pst(sese, opt.max_ext);
-		}
+		net.print_bb(bb);
 	}
 }
 
