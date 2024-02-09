@@ -100,7 +100,7 @@ class GFA {
 		} else {
 			const sid = this.seg.length;
 			this.segname[name] = sid;
-			this.seg.push({ name:name, len:-1, sname:null, soff:-1, rank:-1 });
+			this.seg.push({ name:name, len:-1, sname:null, soff:-1, rank:-1, cec:-1 });
 			return sid;
 		}
 	}
@@ -164,7 +164,7 @@ class GFA {
 					rank = parseInt(m[2]);
 		}
 		this.arc.push({ v:v,   w:w,   ov:ov, ow:ow, rank:rank, ori:true });
-		this.arc.push({ v:w^1, w:v^1, ov:ow, ow:ov, rank:rank, ori:false });
+		//this.arc.push({ v:w^1, w:v^1, ov:ow, ow:ov, rank:rank, ori:false });
 	}
 	#parse_W(line) {
 		const t = line.split("\t");
@@ -242,7 +242,7 @@ class GFA {
 			for (let i = 0; i < n; ++i) {
 				const a = this.arc[off + i];
 				const w = a.w;
-				if (w == ve || w == (ve^1)) continue;
+				if (w == ve) continue;
 				if (flag[w] != f) {
 					if (flag[w^1] != f) list.push(w>>1);
 					if (a.w == (vs^1)) continue;
@@ -272,6 +272,79 @@ class GFA {
 		}
 		//if (!is_bb) warn("><"[vs&1] + this.seg[vs>>1].name + " -- " + "><"[ve&1] + this.seg[ve>>1].name + " is not a bubble");
 		return is_bb? list_name : [];
+	}
+	get_bubble_from(vs, flag, flag2, f2, max_n) {
+		const cec = this.seg[vs>>1].cec;
+		if (cec < 0 || this.idx[vs].n < 2) return [];
+		let stack = [vs], list = [], ve = [];
+		flag[vs] = vs;
+		while (stack.length) {
+			const v = stack.pop();
+			const off = this.idx[v].o, n = this.idx[v].n;
+			for (let i = 0; i < n; ++i) {
+				const a = this.arc[off + i];
+				const w = a.w;
+				if (this.seg[w>>1].cec == cec)
+					ve.push(w);
+				if (flag[w] != f) {
+					if (flag[w^1] != f) list.push(w>>1);
+					if (w == (vs^1)) continue;
+					stack.push(w);
+					flag[w] = f;
+				}
+			}
+			if (list.length > max_n) break;
+		}
+		let bb = [];
+		for (let i = 0; i < ve.length; ++i) {
+			let r = this.get_bubble(vs, ve[i], flag2, f2, max_n);
+		}
+	}
+	get_bubble_all(max_n) {
+		const n_vtx = this.seg.length * 2;
+		let bb = [];
+		let f1 = 0, f2 = 0;
+		let flag1 = [], flag2 = [];
+		for (let v = 0; v < n_vtx; ++v)
+			flag1[v] = flag2[v] = -1;
+		for (let vs = 0; vs < n_vtx; ++vs) {
+			const cec = this.seg[vs>>1].cec;
+			if (cec < 0 || this.idx[vs].n == 0) continue;
+			if (this.idx[vs].n == 1) {
+				const w = this.arc[this.idx[vs].o].w ^ 1;
+				if (this.idx[w].n < 2) continue;
+			}
+			let stack = [vs], list = [], ve = [];
+			flag1[vs] = f1;
+			while (stack.length) {
+				const v = stack.shift();
+				const off = this.idx[v].o, n = this.idx[v].n;
+				for (let i = 0; i < n; ++i) {
+					const a = this.arc[off + i];
+					const w = a.w;
+					if (this.seg[w>>1].cec == cec && w>>1 != vs>>1) {
+						ve.push(w);
+						continue;
+					}
+					if (flag1[w] != f1) {
+						if (flag1[w^1] != f1) list.push(w>>1);
+						if (w == (vs^1)) continue;
+						stack.push(w);
+						flag1[w] = f1;
+					}
+				}
+				if (list.length > max_n) break;
+			}
+			for (let i = 0; i < ve.length; ++i) {
+				let r = this.get_bubble(vs, ve[i], flag2, f2, max_n);
+				if (r.length > 0 && vs < ve[i]) bb.push([vs, ve[i], r]);
+				++f2;
+			}
+			++f1;
+		}
+		for (let i = 0; i < bb.length; ++i)
+			print("BX", "><"[bb[i][0]&1] + this.seg[bb[i][0]>>1].name, "><"[bb[i][1]&1] + this.seg[bb[i][1]>>1].name, bb[i][2].join(","));
+		return bb;
 	}
 }
 
@@ -611,6 +684,12 @@ class NetGraph {
 			}
 		}
 
+		for (let e = 0; e < this.arc.length; ++e) {
+			const a = this.arc[e];
+			if (a.seg < this.gfa.seg.length && (a.dfs_type == 1 || a.dfs_type == 2))
+				this.gfa.seg[a.seg].cec = a.cec;
+		}
+
 		// construct initial PST
 		let state = [], sese = [], cec_entry = [];
 		for (let v = 0; v < this.n_node; ++v) state[v] = 0; // not visited
@@ -843,6 +922,7 @@ function pg_cmd_call(args) {
 		} else {
 			e.print_pst(sese, opt.max_ext);
 		}
+		//g.get_bubble_all(opt.max_ext);
 	}
 }
 
