@@ -254,6 +254,21 @@ class GFA {
 		}
 		return list.length > max_n? [] : list;
 	}
+	get_bubble_id(vs, ve, flag, f, max_n) {
+		let f_for = f, f_rev = f + this.seg.length * 2;
+		let list_for = this.#traverse_bubble(vs,   ve,   flag, f_for, max_n);
+		let list_rev = this.#traverse_bubble(ve^1, vs^1, flag, f_rev, max_n);
+		let list = [];
+		if (list_for.length == list_rev.length) {
+			let n_in = 0;
+			for (let i = 0; i < list_for.length; ++i)
+				if (flag[list_for[i]<<1|0] == f_rev || flag[list_for[i]<<1|1] == f_rev)
+					++n_in;
+			if (n_in == list_for.length)
+				return list_for;
+		}
+		return [];
+	}
 	get_bubble(vs, ve, flag, f, max_n) {
 		let f_for = f, f_rev = f + this.seg.length * 2;
 		let list_for = this.#traverse_bubble(vs,   ve,   flag, f_for, max_n);
@@ -273,77 +288,76 @@ class GFA {
 		//if (!is_bb) warn("><"[vs&1] + this.seg[vs>>1].name + " -- " + "><"[ve&1] + this.seg[ve>>1].name + " is not a bubble");
 		return is_bb? list_name : [];
 	}
-	get_bubble_from(vs, flag, flag2, f2, max_n) {
-		const cec = this.seg[vs>>1].cec;
-		if (cec < 0 || this.idx[vs].n < 2) return [];
-		let stack = [vs], list = [], ve = [];
-		flag[vs] = vs;
-		while (stack.length) {
-			const v = stack.pop();
-			const off = this.idx[v].o, n = this.idx[v].n;
-			for (let i = 0; i < n; ++i) {
-				const a = this.arc[off + i];
-				const w = a.w;
-				if (this.seg[w>>1].cec == cec)
-					ve.push(w);
-				if (flag[w] != f) {
-					if (flag[w^1] != f) list.push(w>>1);
-					if (w == (vs^1)) continue;
-					stack.push(w);
-					flag[w] = f;
-				}
-			}
-			if (list.length > max_n) break;
-		}
-		let bb = [];
-		for (let i = 0; i < ve.length; ++i) {
-			let r = this.get_bubble(vs, ve[i], flag2, f2, max_n);
-		}
-	}
-	get_bubble_all(max_n) {
+	get_bubble_all(max_ext) {
+		// initialize cec_par[]
+		let max_cec = -1, cec_par = []; // parent cec
+		for (let i = 0; i < this.seg.length; ++i)
+			max_cec = max_cec > this.seg[i].cec? max_cec : this.seg[i].cec;
+		for (let i = 0; i <= max_cec; ++i)
+			cec_par[i] = -1;
+
+		// initialize flag arrays
 		const n_vtx = this.seg.length * 2;
-		let bb = [];
 		let f1 = 0, f2 = 0;
-		let flag1 = [], flag2 = [];
+		let flag1 = [], flag2 = []; // flag1 for end finding; flag2 for get_bubble()
 		for (let v = 0; v < n_vtx; ++v)
 			flag1[v] = flag2[v] = -1;
+
+		// look for bubbles
+		let bb = [];
 		for (let vs = 0; vs < n_vtx; ++vs) {
+			// test if vs needs to be checked
 			const cec = this.seg[vs>>1].cec;
 			if (cec < 0 || this.idx[vs].n == 0) continue;
 			if (this.idx[vs].n == 1) {
 				const w = this.arc[this.idx[vs].o].w ^ 1;
 				if (this.idx[w].n < 2) continue;
 			}
-			let stack = [vs], list = [], ve = [];
+
+			// BFS starting from vs
+			let queue = [vs], ve = [], ext = 0;
 			flag1[vs] = f1;
-			while (stack.length) {
-				const v = stack.shift();
+			while (queue.length) { // this loop is similar to the loop in #traverse_bubble()
+				const v = queue.shift();
 				const off = this.idx[v].o, n = this.idx[v].n;
 				for (let i = 0; i < n; ++i) {
-					const a = this.arc[off + i];
-					const w = a.w;
-					if (this.seg[w>>1].cec == cec && w>>1 != vs>>1) {
-						ve.push(w);
-						continue;
-					}
+					const a = this.arc[off + i], w = a.w;
 					if (flag1[w] != f1) {
-						if (flag1[w^1] != f1) list.push(w>>1);
+						if (flag1[w^1] != f1) ++ext;
 						if (w == (vs^1)) continue;
-						stack.push(w);
 						flag1[w] = f1;
+						if (this.seg[w>>1].cec == cec) {
+							ve.push(w);
+							continue;
+						}
+						queue.push(w);
 					}
 				}
-				if (list.length > max_n) break;
+				if (ext > max_ext) break;
 			}
+
+			// test potential bubbles
 			for (let i = 0; i < ve.length; ++i) {
-				let r = this.get_bubble(vs, ve[i], flag2, f2, max_n);
-				if (r.length > 0 && vs < ve[i]) bb.push([vs, ve[i], r]);
+				let r = this.get_bubble_id(vs, ve[i], flag2, f2, max_ext);
+				if (r.length > 0 && vs < ve[i]) {
+					let name_list = [];
+					for (let j = 0; j < r.length; ++j) {
+						if (this.seg[r[j]].cec >= 0)
+							cec_par[this.seg[r[j]].cec] = cec;
+						name_list.push(this.seg[r[j]].name);
+					}
+					bb.push({ cec:cec, cec_par:-1, vs:vs, ve:ve[i], list:name_list });
+				}
 				++f2;
 			}
 			++f1;
 		}
+
+		// update parent cec
 		for (let i = 0; i < bb.length; ++i)
-			print("BX", "><"[bb[i][0]&1] + this.seg[bb[i][0]>>1].name, "><"[bb[i][1]&1] + this.seg[bb[i][1]>>1].name, bb[i][2].join(","));
+			bb[i].cec_par = cec_par[bb[i].cec];
+		for (let i = 0; i < bb.length; ++i)
+			print("BX", bb[i].cec, bb[i].cec_par, bb[i].cec, "><"[bb[i].vs&1] + this.seg[bb[i].vs>>1].name, "><"[bb[i].ve&1] + this.seg[bb[i].ve>>1].name, bb[i].list.length, bb[i].list.join(","));
 		return bb;
 	}
 }
