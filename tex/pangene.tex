@@ -197,10 +197,10 @@ We will come back to this formulation when we describe the bubble finding algori
 As a pangene graph is constructed from the protein-to-genome alignment,
 pangene attaches alignment scores to edges.
 Let $T_{x\to y}\subset T$ be the set of contigs that support $x\to y$
-and $S(x,y|t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
-$S(x\to y)$ is calculated as
+and $S(x|y,t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
+$S(x|y)$ is calculated as
 $$
-S(x, y)=\frac{1}{|T_{x\to y}|}\sum_{t\in T_{x\to y}}S(x,y|t)
+S(x|y)=\frac{1}{|T_{x\to y}|}\sum_{t\in T_{x\to y}}S(x|y,t)
 $$
 which is the average score of $x$ among contigs supporting $x\to y$.
 
@@ -226,7 +226,7 @@ pangene will select one protein for each {\tt <GeneID>} and use {\tt <GeneID>} a
 
 The central problem in graph construction is how to consistently annotate multiple genomes with a subset of input proteins.
 A naive way to annotate a genome is to align all protein sequences to the genome
-and if there are multiple proteins mapped to the same locus, to selec the best scoring protein as the annotation.
+and if there are multiple proteins mapped to the same locus, select the best scoring protein as the annotation.
 This simple strategy does not work if there are orthologous proteins in the input protein set.
 For example, suppose gene $v$ and $w$ are orthologous to each other and are thus aligned to the the same locus in each genome.
 When some genomes match $v$ better and the rest match $w$ better,
@@ -363,11 +363,6 @@ Generalized bibubbles are also nested in that
 if $(x,x')$ and $(y,y')$ are generalized bibubbles and $U(x,x')\cap U(y,y')\not=\emptyset$,
 then $U(x,x')\subset U(y,y')$ or $U(y,y')\subset U(x,x')$.
 
-%In Fig.~\ref{fig:exa1}a, ({\tt >A},{\tt <E}) is both a generalized bibubble in the bidirected graph
-%and a generalized bubble in the equivalent directed graph.
-%This is however not the case in Fig.~\ref{fig:inv}a where
-%({\tt >A},{\tt <C}) is a generalized bibubble but is not a generalized bubble in the directed graph.
-
 For a generalized bibubble $(x,y)$, let $\overline{U}(x,y)=V\setminus U(x,y)\setminus\{\nu(x),\nu(y)\}$.
 No vertex in $\overline{U}(x,y)$ can reach vertices $U(x,y)$
 because otherwise $w\in\overline{U}(x,y)$ reachable from $x$ (or from $\overline{y}$)
@@ -442,10 +437,16 @@ For example, in Fig.~\ref{fig:exa1}f, ``{\tt C}'' and ``{\tt D}'' are cycle equi
 but ({\tt >C},{\tt >D}) or in any orientation is not a generalized bibubble.
 Similarly, ``{\tt A}'' and ``{\tt B}'' are cycle equivalent in Fig.~\ref{fig:complex}c but they do not enclose generalized bibubbles.
 
+%Note that if $u$, $v$ and $w$ are cycle equivalent in $G_B$ and every walk containing $u$ and $w$
+%passes through $v$ between $u$ and $w$,
+%$u$ and $w$ cannot enclose a generalized bibubble in $G_B$
+%because removing $v$ would separate the subgraph induced
+%by the bibubble involving $u$ and $w$.
+
 \subsection{Identifying generalized bibubbles}
 
 Given a bidirected graph $G_B$, pangene transforms it to a net graph $G_N$
-and assigns a class number to each gene $v$ such that $v$ and $w$ are in the same class if and only if they are cycle equivalent in $G_N$.
+and assigns a class number to each gene $v$ such that $v$ and $w$ are in the same class if they are cycle equivalent in $G_N$.
 For each oriented gene $x$ that has multiple edges,
 pangene applies a breadth-first search (BFS) to traverse up to $m$ genes (100 by default) reachable from $x$.
 During BFS, pangene collects $y$ in the same equivalent class and does not traverse beyond $y$.
