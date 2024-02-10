@@ -304,7 +304,9 @@ which will be the basis of our algorithm.
 Weak superbubble is defined on directed graphs, not on bidirected graphs.
 If we apply the previous algorithms to directed graph $G_D$,
 we will find most superbubbles twice on separate strands.
-Superbubble cannot capture the visual intuition in the presence of inversions, either (Fig.~\ref{fig:inv}).
+Superbubble cannot capture the visual intuition in the presence of inversions, either.
+For example, Fig.~\ref{fig:inv}a seems to have a bubble visually
+but the corresponding directed graph (Fig.~\ref{fig:inv}f) does not have a superbubble.
 \citet{Dabbaghie:2022aa} implemented the algorithm by \citet{DBLP:conf/wabi/OnoderaSS13} for sequence graphs,
 but how issues above are handled is not apparent.
 The closest concept to weak superbubble in bidirected graphs is snarl~\citep{Paten:2018aa},
@@ -312,26 +314,25 @@ which leads to a bidirected subgraph that can be separated from the rest of the 
 Snarl does not require reachability which is necessary in defining superbubbles.
 To this end, there are no equivalent definition of weak superbubble in directed graphs.
 
-\subsection{Defining generalized bubbles}
+\subsection{Defining generalized bibubbles}
 
-In a directed graph $G_D$, $z$ is said to be reachable from $x$ without passing through $y$
-if there is a walk from $x$ to $z$ that does not involve $y$.
-Let $U_D(x,y)\subset X$ be the set of vertices that are reachable from $x$ without passing through $y$
-and similarly $U'_D(y,x)$ be the set of vertices that can reach $y$ without passing through $x$.
-A \emph{generalized bubble} is a pair of vertices $(x,y)$ such that
-i) $x$ reaches $y$; ii) $U_D(x,y)=U'_D(y,x)$ and iii) there does not exist $z\in U_D(x,y)$
-that satisfies $U_D(x,z)=U'_D(z,x)$ or $U_D(z,y)=U'_D(y,z)$.
-A generalized bubble is a \emph{superbubble} if the subgraph induced by $\{x,y\}\cup U_D(x,y)$ is acyclic.
-A generalized bubble is equivalent to a weak superbubble~\citep{Gartner:2018aa}.
+%In a directed graph $G_D$, $z$ is said to be reachable from $x$ without passing through $y$
+%if there is a walk from $x$ to $z$ that does not involve $y$.
+%Let $U_D(x,y)\subset X$ be the set of vertices that are reachable from $x$ without passing through $y$
+%and similarly $U'_D(y,x)$ be the set of vertices that can reach $y$ without passing through $x$.
+%A \emph{generalized bubble} is a pair of vertices $(x,y)$ such that
+%i) $x$ reaches $y$; ii) $U_D(x,y)=U'_D(y,x)$ and iii) there does not exist $z\in U_D(x,y)$
+%that satisfies $U_D(x,z)=U'_D(z,x)$ or $U_D(z,y)=U'_D(y,z)$.
+%A generalized bubble is a \emph{superbubble} if the subgraph induced by $\{x,y\}\cup U_D(x,y)$ is acyclic.
+%A generalized bubble is equivalent to a weak superbubble~\citep{Gartner:2018aa}.
 
-The definition above is applied to directed graphs only but can be extended to bidirected graphs.
-Given a vertex $v$ in a bidirected graph $G_B=(V,E)$,
-a walk can either start from ${\rm >}v$ or from ${\rm <}v$.
+The definition of ``bubbles'' here tries to capture the visual intuition.
+It is inspired by \citet{DBLP:conf/wabi/OnoderaSS13}.
 Let $U(x,y)\subset V$ be the set of vertices that are reachable from $x$ without passing through $x$, $\overline{x}$ or $y$.
 A \emph{generalized bidirected bubble}, or a \emph{generalized bibubble} in short, is a pair $(x,y)\in X\times X$ such that
-i) there exists a walk from $x$ to $y$;
-ii) $U(x,y)=U(\overline{y},\overline{x})\not=\emptyset$;
-and iii) there does not exist $z\in U(x,y)\times\{{\rm >},{\rm <}\}$
+i) $U(x,y)=U(\overline{y},\overline{x})\not=\emptyset$;
+ii) $\forall v\in U(x,y)$, there is a walk from $x$ to $y$ that passes $v$;
+iii) there does not exist $z\in U(x,y)\times\{{\rm >},{\rm <}\}$
 that satisfies $U(x,z)=U(\overline{z},\overline{x})$ or $U(z,y)=U(\overline{y},\overline{z})$.
 Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\overline{x})$ is also a generalized bibubble.
 
@@ -339,23 +340,36 @@ Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\
 \centering
 \includegraphics[width=.48\textwidth]{fig4}
 \caption{Example of gene graphs with inversions.
-{\bf (a)} A gene graph for visualization. ({\tt >A},{\tt <C}) is a generlized bubble.
+{\bf (a)} A gene graph for visualization. ({\tt >A},{\tt <C}) is a generlized bibubble.
 {\bf (b)} The corresponding GFA format.
 {\bf (c)} Bidirected graph.
 {\bf (d)} Biedged graph.
 {\bf (e)} Net graph, which loses information.
 {\bf (f)} Directed graph.
-{\bf (g)} Another gene graph with ({\tt >A},{\tt >D}) being a generlized bubble.
+{\bf (g)} A second gene graph with ({\tt >A},{\tt >D}) being a generlized bibubble.
+({\tt >A},{\tt <C}) is not a generalized bibubble because $U$({\tt >A},{\tt <C})=$\{${\tt B},{\tt C}$\}$
+but $U$({\tt >C},{\tt <A})=$\{${\tt B}$\}$.
+{\bf (h)} A third gene graph without any generalized bibubbles.
 }\label{fig:inv}
 \end{figure}
 
-In Fig.~\ref{fig:exa1}a, ({\tt >A},{\tt <E}) is both a generalized bibubble in the bidirected graph
-and a generalized bubble in the equivalent directed graph.
-This is however not the case in Fig.~\ref{fig:inv}a where
-({\tt >A},{\tt <C}) is a generalized bibubble but is not a generalized bubble in the directed graph.
+In the definition of $U(x,y)$, we intentionally allow walks passing through $\overline{y}$;
+otherwise $U$({\tt >A},{\tt <C}) in Fig.~\ref{fig:inv}g would become $\{${\tt B}$\}$, making ({\tt >A},{\tt <C}) a generalized bibubble.
+This example also suggests $(x,y)$ would not be a generalized bibubble if $x\in U(x,y)$ or $y\in U(x,y)$.
+Condition ii) above aims to exclude examples such as Fig.~\ref{fig:inv}h.
+Condition iii) requires a bibubble to be minimal.
+As a result, it is not possible for $(x,y)$ and $(x,z)$ both to be generalized bibubbles unless $y\not=z$.
+Generalized bibubbles are also nested in that
+if $(x,x')$ and $(y,y')$ are generalized bibubbles and $U(x,x')\cap U(y,y')\not=\emptyset$,
+then $U(x,x')\subset U(y,y')$ or $U(y,y')\subset U(x,x')$.
 
-For a generalized bibubble $(x,y)$, let $\overline{U}(x,y)=V\setminus(U(x,y)\cup\{\nu(x),\nu(y)\})$.
-Then no vertex in $\overline{U}(x,y)$ can reach vertices $U(x,y)$
+%In Fig.~\ref{fig:exa1}a, ({\tt >A},{\tt <E}) is both a generalized bibubble in the bidirected graph
+%and a generalized bubble in the equivalent directed graph.
+%This is however not the case in Fig.~\ref{fig:inv}a where
+%({\tt >A},{\tt <C}) is a generalized bibubble but is not a generalized bubble in the directed graph.
+
+For a generalized bibubble $(x,y)$, let $\overline{U}(x,y)=V\setminus U(x,y)\setminus\{\nu(x),\nu(y)\}$.
+No vertex in $\overline{U}(x,y)$ can reach vertices $U(x,y)$
 because otherwise $w\in\overline{U}(x,y)$ reachable from $x$ (or from $\overline{y}$)
 would not pass through $y$ (or $\overline{x}$) and would be added to $U(x,y)$ (or $U(\overline{y},\overline{x})$)
 -- this would violate the definition of $U(x,y)$.
@@ -393,6 +407,8 @@ $\{\nu(x),\nu(y)\}$ is a cut-set in $G_N$.
 
 Two edges $e_1$ and $e_2$ in $G_N$ are said to be \emph{cycle equivalent}
 if every cycle containing $e_1$ contains $e_2$ and vice versa.
+Cycle equivalent edges form equivalent classes, which can be determined in linear time~\citep{DBLP:conf/pldi/JohnsonPP94}.
+
 For any pair of $e_1$ and $e_2$ that are cycle equivalent, $\{e_1,e_2\}$ is a cut-set.
 To see this, let $p_{11}$ and $p_{12}$ are the two vertices incident to $e_1$.
 Without losing generality, suppose $G_n$ is a connected graph.
@@ -406,11 +422,6 @@ To prove this, let $\{e_1,e_2\}$ partition the vertex set $P$ into $P_1$ and $P_
 If $e_1$ and $e_2$ were not cycle equivalent, there must exist a cycle that only contains $e_1$ but not $e_2$.
 Then cutting both $e_1$ and $e_2$ would still keep $P_1$ and $P_2$ connected due to this cycle,
 violating that $\{e_1,e_2\}$ is a cut-set.
-To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle equivalent.
-%$G_B$ can be converted to $G_N$ in $O(|V|+|E|)$ time
-%and cycle equivalent classes can be identified in $O(|V|)$ time~\citep{DBLP:conf/pldi/JohnsonPP94}.
-
-\subsection{Identifying generalized bibubbles}
 
 \begin{figure}[t!]
 \centering
@@ -420,38 +431,48 @@ To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle
 {\bf (b)} The corresponding pangene graph.
 {\bf (c)} Net graph with the dummy vertex ``0'' connected to ``1'' only.
 {\bf (d)} Net graph with the dummy vertex connected to genes at the ends of the contig.
-{\bf (e)} Another pangene graph.
-{\bf (f)} The corresponding net graph.
 }\label{fig:complex}
 \end{figure}
 
-Now we see that if $(x,y)$ is a generalized bibubble in $G_B$,
+To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle equivalent.
+Then if $(x,y)$ is a generalized bibubble in $G_B$,
 $\nu(x)$ and $\nu(y)$ are cycle equivalent in $G_N$.
 The reverse is not always ture.
 For example, in Fig.~\ref{fig:exa1}f, ``{\tt C}'' and ``{\tt D}'' are cycle equivalent,
 but ({\tt >C},{\tt >D}) or in any orientation is not a generalized bibubble.
-Similarly, ``{\tt A}'' and ``{\tt B}'' are cycle equivalent in Fig.~\ref{fig:complex}c but they do not bracket generalized bibubbles.
+Similarly, ``{\tt A}'' and ``{\tt B}'' are cycle equivalent in Fig.~\ref{fig:complex}c but they do not enclose generalized bibubbles.
 
-Pangene alleviates this issue by introducing a dummy vertex $p_0$ to the net graph $G_N$.
-$p_0$ connects all vertices in $G_N$ with degree one and, in the presence of a reference genome,
-also connects the genes at the ends of each chromosome.
-This way, ``{\tt C}'' and ``{\tt D}'' are no longer cycle equivalent in Fig.~\ref{fig:exa1}g
-and ``{\tt A}'' and ``{\tt B}'' are not equivalent in Fig.~\ref{fig:complex}d.
-However, some cycle equivalent edges still do not correspond to bibubbles, such as ``{\tt B}'' and ``{\tt E}'' in Fig.~\ref{fig:complex}f.
-Pangene still needs to check if two equivalent edges in $G_N$ enclose a bibubble in $G_B$.
+\subsection{Identifying generalized bibubbles}
 
-To find generalized bibubbles in $G_B$,
-pangene converts $G_B$ to $G_N$,
-identifies all single-entry-single-exit (SESE) regions in $G_N$ with an algorithm by \citet{DBLP:conf/pldi/JohnsonPP94},
-test each identified gene pairs in $G_B$ using the definition of generalized bibubbles,
-and then outputs them.
-The first two steps can be done in $O(|V|+|E|)$ time.
-When testing bibubbles,
-pangene traverses up to $m=100$ genes.
-The total time complexity is $O(|V|+|E|+b\cdot m)$ where $b$ is the number of SESE regions.
-We emphasize that this algorithm is approximate.
-Although it does not identify false bibubbles by testing every SESE,
-it in theory might miss bibubbles if the dummy vertex in $G_N$ is wrongly placed.
+Given a bidirected graph $G_B$, pangene transforms it to a net graph $G_N$
+and assigns a class number to each gene $v$ such that $v$ and $w$ are in the same class if and only if they are cycle equivalent in $G_N$.
+For each oriented gene $x$ that has multiple edges,
+pangene applies a breadth-first search (BFS) to traverse up to $m$ genes (100 by default) reachable from $x$.
+During BFS, pangene collects $y$ in the same equivalent class and does not traverse beyond $y$.
+It then checks each $(x,y)$ using the definition of generalized bibubble.
+Because $x$ can only appear in one generalized bibubble, pangene stops testing other $(x,\cdot)$ pairs
+if it has found a generalized bibubble.
+
+The time complexity in the worst case is $O(|V|+|E|+b\cdot m^2)$, where $b$ is the number of genes with multiple incoming or outgoing edges
+and $m$ is effectively the maximum bibubble size.
+On real pangene graphs, the time complexity is close to $O(|V|+|E|+b\cdot m)$.
+It takes pangene less than one second to find $\sim$200 generalized bibubbles
+in a human graph including 20 thousand genes.
+
+In addition to cycle equivalence, \citet{DBLP:conf/pldi/JohnsonPP94}
+described another linear algorithm to find single-entry-single-exist (SESE) regions in $G_N$
+provided that $G_N$ contains a vertex $p_0$ that puts every other vertex in $G_N$ in a cycle with $p_0$.
+A SESE region is intuitively a bubble-like subgraph in $G_N$.
+Pangene also implemented this algorithm.
+It introduced $p_0$ that connects all vertices with degree one in $G_N$
+and connects the first and the last gene on the reference chromosome (Fig.~\ref{fig:exa1}f and Fig.~\ref{fig:complex}d).
+Because a SESE region does not always correspond to a generalized bibubble in $G_B$,
+pangene still has to test each SESE region using the definition of generalized bibubble.
+The time complexity of this second algorithm is $O(|V|+|E|+b'm^2)$ where $b'$ is the number of
+SESE regions in $G_N$.
+It is slightly faster in theory,
+but pangene still uses the first algorithm by default
+as the placement of $p_0$ is heuristic which caused one false negative in a human pangene graph.
 
 \section{Results}
 
