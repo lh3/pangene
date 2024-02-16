@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r215-dirty";
+const pg_version = "r220-dirty";
 
 /**************
  * From k8.js *
@@ -228,7 +228,7 @@ class GFA {
 			this.#parse_line(line);
 		this.#index();
 	}
-	static int_hash(x) {
+	static int_hash(x) { // this not actually used
 		x = Math.imul((x >> 16) ^ x, 0x45d9f3b) & 0xffffffff;
 		x = Math.imul((x >> 16) ^ x, 0x45d9f3b) & 0xffffffff;
 		return (x >> 16) ^ x;
@@ -844,17 +844,17 @@ class NetGraph {
 			st[sese[i].vs].push({ en:sese[i].ve, bid:i, ori:1 });
 			st[sese[i].ve^1].push({ en:sese[i].vs^1, bid:i, ori:-1 });
 		}
-		for (let j = 0; j < g.walk.length; ++j) {
+		for (let j = 0; j < g.walk.length; ++j) { // traverse each W-line
 			const vtx = g.walk[j].v;
-			for (let i = 0; i < vtx.length; ++i) {
+			for (let i = 0; i < vtx.length; ++i) { // traverse oriented genes on the W-line
 				const v = vtx[i];
-				for (let k = 0; k < st[v].length; ++k) {
+				for (let k = 0; k < st[v].length; ++k) { // traverse bubbles that start with v
 					let e = en[st[v][k].en];
 					if (e.walk != j)
 						e.walk = j, e.a = [];
 					e.a.push({ st_off:i, bid:st[v][k].bid, ori:st[v][k].ori });
 				}
-				if (en[v].walk != j) continue;
+				if (en[v].walk != j) continue; // this means we also found the other end of the bubble
 				for (let k = 0; k < en[v].a.length; ++k) {
 					const x = en[v].a[k];
 					ht[x.bid].push({ walk:j, st_off:x.st_off, en_off:i, bid:x.bid, ori:x.ori });
@@ -862,7 +862,7 @@ class NetGraph {
 				}
 			}
 		}
-		return ht;
+		return ht; // for each bubble, it keeps the list of walks that contain the start and end vertices of the bubble
 	}
 	count_allele(sese, ht, max_ext) {
 		const g = this.gfa;
@@ -895,11 +895,11 @@ class NetGraph {
 						a.push(w.v[k]^1);
 				}
 				const s = a.join(",");
-				if (al[s] == null) al[s] = { a:a.slice(0), n:0 };
-				++al[s].n;
+				if (al[s] == null) al[s] = { a:a.slice(0), asm:[] };
+				al[s].asm.push(g.walk[x.walk].asm);
 			}
 			for (const key in al)
-				sese[i].al.push({ n:al[key].n, a:al[key].a });
+				sese[i].al.push({ n:al[key].asm.length, a:al[key].a, asm:al[key].asm });
 			sese[i].al.sort(function(a,b) { return b.n - a.n });
 		}
 	}
@@ -920,7 +920,7 @@ class NetGraph {
 						const v = bb[i].al[j].a[k];
 						a.push("><"[v&1], g.seg[v>>1].name);
 					}
-					print('AL', bb[i].al[j].n, a.join(""));
+					print('AL', bb[i].al[j].n, a.join(""), bb[i].al[j].asm.join(","));
 				}
 			} else {
 				print('BB', i, bb[i].par, bb[i].cec, "><"[vs&1] + g.seg[vs>>1].name, "><"[ve&1] + g.seg[ve>>1].name, -1, bb[i].list.length, bb[i].list.join(","));
@@ -971,7 +971,7 @@ function pg_cmd_call(args) {
 	if (opt.print_cec) net.print_cycle_equiv();
 	if (opt.print_bb) {
 		print("CC", "FB  bbID  parID  side1  side2");
-		print("CC", "BB  bbID  parID  side1  side2  #alleles  #genes  geneList");
+		print("CC", "BB  bbID  parID  side1  side2  #alleles  #genes  geneList  supportingAsm");
 		print("CC", "AL  #hap  walk");
 		print("CC");
 		net.print_bb(bb);
