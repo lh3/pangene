@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PG_VERSION "1.0-r191-dirty"
+#define PG_VERSION "1.0-r218-dirty"
 
 #define PG_F_WRITE_BED_RAW      0x1
 #define PG_F_WRITE_BED_WALK     0x2
@@ -11,7 +11,7 @@
 #define PG_F_WRITE_NO_WALK      0x8
 #define PG_F_WRITE_VTX_SEL      0x10
 #define PG_F_FRAG_MODE          0x20
-#define PG_F_NO_JOINT_PSEUDO    0x40
+#define PG_F_JOINT_PSEUDO       0x40
 #define PG_F_ORI_FOR_BRANCH     0x80
 #define PG_F_CHECK_STRAND       0x100
 
