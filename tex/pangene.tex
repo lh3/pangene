@@ -270,7 +270,7 @@ However, a phased male human assembly does not have chromosome X,
 the gene will be mapped to the autosome (Fig.~\ref{fig:resolve}a).
 This false hit will lead to spurious edges in the initial graph (Fig.~\ref{fig:resolve}b).
 To solve this problem, pangene marks $x\to y$ as a false edge
-if there exists $x\to z$ such that $y$ and $z$ are on different contigs in every input genome and $S(x,y)<S(x,z)\cdot 95\%$.
+if there exists $x\to z$ such that $y$ and $z$ are on different contigs in every input genome and $S(x|y)<S(x|z)\cdot 95\%$.
 Pangene then filters out all $x$ alignment that are incident to a false edge $x\to y$ (Fig.~\ref{fig:resolve}c).
 
 Second, similar to the first case, if the best position of a gene is missing due to real deletion in evolution,
@@ -477,31 +477,61 @@ as the placement of $p_0$ is heuristic which caused one false negative in a huma
 
 \section{Results}
 
-\subsection{Finding structural variants between two human genomes}
+\subsection{Structural variants between two human genomes}
 
-We downloaded GenCode comprehensive human annotation v44,
-retained the protein coding genes and filtered out readthrough transcripts and mitochondrial genes.
+We downloaded GenCode comprehensive human annotation v45,
+retained the protein coding transcripts tagged with ``Ensembl\_canonical'' and filtered out readthrough transcripts and mitochondrial genes.
+Only one transcript was selected per gene.
 Because GenCode does not include HLA-DRB3, HLA-DRB4 and several KIR genes,
-we manually added 20 {\it HLA-DRB} genes from the IPD-IMGT/HLA database and
+we manually added 20 {\it HLA-DRB} genes and alleles from the IPD-IMGT/HLA database and
 15 KIR genes from the IPD-KIR database.
-In the end, we constructed a protein set with 109,317 proteins, representing 19,335 protein coding genes.
+In the end, we constructed a set of 19,421 protein sequences.
 
 We aligned the proteins to the human reference genome GRCh38~\citep{Schneider:2017aa} and T2T-CHM13~\citep{Nurk:2022up}
 with miniprot~\citep{Li:2023ac} v0.12 under option ``{\tt --outs=0.97 -Iu}''
 and constructed a pangene graph.
-The resulting graph contains 19,058 genes and 19,361 edges.
-We identified 104 large-scale variants, represented by ``bubbles'' in the graph,
-involving 1,026 protein coding genes affected by gene copy, gene order or gene orientation changes between the two genome.
-These genes include many known events such as {\it PDPR}, {\it SMN2}, {\it CTAGE9}, {\it HPR}, {\it ORM1}, {\it CCL4}, {\it NCF1} and Amylase~\citep{Handsaker:2015ur,Sudmant:2010aa}
-as well as new events.
+The resulting graph contains 19,088 genes and 19,390 edges.
+We identified 88 generalized bubbles in the graph,
+involving 655 protein coding genes affected by gene copy, gene order or gene orientation changes between the two genome.
+These genes include many known events such as {\it PDPR}, {\it SMN2}, {\it CTAGE9}, {\it HPR}, {\it ORM1}, {\it CCL4}, {\it NCF1} and Amylase~\citep{Handsaker:2015ur,Sudmant:2010aa}.
 We manually checked the miniprot alignment of 20 relatively small events
 and believed pangene is reporting the desired haplotype structures.
 Some of the large gene clusters affected by structural changes, such as SMN2 and Amylase,
-would not be easily captured by whole-genome alignment as they are not represented by colinear alignments.
+would not be easily captured by whole-genome alignment as they are not represented by colinear genome alignments.
+
+\subsection{Analyzing 100 human haplotypes}
+
+We obtained the assembly of CN1~\citep{Yang:2023aa}, YAO~\citep{He:2023aa} and 47 samples released by the Human Reference Pangenome Consortium~\citep{Liao:2023aa}.
+Together with GRCh38 and T2T-CHM13, this gave us 100 human haplotypes.
+We aligned the same set of proteins to the haplotypes.
+Pangene took less than one minute to construct a graph
+and less than one second to identify 251 generalized bibubbles in the graph.
+Many of the bibubbles were supported by one contig only.
+When we pruned edges supported by one contig,
+the resultant graph contained 198 generalized bibubbles involving 896 protein-coding genes.
+These include manually confirmed gene-level variations around {\it CYP2D6}/{\it CYP2D7}, {\it C4A}/{\it C4B} and 
+{\it RHD}/{\it RHCE}~\citep{Liao:2023aa}.
+
+We next investigated genes with presence/absence variants (PAVs).
+There were 18,262 genes on the autosomes of GRCh38.
+4.1\% of them were not present in all haplotypes and 0.4\% ($n$=69) were only present in $\le$50\% of haplotypes.
+Among the 69 genes, for example, \emph{NPY4R} is paralogous to \emph{NPY4R2} which differs at one amino acid.
+On most haplotypes, \emph{NPY4R2} was aligned better than \emph{NPY4R} and pangene annotated two \emph{NPY4R2} genes but no \emph{NPY4R}.
+Therefore \emph{NPY4R} became a PAV.
+When we excluded genes having paralogs of $\ge$95\% identity from the list,
+only 18 were left.
+This list includes three KIR genes and \emph{HLA-DRB4} that are known to be PAVs.
+We checked a few remaining genes in the list.
+\emph{PRH1}, \emph{LCE3B} and \emph{LCE3C} are in relatively simple regions and look like real PAVs.
+\emph{KCND2} has an intron longer than 200 kb, which caused miniprot misalignment.
+\emph{GSTT2} has a close paralog \emph{GSTT2B} that CD-HIT failed to identify -- it seems an algorithm glitch.
+The flanking region around \emph{NOTCH2NLR} is complex and was poorly assembled in most haplotypes.
+This may explain the low occurrence rate of this gene.
+Overall, 99.9\% of human genes or their close paralogs were present in the majority of human haplotypes.
+It is rare to see a protein-coding gene completely missing without paralogs as backups.
 
 \begin{table}[!tb]
 \caption{Bacterial pangenome analysis\label{tab:bac}}
-%\begin{tabular}{lrrr}
 \begin{tabular*}{\columnwidth}{@{\extracolsep\fill}lrrr@{\extracolsep\fill}}
 \toprule
 %& Panaroo & Panaroo & pangene & PPanGGOLiN\\
@@ -528,8 +558,6 @@ Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
 --clean-mode strict --merge\_paralogs}'').
 \end{tablenotes}
 \end{table}
-
-\subsection{Analyzing 98 human haplotypes}
 
 \subsection{Analyzing 146 \textit{M. tuberculosis} strains}
 

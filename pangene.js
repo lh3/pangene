@@ -1124,11 +1124,17 @@ function pg_cmd_getaa(args) {
 }
 
 function pg_cmd_gfa2matrix(args) {
-	let copy_number = false;
-	for (const o of getopt(args, "c", []))
+	let copy_number = false, fn_clstr = null, print_cd = false;
+	for (const o of getopt(args, "cd:p", [])) {
 		if (o.opt == "-c") copy_number = true;
+		else if (o.opt == "-d") fn_clstr = o.arg;
+		else if (o.opt == "-p") print_cd = true;
+	}
 	if (args.length == 0) {
-		print("Usage: pangene.js gfa2matrix [-c] <in.gfa>");
+		print("Usage: pangene.js gfa2matrix [options] <in.gfa>");
+		print("Options:");
+		print("  -c        output counts");
+		print("  -d FILE   CD-HIT cluster file to merge paralogs []");
 		return;
 	}
 	let g = new GFA();
@@ -1147,14 +1153,54 @@ function pg_cmd_gfa2matrix(args) {
 		for (const v of w.v)
 			++mat[v>>1][asm_id];
 	}
+	let paralog = {};
+	if (fn_clstr != null) {
+		let m, a = [];
+		let process_b = function(b) {
+			let sel = -1;
+			if (b.length == 0) return;
+			for (let i = 0; i < b.length; ++i)
+				if (b[i][1]) sel = i;
+			if (sel >= 0) {
+				for (let i = 0; i < b.length; ++i) {
+					if (i == sel) continue;
+					paralog[b[i][0].split(":")[0]] = b[sel][0].split(":")[0];
+					if (print_cd)
+						print(b[i][0].split(":")[0], b[sel][0].split(":")[0]);
+				}
+			}
+		}
+		for (const line of k8_readline(fn_clstr)) {
+			if (/^>/.test(line)) {
+				process_b(a);
+				a.length = 0;
+			} else if ((m = /^\d+\s+\S+,\s+>(\S+)\.\.\.\s+(\S+)/.exec(line)) != null) {
+				a.push([m[1], m[2] == "*"? true : false]);
+			}
+		}
+		process_b(a);
+		let name2id = {};
+		for (let i = 0; i < g.seg.length; ++i)
+			name2id[g.seg[i].name] = i;
+		for (const g in paralog) {
+			const p = paralog[g];
+			if (!(g in name2id) || !(p in name2id)) continue;
+			const gid = name2id[g];
+			const pid = name2id[p];
+			for (let i = 0; i < mat[gid].length; ++i)
+				mat[pid][i] += mat[gid][i];
+		}
+	}
 	if (copy_number == false) {
 		for (let i = 0; i < mat.length; ++i)
 			for (let j = 0; j < mat[i].length; ++j)
 				if (mat[i][j] > 1) mat[i][j] = 1;
 	}
+	if (print_cd) return;
 	print('Gene', asm_a.join("\t"));
 	for (let i = 0; i < mat.length; ++i)
-		print(g.seg[i].name, mat[i].join("\t"));
+		if (!(g.seg[i].name in paralog))
+			print(g.seg[i].name, mat[i].join("\t"));
 }
 
 function pg_cmd_flt_mmseqs(args) {
