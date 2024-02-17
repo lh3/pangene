@@ -1157,6 +1157,7 @@ function pg_cmd_outgroup(args) {
 			if (n_in_only + n_mix >= 2) tag.push("poly_in");
 			if (n_out_only + n_mix >= 2) tag.push("poly_out");
 			if (n_in_only + n_mix >= 2 && n_mix == 1) tag.push("exp_in");
+			if (tag.length == 0) tag.push("split");
 			print("BA", bb[1], tag.join(","));
 			print(ori.join("\n"));
 			print("//");

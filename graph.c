@@ -11,7 +11,7 @@ void pg_post_process(const pg_opt_t *opt, pg_data_t *d)
 		fprintf(stderr, "[M::%s::%s] %d genes and %d proteins\n", __func__, pg_timestamp(), d->n_gene, d->n_prot);
 	pg_cap_score_dom(d);
 	pg_flag_representative(d);
-	if (opt->flag & PG_F_JOINT_PSEUDO) {
+	if (!(opt->flag & PG_F_NO_JOINT_PSEUDO)) {
 		int32_t n;
 		n = pg_flag_pseudo_joint(opt, d);
 		if (pg_verbose >= 3)

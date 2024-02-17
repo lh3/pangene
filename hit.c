@@ -75,16 +75,18 @@ int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g)
 	radix_sort_pg128x(a, a + g->n_hit);
 	for (i = 1, i0 = 0; i <= g->n_hit; ++i) {
 		if (i == g->n_hit || a[i].x>>32 != a[i0].x>>32) {
-			int32_t n_multi = 0;
+			int32_t max_n = 0, min_n = INT32_MAX;
 			if (i - i0 > 1) {
-				for (j = i0; j < i; ++j)
-					if (g->hit[a[j].y].n_exon > 1)
-						++n_multi;
+				for (j = i0; j < i; ++j) {
+					max_n = max_n > g->hit[a[j].y].n_exon? max_n : g->hit[a[j].y].n_exon;
+					min_n = min_n < g->hit[a[j].y].n_exon? min_n : g->hit[a[j].y].n_exon;
+				}
 			}
-			if (n_multi > 0 && i - i0 - n_multi > 0) {
+			if (max_n > 1 && (min_n == 1 || min_n * 2 <= max_n)) {
 				int32_t j1 = -1;
 				for (j = i0; j < i; ++j) {
-					if (g->hit[a[j].y].n_exon == 1)
+					int32_t n_exon = g->hit[a[j].y].n_exon;
+					if (n_exon == 1 || n_exon * 2 <= max_n)
 						g->hit[a[j].y].pseudo = 1, ++n_pseudo;
 					else if (j1 < 0)
 						j1 = j;
