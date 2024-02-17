@@ -24,6 +24,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "  Graph construction:\n");
 	fprintf(fp, "    -f FLOAT      min overlap fraction [%g]\n", opt->min_ov_ratio);
 	fprintf(fp, "    -J            don't filter pseudogenes across samples\n");
+	fprintf(fp, "    -E            ignore genes that are single-exon in all genomes\n");
 	fprintf(fp, "    -p FLOAT      gene considered if dominant in FLOAT fraction of genes [%g]\n", opt->min_vertex_ratio);
 	fprintf(fp, "    -c INT        drop a gene if average occurrence is >INT [%d]\n", opt->max_avg_occ);
 	fprintf(fp, "    -g INT        drop a gene if its in- or out-degree >INT [%d]\n", opt->max_degree);
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:JOS", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:JOSE", long_options)) >= 0) {
 		// input options
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'X') opt.excl = pg_read_list_dict(o.arg);
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
 		else if (c == 'g') opt.max_degree = atoi(o.arg);
 		else if (c == 'r') opt.max_dist_loci = atoi(o.arg);
 		else if (c == 'J') opt.flag |= PG_F_NO_JOINT_PSEUDO;
+		else if (c == 'E') opt.flag |= PG_F_DROP_SGL_EXON;
 		else if (c == 'b') opt.branch_diff = atof(o.arg);
 		else if (c == 'B') opt.branch_diff_cut = atof(o.arg);
 		else if (c == 'y') opt.branch_diff_dist = atof(o.arg);

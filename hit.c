@@ -76,11 +76,10 @@ int32_t pg_flag_pseudo(const pg_prot_t *prot, pg_genome_t *g)
 	for (i = 1, i0 = 0; i <= g->n_hit; ++i) {
 		if (i == g->n_hit || a[i].x>>32 != a[i0].x>>32) {
 			int32_t max_n = 0, min_n = INT32_MAX;
-			if (i - i0 > 1) {
-				for (j = i0; j < i; ++j) {
-					max_n = max_n > g->hit[a[j].y].n_exon? max_n : g->hit[a[j].y].n_exon;
-					min_n = min_n < g->hit[a[j].y].n_exon? min_n : g->hit[a[j].y].n_exon;
-				}
+			for (j = i0; j < i; ++j) {
+				int32_t n_exon = g->hit[a[j].y].n_exon;
+				max_n = max_n > n_exon? max_n : n_exon;
+				min_n = min_n < n_exon? min_n : n_exon;
 			}
 			if (max_n > 1 && (min_n == 1 || min_n * 2 <= max_n)) {
 				int32_t j1 = -1;
@@ -164,7 +163,7 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg
 			if (a->rank == 0) {
 				int32_t w = a->n_exon == 1? 0 : 1;
 				aux[a->pid].c[w]++;
-				aux[a->pid].s[w] += a->score_adj;
+				aux[a->pid].s[w] += a->score_ori;
 			}
 		}
 	}
@@ -173,10 +172,12 @@ int32_t pg_flag_pseudo_joint(const pg_opt_t *opt, pg_data_t *d) // call after pg
 		for (i = 0; i < g->n_hit; ++i) {
 			pg_hit_t *a = &g->hit[i];
 			pseudo_joint_aux_t *p = &aux[a->pid];
-			if (a->flt) continue;
-			if (a->n_exon == 1 && p->c[1] >= d->n_genome * opt->min_vertex_ratio && !a->pseudo
-				&& p->s[1] * p->c[0] >= p->s[0] * p->c[1]) // multi-exon should have higher score
+			if (a->flt || a->pseudo) continue;
+			if (a->n_exon == 1 && p->c[1] > 0 && p->c[1] >= d->n_genome * opt->min_vertex_ratio
+				&& ((double)p->s[1] / p->c[1]) / ((double)p->s[0] / p->c[0]) >= 0.99) // multi-exon should have higher score
 			{
+				a->pseudo = 1, ++n_pseudo;
+			} else if (a->n_exon == 1 && (p->c[1] == 0 || p->c[1] <= d->n_genome * opt->min_vertex_ratio) && (opt->flag & PG_F_DROP_SGL_EXON)) {
 				a->pseudo = 1, ++n_pseudo;
 			}
 		}
