@@ -1123,6 +1123,47 @@ function pg_cmd_getaa(args) {
 	}
 }
 
+function pg_cmd_outgroup(args) {
+	if (args.length < 2) {
+		print("Usage: pangene.js outgroup <call.txt> <outgroup.txt>");
+		return;
+	}
+	let outgroup = {};
+	for (const line of k8_readline(args[1]))
+		outgroup[line.split(/\s+/)[0]] = 1;
+	let bb, al, ori;
+	for (const line of k8_readline(args[0])) {
+		let m;
+		if (/^BB/.test(line)) {
+			bb = line.split("\t");
+			al = [];
+			ori = [line];
+		} else if ((m = /^AL\s(\d+)\s\S+\s(\S+)/.exec(line)) != null) {
+			let n_in = 0, n_out = 0;
+			for (const asm of m[2].split(",")) {
+				if (asm in outgroup) ++n_out;
+				else ++n_in;
+			}
+			al.push([n_in, n_out]);
+			ori.push(line);
+		} else if (line === "//") {
+			let n_in_only = 0, n_out_only = 0, n_mix = 0;
+			for (let i = 0; i < al.length; ++i) {
+				if (al[i][0] > 0 && al[i][1] > 0) ++n_mix;
+				else if (al[i][0] > 0 && al[i][1] == 0) ++n_in_only;
+				else if (al[i][0] == 0 && al[i][1] > 0) ++n_out_only;
+			}
+			let tag = [];
+			if (n_in_only + n_mix >= 2) tag.push("poly_in");
+			if (n_out_only + n_mix >= 2) tag.push("poly_out");
+			if (n_in_only + n_mix >= 2 && n_mix == 1) tag.push("exp_in");
+			print("BA", bb[1], tag.join(","));
+			print(ori.join("\n"));
+			print("//");
+		}
+	}
+}
+
 function pg_cmd_gfa2matrix(args) {
 	let copy_number = false, fn_clstr = null, print_cd = false;
 	for (const o of getopt(args, "cd:p", [])) {
@@ -1311,6 +1352,7 @@ function main(args)
 	else if (cmd == 'getaa') pg_cmd_getaa(args);
 	else if (cmd == 'bed2paf') pg_cmd_bed2paf(args);
 	else if (cmd == 'gfa2matrix') pg_cmd_gfa2matrix(args);
+	else if (cmd == 'outgroup') pg_cmd_outgroup(args);
 	else if (cmd == 'flt-mmseqs') pg_cmd_flt_mmseqs(args);
 	else if (cmd == 'version') {
 		print(pg_version);
