@@ -284,6 +284,13 @@ In Fig.~\ref{fig:resolve}e, $x={\rm <}$\emph{CYP2D6}, $y={\rm <}$\emph{TCF20} an
 ${\rm <}$\emph{CYP2D6} is marked to have low priority on the second contig.
 This results in a graph in Fig.~\ref{fig:resolve}f that is more consistent with the known evolution at this locus~\citep{Liao:2023aa}.
 
+Both cases may also be caused by processed pseudogenes.
+When a protein-coding gene has a recent pseudogene that has a near identical sequence,
+the two heuristics may not work due to the score ratio threshold.
+By default, pangene filters out an alignment without splicing if the protein has a spliced alignment in other samples.
+Pangene also has an option to drop a protein if it does not have spliced alignment in any sample.
+For human samples, these strategies can reduce false connections between chromosomes.
+
 \subsection{Past work on bubble finding}
 
 The concept of bubble is perhaps first coined by \citet{Zerbino:2008uq} in the context of assembly graphs.
@@ -491,8 +498,8 @@ We aligned the proteins to the human reference genome GRCh38~\citep{Schneider:20
 with miniprot~\citep{Li:2023ac} v0.12 under option ``{\tt --outs=0.97 -Iu}''
 and constructed a pangene graph.
 The resulting graph contains 19,088 genes and 19,390 edges.
-We identified 88 generalized bubbles in the graph,
-involving 655 protein coding genes affected by gene copy, gene order or gene orientation changes between the two genome.
+We identified 91 generalized bubbles in the graph that contain 100 genes or fewer.
+These bibubbles involved 691 genes affected by gene copy, gene order or gene orientation changes between the two genome.
 These genes include many known events such as {\it PDPR}, {\it SMN2}, {\it CTAGE9}, {\it HPR}, {\it ORM1}, {\it CCL4}, {\it NCF1} and Amylase~\citep{Handsaker:2015ur,Sudmant:2010aa}.
 We manually checked the miniprot alignment of 20 relatively small events
 and believed pangene is reporting the desired haplotype structures.
@@ -505,25 +512,24 @@ We obtained the assembly of CN1~\citep{Yang:2023aa}, YAO~\citep{He:2023aa} and 4
 Together with GRCh38 and T2T-CHM13, this gave us 100 human haplotypes.
 We aligned the same set of proteins to the haplotypes.
 Pangene took less than one minute to construct a graph
-and less than one second to identify 251 generalized bibubbles in the graph.
+and less than one second to identify 266 generalized bibubbles in the graph.
 Many of the bibubbles were supported by one contig only.
-When we pruned edges supported by one contig,
-the resultant graph contained 198 generalized bibubbles involving 896 protein-coding genes.
+Pruning edges supported by one contig resulted in a graph containing 209 generalized bibubbles.
+Further dropped about 2,000 single-coding-exon genes led to a graph containing 163 bibubbles.
 These include manually confirmed gene-level variations around {\it CYP2D6}/{\it CYP2D7}, {\it C4A}/{\it C4B} and 
 {\it RHD}/{\it RHCE}~\citep{Liao:2023aa}.
 
 We next investigated genes with presence/absence variants (PAVs).
-There were 18,262 genes on the autosomes of GRCh38.
-4.1\% of them were not present in all haplotypes and 0.4\% ($n$=69) were only present in $\le$50\% of haplotypes.
-Among the 69 genes, for example, \emph{NPY4R} is paralogous to \emph{NPY4R2} which differs at one amino acid.
-On most haplotypes, \emph{NPY4R2} was aligned better than \emph{NPY4R} and pangene annotated two \emph{NPY4R2} genes but no \emph{NPY4R}.
-Therefore \emph{NPY4R} became a PAV.
-When we excluded genes having paralogs of $\ge$95\% identity from the list,
-only 18 were left.
+Out of 16,996 multi-exon genes in the graph,
+16,315 were on the autosomes of GRCh38.
+3.4\% of them were not present in all haplotypes and 0.4\% ($n$=58) were only present in $\le$50\% of haplotypes.
+Among the 58 genes, for example, \emph{TRIM64} is close paralogous to \emph{TRIM64B}.
+On most haplotypes, \emph{TRIM64B} was aligned better than \emph{TRIM64} and pangene annotated two \emph{TRIM64B} genes but no \emph{TRIM64}.
+Therefore \emph{TRIM64} became a PAV.
+When we excluded genes having paralogs of $\ge$95\% identity from the list, only 14 were left.
 This list includes three KIR genes and \emph{HLA-DRB4} that are known to be PAVs.
 We checked a few remaining genes in the list.
-\emph{PRH1}, \emph{LCE3B} and \emph{LCE3C} are in relatively simple regions and look like real PAVs.
-\emph{KCND2} has an intron longer than 200 kb, which caused miniprot misalignment.
+\emph{PRH1} and \emph{GSTM1} are in relatively simple regions and look like real PAVs.
 \emph{GSTT2} has a close paralog \emph{GSTT2B} that CD-HIT failed to identify -- it seems an algorithm glitch.
 The flanking region around \emph{NOTCH2NLR} is complex and was poorly assembled in most haplotypes.
 This may explain the low occurrence rate of this gene.
