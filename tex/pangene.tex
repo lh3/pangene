@@ -14,34 +14,39 @@
 \DeclareMathOperator*{\argmax}{argmax}
 
 \begin{document}
-\journaltitle{Journal Title Here}
-\DOI{DOI HERE}
+\journaltitle{TBD}
+\DOI{TBD}
 \copyrightyear{2024}
 \pubyear{2024}
 \access{Advance Access Publication Date: Day Month Year}
-\appnotes{Paper}
+\appnotes{Preprint}
 \firstpage{1}
 
 \title[Pangene graphs]{Exploring gene content with pangenome gene graphs}
-\author[1,2,3,$\ast$]{Heng Li}
+\author[1,2,3,$\ast$]{Heng Li\ORCID{0000-0003-4874-2874}}
+\author[2]{Maximillian Marin\ORCID{0000-0002-9108-3328}}
 \address[1]{Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA}
 \address[2]{Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
 \address[3]{Broad Insitute of Harvard and MIT, 415 Main St, Cambridge, MA 02142, USA}
-\corresp[$\ast$]{Corresponding author. \href{email:hli@ds.dfci.harvard.edu}{hli@ds.dfci.harvard.edu}}
+\corresp[$\ast$]{Corresponding author. \href{mailto:hli@ds.dfci.harvard.edu}{hli@ds.dfci.harvard.edu}}
+
+%\received{Date}{0}{Year}
+%\revised{Date}{0}{Year}
+%\accepted{Date}{0}{Year}
 
 \abstract{
 \textbf{Motivation:}
 The gene content of an organism regulates the biology of the organism
 and varies between species and between individuals of the same species.
 Although several tools have been developed to identify gene content changes in bacterial genomes,
-no existing tools are applicable to collections of large Eukaryotic genomes such as the human pangenome.\vspace{0.5em}\\
+no existing tools are applicable to collections of large eukaryotic genomes such as the human pangenome.\vspace{0.5em}\\
 \textbf{Results:}
 We developed pangene, a computational tool to identify gene orientation, gene order
 and gene copy-number changes in a collection of genomes.
 Pangene aligns a set of input protein sequences to the genomes,
 resolves redundancies between protein sequences
 and constructs a gene graph with each genome represented as a walk in the graph.
-It additionally characterizes subgraphs that encodes gene content chnages.
+It additionally characterizes subgraphs that encodes gene content changes.
 Applied to the human pangenome, pangene identifies known gene-level variations
 and reveals complex haplotypes that are not well studied before.
 Pangene also works with long-read bacterial pangenome and reports similar numbers of core and accessory genes
@@ -82,8 +87,8 @@ focuses on protein-coding genes instead of genome sequences, to the point that
 in the literature, a bacterial ``pangenome'' often refers to the collection of protein-coding genes.
 Several high-quality tools have been developed for constructing the gene content of bacterial genomes~\citep{Page:2015aa,Ding:2018aa,Tonkin-Hill:2020aa,Gautreau:2020aa,Zhou:2020aa}.
 In a nutshell, they start with \emph{ab initio} gene annotation in each genome,
-cluster the restulted protein sequences,
-and then post-process clusters to identify orthoglous genes
+cluster the resulted protein sequences,
+and then post-process clusters to identify orthologous genes
 and to fix issues caused by imperfect assembly, annotation or clustering~\citep{Tonkin-Hill:2023aa}.
 These bacterial pangenome tools however have not considered splicing,
 multiple isoforms, frequent segmental duplications and the much larger size of the human genome.
@@ -232,7 +237,7 @@ The central problem in graph construction is how to consistently annotate multip
 A naive way to annotate a genome is to align all protein sequences to the genome
 and if there are multiple proteins mapped to the same locus, select the best scoring protein as the annotation.
 This simple strategy does not work if there are orthologous proteins in the input protein set.
-For example, suppose gene $v$ and $w$ are orthologous to each other and are thus aligned to the the same locus in each genome.
+For example, suppose gene $v$ and $w$ are orthologous to each other and are thus aligned to the same locus in each genome.
 When some genomes match $v$ better and the rest match $w$ better,
 both $v$ and $w$ will be considered as accessory genes that are not present in all genomes.
 However, the preferred choice is to elect one of them as a core gene.
@@ -351,13 +356,13 @@ Due to the skew symmetry, if $(x,y)$ is a generalized bibubble, $(\overline{y},\
 \centering
 \includegraphics[width=.48\textwidth]{fig4}
 \caption{Example of gene graphs with inversions.
-{\bf (a)} A gene graph for visualization. ({\tt >A},{\tt <C}) is a generlized bibubble.
+{\bf (a)} A gene graph for visualization. ({\tt >A},{\tt <C}) is a generalized bibubble.
 {\bf (b)} The corresponding GFA format.
 {\bf (c)} Bidirected graph.
 {\bf (d)} Biedged graph.
 {\bf (e)} Net graph, which loses information.
 {\bf (f)} Directed graph.
-{\bf (g)} A second gene graph with ({\tt >A},{\tt >D}) being a generlized bibubble.
+{\bf (g)} A second gene graph with ({\tt >A},{\tt >D}) being a generalized bibubble.
 ({\tt >A},{\tt <C}) is not a generalized bibubble because $U$({\tt >A},{\tt <C})=$\{${\tt B},{\tt C}$\}$
 but $U$({\tt >C},{\tt <A})=$\{${\tt B}$\}$.
 {\bf (h)} A third gene graph without any generalized bibubbles.
@@ -443,7 +448,7 @@ violating that $\{e_1,e_2\}$ is a cut-set.
 To this end, $\{e_1,e_2\}$ is a cut-set if and only if $e_1$ and $e_2$ are cycle equivalent.
 Then if $(x,y)$ is a generalized bibubble in $G_B$,
 $\nu(x)$ and $\nu(y)$ are cycle equivalent in $G_N$.
-The reverse is not always ture.
+The reverse is not always true.
 For example, in Fig.~\ref{fig:exa1}f, ``{\tt C}'' and ``{\tt D}'' are cycle equivalent,
 but ({\tt >C},{\tt >D}) or in any orientation is not a generalized bibubble.
 Similarly, ``{\tt A}'' and ``{\tt B}'' are cycle equivalent in Fig.~\ref{fig:complex}c but they do not enclose generalized bibubbles.
@@ -529,8 +534,8 @@ Pangene took less than one minute to construct a graph
 and less than one second to identify 266 generalized bibubbles in the graph.
 Many of the bibubbles were supported by one contig only.
 Pruning edges supported by one contig resulted in a graph containing 209 generalized bibubbles.
-Further dropped about 2,000 single-coding-exon genes led to a graph containing 163 bibubbles.
-These include manually confirmed gene-level variations around {\it CYP2D6}/{\it CYP2D7}, {\it C4A}/{\it C4B} and 
+Further dropping about 2,000 single-coding-exon genes led to a graph containing 163 bibubbles.
+These included manually confirmed gene-level variations around {\it CYP2D6}/{\it CYP2D7}, {\it C4A}/{\it C4B} and
 {\it RHD}/{\it RHCE}~\citep{Liao:2023aa}.
 
 We next investigated genes with presence/absence variants (PAVs).
@@ -541,14 +546,14 @@ Among the 58 genes, for example, \emph{TRIM64} is close paralogous to \emph{TRIM
 On most haplotypes, \emph{TRIM64B} was aligned better than \emph{TRIM64} and pangene annotated two \emph{TRIM64B} genes but no \emph{TRIM64}.
 Therefore \emph{TRIM64} became a PAV.
 When we excluded genes having paralogs of $\ge$95\% identity from the list, only 14 were left.
-This list includes three KIR genes and \emph{HLA-DRB4} that are known to be PAVs.
+This list included three KIR genes and \emph{HLA-DRB4} that are known to be PAVs.
 We checked a few remaining genes in the list.
-\emph{PRH1} and \emph{GSTM1} are in relatively simple regions and look like real PAVs.
+\emph{PRH1} and \emph{GSTM1} were in relatively simple regions and look like real PAVs.
 Both of them have paralogs of identity below 95\%.
 \emph{GSTT2} has a close paralog \emph{GSTT2B} that CD-HIT failed to identify -- it seems an algorithm glitch.
-The flanking region around \emph{NOTCH2NLR} is complex and was poorly assembled in most haplotypes.
+The flanking region around \emph{NOTCH2NLR} looked complex and was poorly assembled in most haplotypes.
 This may explain the low occurrence rate of this gene.
-Overall, almost all human genes or their close paralogs were present in the majority of human haplotypes.
+Overall, almost all human genes or their close paralogs are present in the majority of human haplotypes.
 It is rare to see a protein-coding gene with sequences completely missing without paralogs as backups.
 
 We also constructed a graph including ten great ape haplotype assemblies of chimpanzee, bonobo, gorilla
@@ -571,7 +576,7 @@ Intriguingly, gorilla haplotypes are similar to human haplotypes at 17q24.1
 but chimpanzee and orangutan haplotypes involve genes at 17q21.31 (Fig.~\ref{fig:17inv}).
 As a result, the pangene graph including great apes connected genes in 17q24.1 and 17q21.31
 and broke the 17q21.31 bibubble in the human-only graph.
-Involving outgroup species may hurt the the finding of localized bibubbles.
+Involving outgroup species may hurt the finding of localized bibubbles.
 
 \begin{table}[!tb]
 \caption{Bacterial pangenome analysis\label{tab:bac}}
@@ -621,7 +626,7 @@ Pangene constructed a graph consisting of 4,217 genes,
 3,646 of which were considered to be present in all 146 genomes (Table~\ref{tab:bac}).
 To check if pangene captured the gene content in these strains,
 we compared the pangene result to Panaroo v1.3.4 in the strict mode.
-We aligned the Panaroo proteins to the pangene proteins with mmseqs2~\citep{Steinegger:2017aa} v13.45111
+We aligned the Panaroo proteins to the pangene proteins with MMseqs2~\citep{Steinegger:2017aa} v13.45111
 and identified 63 Panaroo proteins do not hit to pangene proteins.
 We mapped the 63 proteins to H37Rv with miniprot
 and found 60 of them can be aligned
@@ -640,7 +645,7 @@ PPanGGOLiN collected 4,742 genes in the pangenome with 3,465 present in all.
 276 of these genes could be aligned to H37Rv by miniprot
 and 90\% of the aligned regions overlap with annotated CDS in RefSeq.
 PPanGGOLiN tends to select more overlapping genes in different reading frames,
-comfirming the observation by~\citet{Tonkin-Hill:2020aa}.
+confirming the observation by~\citet{Tonkin-Hill:2020aa}.
 
 \subsection{Analyzing 50 \textit{E. coli} strains}
 
@@ -656,12 +661,12 @@ it filtered out 627 genes in \emph{E. coli}.
 We added option ``{\tt -p.001 -g50 -r10}'' to retain more genes.
 Although pangene collected fewer genes (Table~\ref{tab:bac}),
 only 98 Panaroo genes do not hit to genes collected by pangene.
-The differences between the tools might be determined by subtle thresholds on how to resolve homologies
+The differences between the tools might be determined by subtle thresholds on how to resolve homology
 and may not reflect the capability of each algorithm.
 
 \section{Discussions}
 
-Pangene constructs a graph to joinly represent the gene content of multiple high-quality genomes.
+Pangene constructs a graph to jointly represent the gene content of multiple high-quality genomes.
 It provides approximate gene annotation and orthology assignment as a byproduct.
 Given bacterial genomes, it plays a similar role to other bacterial pangenome tools
 for identifying core and accessory genes~\citep{Tonkin-Hill:2023aa}.
@@ -689,20 +694,20 @@ In the resultant graph, we observed thousands of alignments in the intergenic or
 which degraded the overall quality of the graph.
 The issue will become more prominent when we take diverse genomes without high-quality gene annotation as input.
 Nevertheless, cross-species whole-genome alignment is equally challenging.
-we still believe with improvements, pangene can construct a cross-species graph that can help to reveal evolution in longer term.
+We still believe with improvements, pangene can construct a cross-species graph that can help to reveal evolution in longer term.
 
 On the theoretical side, this article presented a rigorous definition of ``bubble'' in a bidirected graph
 but it did not find an efficient algorithm to identify such generalized bibubbles.
 While the current implementation in pangene works for gene graphs containing $\sim$20,000 genes,
 it will be slow for a minigraph-cactus or PGGB graph that contains tens of millions of nodes.
-How to efficiently identify generallized bibubbles remains an open and critical problem.
+How to efficiently identify generalized bibubbles remains an open and critical problem.
 Furthermore, ``bubbles'' cannot represent rearrangements at the chromosome scale.
 How to explore a multi-species gene graph or an alignment graph in general
 may be another interesting research topic.
 
 \section*{Acknowledgements}
 
-TBD
+We are grateful to Pouria Salehi and Luke O'Connor for the helpful discussions about the definition of variants in a sequence graph.
 
 \section*{Conflict of interest}
 
