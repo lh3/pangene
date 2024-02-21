@@ -23,9 +23,10 @@
 \firstpage{1}
 
 \title[Pangene graphs]{Exploring gene content with pangenome gene graphs}
-\author[1,2,$\ast$]{Heng Li}
+\author[1,2,3,$\ast$]{Heng Li}
 \address[1]{Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA}
 \address[2]{Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
+\address[3]{Broad Insitute of Harvard and MIT, 415 Main St, Cambridge, MA 02142, USA}
 \corresp[$\ast$]{Corresponding author. \href{email:hli@ds.dfci.harvard.edu}{hli@ds.dfci.harvard.edu}}
 
 \abstract{
@@ -70,7 +71,7 @@ However, how to automatically identify these genes remains an unsolved problem.
 Among the three pangenome construction tools used by the Human Pangenome Reference Consortium (HPRC),
 minigraph~\citep{Li:2020aa} and minigraph-cactus~\citep{Hickey:2023aa} are
 unable to align through complex genomic regions and may miss genes in long segmental duplications;
-PGGB~\citep{Garrison2023.04.05.535718} collapses paralogous genes which makes it difficult to study individual paraplog.
+PGGB~\citep{Garrison2023.04.05.535718} collapses paralogous genes which makes it difficult to study individual paralog.
 In addition, all three tools do not reveal how genomic variations affect genes.
 To study gene-level variations, HPRC
 had to manually annotate genes on each haplotype~\citep{Liao:2023aa} which is a time-consuming process.
@@ -126,8 +127,9 @@ Pangene provides utilities to classify genes into core genes that are present in
 Pangene can also identify generalized ``bubbles'' in the graph, which represent gene order,
 gene copy-number or gene orientation variations among the input genomes.
 
-Given perfect gene annotations, the pangene graph construction algorithm is conceptually simple:
-it takes each gene as a node and adds an edge between two genes if they are adjacent on a genome (Fig.~\ref{fig:ex1}).
+Given perfect gene annotation and orthology relationship between the genes, the pangene graph construction algorithm is conceptually simple:
+it takes an orthologous group as a vertex and adds an edge between two groups
+if on an input genome, a gene in one group is adjacent to a gene in the other group (Fig.~\ref{fig:ex1}).
 The practical difficulty is to obtain accurate annotation in the presence of redundant sequences, paralogous genes and errors in assembly or alignment.
 On the theoretical side, bubble finding is an unsolved problem on its own
 and will also be a major topic of this article.
@@ -557,7 +559,7 @@ The fewer polymorphic bibubbles in human (in comparison to 163 identified withou
 were caused by the merging of small bibubbles,
 by the increased difficulty in resolving paralogs given more remote outgroups,
 or by chromosomal inversions or translocations that disrupted the local bubble topology.
-The last cause seemed to be the major contributor.
+The last seemed to be the major cause.
 We will use the 17q21.31 inversion around \emph{MAPT} as an example.
 
 The 17q21.31 inversion is polymorphic in the human population~\citep{Boettger:2012aa,Steinberg:2012aa}.
@@ -659,9 +661,61 @@ and may not reflect the capability of each algorithm.
 
 \section{Discussions}
 
-\section{Acknowledgements}
+Pangene constructs a graph to joinly represent the gene content of multiple high-quality genomes.
+It provides approximate gene annotation and orthology assignment as a byproduct.
+Given bacterial genomes, it plays a similar role to other bacterial pangenome tools
+for identifying core and accessory genes~\citep{Tonkin-Hill:2023aa}.
+Pangene is unique in that it also works for eukaryotic genomes
+and it is perhaps the first computational tool that aims to accurately capture localized gene-level variants.
+Pangene complements whole-genome alignment based pangenome tools
+and gives a cleaner high-level view of gene content changes.
 
-{\bf Funding:} NHGRI R01HG010040 and Chan-Zuckerberg Initiative
+The pangene graph construction algorithm is \emph{ad hoc}.
+We have manually tuned various heuristics to correctly encode known gene-level variants in human.
+However, we may have overlooked other cases that pangene may fail to represent.
+Ideally, we would prefer to turn graph construction to a global optimization problem.
+We have not been able to find such a formulation that can reliably encode known variations.
+
+As protein-to-genome alignment can identify orthology within mammals or even vertebrates to a lesser extent~\citep{Li:2023ac},
+we could in principle apply pangene to more distantly related species.
+We did construct a gene graph from the human and mouse reference genomes.
+The graph revealed synteny blocks visible from the human-mouse whole-genome alignment,
+but the topology looked complex due to frequent large-scale rearrangements over long evolutionary distance.
+Many generalized bibubbles identified from this graph were due to real orthologous alignments missed by miniprot.
+We will need another way at higher level to investigate such a graph.
+Another practical challenge in building a cross-species graph is to select the set of input proteins.
+When constructing the great ape graph, we tried to merge human and great ape protein sequences.
+In the resultant graph, we observed thousands of alignments in the intergenic or intronic regions of GRCh38
+which degraded the overall quality of the graph.
+The issue will become more prominent when we take diverse genomes without high-quality gene annotation as input.
+Nevertheless, cross-species whole-genome alignment is equally challenging.
+we still believe with improvements, pangene can construct a cross-species graph that can help to reveal evolution in longer term.
+
+On the theoretical side, this article presented a rigorous definition of ``bubble'' in a bidirected graph
+but it did not find an efficient algorithm to identify such generalized bibubbles.
+While the current implementation in pangene works for gene graphs containing $\sim$20,000 genes,
+it will be slow for a minigraph-cactus or PGGB graph that contains tens of millions of nodes.
+How to efficiently identify generallized bibubbles remains an open and critical problem.
+Furthermore, ``bubbles'' cannot represent rearrangements at the chromosome scale.
+How to explore a multi-species gene graph or an alignment graph in general
+may be another interesting research topic.
+
+\section*{Acknowledgements}
+
+TBD
+
+\section*{Conflict of interest}
+
+None declared.
+
+\section*{Funding}
+This work is supported by NHGRI R01HG010040 and Chan-Zuckerberg Initiative (to H.L.).
+
+\section*{Data availability}
+
+Source code at \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene};
+pre-built pangene graphs can be downloaded from \href{https://zenodo.org/records/10038994}{https://zenodo.org/records/10038994}
+and visualized at \href{http://pangene.liheng.org}{http://pangene.liheng.org}.
 
 %\bibliographystyle{abbrvnat}
 \bibliographystyle{apalike}
