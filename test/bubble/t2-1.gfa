@@ -1,0 +1,15 @@
+S	s1	*	LN:i:100
+S	s2	*	LN:i:100
+S	s3	*	LN:i:100
+S	s4	*	LN:i:100
+S	s5	*	LN:i:100
+S	s6	*	LN:i:100
+S	s7	*	LN:i:100
+L	s1	+	s2	+	0M
+L	s2	+	s3	+	0M
+L	s1	+	s4	+	0M
+L	s4	+	s5	+	0M
+L	s5	+	s6	+	0M
+L	s4	+	s7	+	0M
+L	s7	+	s6	+	0M
+L	s6	+	s3	+	0M

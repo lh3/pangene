@@ -119,6 +119,12 @@ on the genome is at least
 .I FLOAT
 fraction of the shorter alignment [0.5]
 .TP
+.BI -J
+Do not attempt to identify pseudogenes jointly across samples.
+.TP
+.BI -E
+ignore genes that are single-exon in all genomes
+.TP
 .BI -p \ FLOAT
 A gene is considered a segment in the graph if it is
 .I dominant
@@ -142,9 +148,6 @@ Drop a gene if its in- or out-degree in the initial graph is higher than
 Drop a gene if it connects more than
 .I INT
 loci that are distant from each other [3]
-.TP
-.BI -J
-Do not attempt to identify pseudogenes jointly across samples.
 .TP
 .BI -b \ FLOAT
 Demote a branching arc if it is weaker than the best branching arc by
