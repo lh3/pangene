@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-const pg_version = "r220-dirty";
+const pg_version = "1.1-r231";
 
 /**************
  * From k8.js *
