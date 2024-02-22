@@ -49,7 +49,7 @@ Pangene also works with high-quality bacterial pangenome and reports similar num
 in comparison to existing tools.\vspace{0.5em}\\
 \textbf{Availability and implementation:}
 Source code at \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene};
-pre-built pangene graphs can be downloaded from \href{https://zenodo.org/doi/10.5281/zenodo.8118576}{https://zenodo.org/doi/10.5281/zenodo.8118576}
+pre-built pangene graphs can be downloaded from \href{https://zenodo.org/records/8118576}{https://zenodo.org/records/8118576}
 and visualized at \href{http://pangene.liheng.org}{http://pangene.liheng.org}.
 }
 
@@ -491,22 +491,22 @@ as the placement of $p_0$ is heuristic which caused one false negative in a huma
 \subsection{Structural variants between two human genomes}
 
 We downloaded GenCode comprehensive human annotation v45,
-retained the protein coding transcripts tagged with ``Ensembl\_canonical'' and filtered out readthrough transcripts and mitochondrial genes.
+retained the protein-coding transcripts tagged with ``Ensembl\_canonical'' and filtered out readthrough transcripts and mitochondrial genes.
 Only one transcript was selected per gene.
 Because GenCode does not include HLA-DRB3, HLA-DRB4 and several KIR genes,
 we manually added 20 {\it HLA-DRB} genes and alleles from the IPD-IMGT/HLA database and
 15 KIR genes from the IPD-KIR database.
-In the end, we constructed a set of 19,421 protein sequences.
+In the end, we constructed a protein set with 19,421 sequences.
 
 We aligned the proteins to the human reference genome GRCh38~\citep{Schneider:2017aa} and T2T-CHM13~\citep{Nurk:2022up}
 with miniprot~\citep{Li:2023ac} v0.12 under option ``{\tt --outs=0.97 -Iu}''
 and constructed a pangene graph.
 The resulting graph contains 19,088 genes and 19,390 edges.
 We identified 91 generalized bubbles in the graph that contain 100 genes or fewer.
-These bibubbles involved 691 genes affected by gene copy, gene order or gene orientation changes between the two genome.
-These genes include many known events such as {\it PDPR}, {\it SMN2}, {\it CTAGE9}, {\it HPR}, {\it ORM1}, {\it CCL4}, {\it NCF1} and Amylase~\citep{Handsaker:2015ur,Sudmant:2010aa}.
-We manually checked the miniprot alignment of 20 relatively small events
-and believed pangene is reporting the desired haplotype structures.
+The bibubbles involved 691 genes affected by gene copy, gene order or gene orientation changes between the two genome.
+These genes included many known events such as {\it PDPR}, {\it SMN2}, {\it CTAGE9}, {\it HPR}, {\it ORM1}, {\it CCL4}, {\it NCF1} and Amylase~\citep{Handsaker:2015ur,Sudmant:2010aa}.
+%We manually checked the miniprot alignment of 20 relatively small events
+%and believed pangene is reporting the desired haplotype structures.
 Some of the large gene clusters affected by structural changes, such as {\it SMN2} and Amylase,
 would not be easily captured by whole-genome alignment as they are not represented by colinear genome alignments.
 
@@ -524,7 +524,7 @@ A dashed line links two genes that are close but not immediately adjacent to eac
 
 We obtained the assembly of CN1~\citep{Yang:2023aa}, YAO~\citep{He:2023aa} and 47 samples released by the Human Reference Pangenome Consortium~\citep{Liao:2023aa}.
 Together with GRCh38 and T2T-CHM13, this gave us 100 human haplotypes.
-We aligned the same set of proteins to the haplotypes.
+We aligned the same set of proteins to the 100 haplotypes.
 Pangene took less than one minute to construct a graph
 and less than one second to identify 266 generalized bibubbles in the graph.
 Many of the bibubbles were supported by one contig only.
@@ -536,35 +536,35 @@ These included manually confirmed gene-level variations around {\it CYP2D6}/{\it
 We next investigated genes with presence/absence variants (PAVs).
 Out of 16,996 multi-exon genes in the graph,
 16,315 were on the autosomes of GRCh38.
-3.4\% of them were not present in all haplotypes and 0.4\% ($n$=58) were only present in $\le$50\% of haplotypes.
-Among the 58 genes, for example, \emph{TRIM64} is close paralogous to \emph{TRIM64B}.
+3.4\% of them were absent from one or more haplotypes and 0.4\% ($n$=58) were only present in $\le$50\% of haplotypes.
+Among the 58 genes, \emph{TRIM64}, for example, is close paralogous to \emph{TRIM64B}.
 On most haplotypes, \emph{TRIM64B} was aligned better than \emph{TRIM64} and pangene annotated two \emph{TRIM64B} genes but no \emph{TRIM64}.
 Therefore \emph{TRIM64} became a PAV.
 When we excluded genes having paralogs of $\ge$95\% identity from the list, only 14 were left.
-This list included three KIR genes and \emph{HLA-DRB4} that are known to be PAVs.
+This list included three KIR genes and \emph{HLA-DRB4} that are known to be PAVs~\citep{Zhou2024.01.20.576452}.
 We checked a few remaining genes in the list.
 \emph{PRH1} and \emph{GSTM1} were in relatively simple regions and look like real PAVs.
 Both of them have paralogs of identity below 95\%.
-\emph{GSTT2} has a close paralog \emph{GSTT2B} that CD-HIT failed to identify -- it seems an algorithm glitch.
+\emph{GSTT2} has a close paralog \emph{GSTT2B} that CD-HIT failed to identify -- it seemed an algorithm glitch.
 The flanking region around \emph{NOTCH2NLR} looked complex and was poorly assembled in most haplotypes.
 This may explain the low occurrence rate of this gene.
 Overall, almost all human genes or their close paralogs are present in the majority of human haplotypes.
 It is rare to see a protein-coding gene with sequences completely missing without paralogs as backups.
 
-We also constructed a graph including ten great ape haplotype assemblies of chimpanzee, bonobo, gorilla
+We also constructed a graph including ten haplotype assemblies of great apes, including chimpanzee, bonobo, gorilla
 and two orangutan subspecies~\citep{Makova2023.11.30.569198}.
 We filtered out single-exon genes and pruned edges supported by one contig.
 This graph contained 239 generalized bibubbles, 131 of which were polymorphic among the 100 human samples.
 The fewer polymorphic bibubbles in human (in comparison to 163 identified without great ape samples)
 were caused by the merging of small bibubbles,
 by the increased difficulty in resolving paralogs given more remote outgroups,
-or by chromosomal inversions or translocations that disrupted the local bubble topology.
-The last seemed to be the major cause.
+or by chromosome-scale inversions or translocations that disrupted the local bubble topology.
+The last cause seemed to be the major contributor.
 We will use the 17q21.31 inversion around \emph{MAPT} as an example.
 
 The 17q21.31 inversion is polymorphic in the human population~\citep{Boettger:2012aa,Steinberg:2012aa}.
 In the graph derived from the 100 human haplotypes, pangene identifid a generalized bibubble corresponding to this inversion.
-This bibubble contained \emph{LRRC37A} and \emph{LRRC37A2}.
+The bibubble contained \emph{LRRC37A} and \emph{LRRC37A2} which have similar sequences.
 The two genes have another paralog \emph{LRRC37A3} that is $\sim$18 Mb away.
 All great apes only have one copy of the gene.
 Intriguingly, gorilla haplotypes are similar to human haplotypes at 17q24.1
@@ -604,13 +604,11 @@ Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
 
 \subsection{Analyzing 146 \textit{M. tuberculosis} strains}
 
-We downloaded the \emph{M. tuberculosis} reference strain H37Rv and its gene annotation from RefSeq (AC:GCF\_000195955.2),
-which included 3,906 protein sequences.
-We obtained the complete long-read assemblies of 145 other strains from \citet{Marin:2022aa}.
+We downloaded the \emph{M. tuberculosis} reference strain H37Rv and its gene annotation from RefSeq (AC:GCF\_000195955.2)
+and obtained the complete long-read assemblies of 145 other strains~\citep{Marin:2022aa}.
 Following the instruction of Panaroo~\citep{Tonkin-Hill:2020aa},
 we ran Prodigal~\citep{Hyatt:2010aa} v2.6.3 on the reference strain to train the Prodigal model
-and ran Prokka~\citep{Seemann:2014aa} v1.14.6 with the pretrained model to predict protein coding genes
-in the 145 non-reference strains.
+and ran Prokka~\citep{Seemann:2014aa} v1.14.6 with the pretrained model to predict protein coding genes in all strains.
 We used CD-HIT~\citep{Li:2006aa,Fu:2012aa} v4.8.1 with option ``{\tt -c 0.98}'' to cluster non-reference protein sequences,
 which resulted in 6,750 clusters.
 We mapped these proteins to each \emph{M. tuberculosis} genome using miniprot with option ``{\tt -S}'' to disable splicing.
@@ -668,15 +666,15 @@ for identifying core and accessory genes~\citep{Tonkin-Hill:2023aa}.
 Pangene is unique in that it also works for eukaryotic genomes
 and it is perhaps the first computational tool that aims to accurately capture localized gene-level variants.
 Pangene complements whole-genome alignment based pangenome tools
-and gives a cleaner high-level view of gene content changes.
+and gives a more concise high-level view of gene content changes.
 
 The pangene graph construction algorithm is \emph{ad hoc}.
-We have manually tuned various heuristics to correctly encode known gene-level variants in human.
-However, we may have overlooked other cases that pangene may fail to represent.
-Ideally, we would prefer to turn graph construction to a global optimization problem.
+We have manually tuned various heuristics to correctly encode known gene-level variants in human,
+but may have overlooked other cases that pangene may fail to represent.
+Ideally, we would prefer to model graph construction to a global optimization problem.
 We have not been able to find such a formulation that can reliably encode known variations.
 
-As protein-to-genome alignment can identify orthology within mammals or even vertebrates to a lesser extent~\citep{Li:2023ac},
+As protein-to-genome alignment can identify orthology within mammals or even vertebrates~\citep{Li:2023ac},
 we could in principle apply pangene to more distantly related species.
 We did construct a gene graph from the human and mouse reference genomes.
 The graph revealed synteny blocks visible from the human-mouse whole-genome alignment,
@@ -688,8 +686,8 @@ When constructing the great ape graph, we tried to merge human and great ape pro
 In the resultant graph, we observed thousands of alignments in the intergenic or intronic regions of GRCh38
 which degraded the overall quality of the graph.
 The issue will become more prominent when we take diverse genomes without high-quality gene annotation as input.
-Nevertheless, cross-species whole-genome alignment is equally challenging.
-We still believe with improvements, pangene can construct a cross-species graph that can help to reveal evolution in longer term.
+Nevertheless, we note that cross-species whole-genome alignment is also challenging and is perhaps doing no better than pangene.
+We still believe with improvements, pangene can construct a cross-species graph that helps to reveal evolution in longer term.
 
 On the theoretical side, this article presented a rigorous definition of ``bubble'' in a bidirected graph
 but it did not find an efficient algorithm to identify such generalized bibubbles.
@@ -713,8 +711,8 @@ This work is supported by NHGRI R01HG010040 and Chan-Zuckerberg Initiative (to H
 
 \section*{Data availability}
 
-Source code at \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene};
-pre-built pangene graphs can be downloaded from \href{https://zenodo.org/doi/10.5281/zenodo.8118576}{https://zenodo.org/doi/10.5281/zenodo.8118576}
+Pangene source code available at \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene};
+pre-built pangene graphs can be downloaded from \href{https://zenodo.org/records/8118576}{https://zenodo.org/records/8118576}
 and visualized at \href{http://pangene.liheng.org}{http://pangene.liheng.org}.
 
 %\bibliographystyle{abbrvnat}
