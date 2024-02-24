@@ -586,15 +586,15 @@ Involving outgroup species may hurt the finding of localized bibubbles.
 %Ecoli: \#core genes  & 2,890  & 2,893  & 3,081  & 2,966  \\
 & Panaroo & pangene & PPanGGOLiN\\
 \midrule
-Mtb: \#total genes   & 4,216  & 4,217  & 4,742  \\
-Mtb: \#core genes    & 3,657  & 3,646  & 3,465  \\
+Mtb: \#total genes   & 4,207  & 4,216  & 4,744  \\
+Mtb: \#core genes    & 3,655  & 3,652  & 3,463  \\
 Ecoli: \#total genes & 13,723 & 13,009 & 14,630 \\
 Ecoli: \#core genes  & 2,893  & 3,081  & 2,966  \\
 \botrule
 \end{tabular*}
 \begin{tablenotes}
 \item Panaroo, pangene and PPanGGOLiN were applied to two sets of gapless bacterial assemblies:
-146 \emph{M. tuberculosis} (Mtb) strains and 50 \emph{E. coli} strains.
+152 \emph{M. tuberculosis} (Mtb) strains and 50 \emph{E. coli} strains.
 Mtb genes were annotated by Prokka and Ecoli genes were annotated by NCBI and downloaded from GenBank.
 A ``core'' gene is a gene that is inferred to be present in all assemblies in each dataset.
 Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
@@ -602,29 +602,29 @@ Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
 \end{tablenotes}
 \end{table}
 
-\subsection{Analyzing 146 \textit{M. tuberculosis} strains}
+\subsection{Analyzing 152 \textit{M. tuberculosis} strains}
 
 We downloaded the \emph{M. tuberculosis} reference strain H37Rv and its gene annotation from RefSeq (AC:GCF\_000195955.2)
-and obtained the complete long-read assemblies of 145 other strains~\citep{Peker:2021aa,Marin:2022aa,Hall:2023aa}.
+and obtained the complete long-read assemblies of 151 other strains~\citep{Peker:2021aa,Marin:2022aa,Hall:2023aa}.
 Following the instruction of Panaroo~\citep{Tonkin-Hill:2020aa},
 we ran Prodigal~\citep{Hyatt:2010aa} v2.6.3 on the reference strain to train the Prodigal model
 and ran Prokka~\citep{Seemann:2014aa} v1.14.6 with the pretrained model to predict protein coding genes in all strains.
 We used CD-HIT~\citep{Li:2006aa,Fu:2012aa} v4.8.1 with option ``{\tt -c 0.98}'' to cluster non-reference protein sequences,
-which resulted in 6,750 clusters.
+which resulted in 6,744 clusters.
 We mapped these proteins to each \emph{M. tuberculosis} genome using miniprot with option ``{\tt -S}'' to disable splicing.
 We finally ran pangene with ``{\tt -p.001}''
 to keep all genes regardless of their frequency in the pangenome.
 
-Pangene constructed a graph consisting of 4,217 genes,
-3,646 of which were considered to be present in all 146 genomes (Table~\ref{tab:bac}).
+Pangene constructed a graph consisting of 4,216 genes,
+3,652 of which were present in all 152 genomes (Table~\ref{tab:bac}).
 To check if pangene captured the gene content in these strains,
 we compared the pangene result to Panaroo v1.3.4 in the strict mode.
 We aligned the Panaroo proteins to the pangene proteins with MMseqs2~\citep{Steinegger:2017aa} v13.45111
-and identified 63 Panaroo proteins do not hit to pangene proteins.
-We mapped the 63 proteins to H37Rv with miniprot
-and found 60 of them can be aligned
+and identified 46 Panaroo proteins do not hit to pangene proteins.
+We mapped the 46 proteins to H37Rv with miniprot
+and found 43 of them can be aligned
 and 76\% of the aligned regions overlap with annotated CDS in RefSeq.
-Manually investigating the overlaps revealed that most of the 60 proteins
+Manually investigating the overlaps revealed that most of the 43 proteins
 were aligned to the opposite strand of some RefSeq genes or in different reading frames.
 Identifying homology based on the genomic locations of input proteins,
 pangene did not include them into the final graph.
@@ -633,9 +633,9 @@ only 0.2\% of coding regions in H37Rv are present in more than one genes --
 overlapping genes are rare in \emph{M. tuberculosis}.
 
 We additionally ran PPanGGOLiN~\citep{Gautreau:2020aa} v1.2.105 with the Prokka annotation as the input.
-PPanGGOLiN collected 4,742 genes in the pangenome with 3,465 present in all.
-279 genes did not hit to genes selected by pangene.
-276 of these genes could be aligned to H37Rv by miniprot
+PPanGGOLiN collected 4,744 genes in the pangenome with 3,463 present in all.
+277 genes did not hit to genes selected by pangene.
+274 of these genes could be aligned to H37Rv by miniprot
 and 90\% of the aligned regions overlap with annotated CDS in RefSeq.
 PPanGGOLiN tends to select more overlapping genes in different reading frames,
 confirming the observation by~\citet{Tonkin-Hill:2020aa}.
