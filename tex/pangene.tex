@@ -659,9 +659,10 @@ It provides approximate gene annotation and orthology assignment as a byproduct.
 Given bacterial genomes, it plays a similar role to other bacterial pangenome tools
 for identifying core and accessory genes~\citep{Tonkin-Hill:2023aa}.
 Pangene is unique in that it also works for eukaryotic genomes
-and it is perhaps the first computational tool that aims to accurately capture localized gene-level variants.
+and captures localized gene-level variants.
 Pangene complements whole-genome alignment based pangenome tools
-and gives a more concise high-level view of gene content changes.
+and gives a more concise high-level view of gene content changes,
+though it ignores small variants and non-allelic gene conversions~\citep{Vollger:2023aa}.
 
 The pangene graph construction algorithm is \emph{ad hoc}.
 We have manually tuned various heuristics to correctly encode known gene-level variants in human,
