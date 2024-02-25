@@ -21,9 +21,11 @@
 \title[Pangene graphs]{Exploring gene content with pangenome gene graphs}
 \author[1,2,3,$\ast$]{Heng Li\ORCID{0000-0003-4874-2874}}
 \author[2]{Maximillian Marin\ORCID{0000-0002-9108-3328}}
+\author[2,4]{Maha Reda Farhat\ORCID{0000-0002-3871-5760}}
 \address[1]{Dana-Farber Cancer Institute, 450 Brookline Ave, Boston, MA 02215, USA}
 \address[2]{Harvard Medical School, 10 Shattuck St, Boston, MA 02215, USA}
 \address[3]{Broad Insitute of Harvard and MIT, 415 Main St, Cambridge, MA 02142, USA}
+\address[4]{Pulmonary and Critical Care Medicine, Massachusetts General Hospital, Boston, USA}
 \corresp[$\ast$]{Corresponding author. \href{mailto:hli@ds.dfci.harvard.edu}{hli@ds.dfci.harvard.edu}}
 
 %\received{Date}{0}{Year}
@@ -577,17 +579,10 @@ Involving outgroup species may hurt the finding of localized bibubbles.
 \caption{Bacterial pangenome analysis\label{tab:bac}}
 \begin{tabular*}{\columnwidth}{@{\extracolsep\fill}lrrr@{\extracolsep\fill}}
 \toprule
-%& Panaroo & Panaroo & pangene & PPanGGOLiN\\
-%&         & (merge) \\
-%\midrule
-%Mtb: \#total genes   & 4,261  & 4,216  & 4,217  & 4,742  \\
-%Mtb: \#core genes    & 3,664  & 3,657  & 3,646  & 3,465  \\
-%Ecoli: \#total genes & 14,152 & 13,723 & 13,009 & 14,630 \\
-%Ecoli: \#core genes  & 2,890  & 2,893  & 3,081  & 2,966  \\
 & Panaroo & pangene & PPanGGOLiN\\
 \midrule
 Mtb: \#total genes   & 4,207  & 4,216  & 4,744  \\
-Mtb: \#core genes    & 3,655  & 3,652  & 3,463  \\
+Mtb: \#core genes    & 3,769  & 3,774  & 3,660  \\
 Ecoli: \#total genes & 13,723 & 13,009 & 14,630 \\
 Ecoli: \#core genes  & 2,893  & 3,081  & 2,966  \\
 \botrule
@@ -596,7 +591,7 @@ Ecoli: \#core genes  & 2,893  & 3,081  & 2,966  \\
 \item Panaroo, pangene and PPanGGOLiN were applied to two sets of gapless bacterial assemblies:
 152 \emph{M. tuberculosis} (Mtb) strains and 50 \emph{E. coli} strains.
 Mtb genes were annotated by Prokka and Ecoli genes were annotated by NCBI and downloaded from GenBank.
-A ``core'' gene is a gene that is inferred to be present in all assemblies in each dataset.
+A ``core'' gene is a gene that is inferred to be present in $\ge$99\% of assemblies in each dataset.
 Panaroo was invoked in the strict mode with paralogs merged (option ``{\tt
 --clean-mode strict --merge\_paralogs}'').
 \end{tablenotes}
@@ -644,7 +639,7 @@ confirming the observation by~\citet{Tonkin-Hill:2020aa}.
 
 \emph{M. tuberculosis} has low diversity with each strain similar to each other~\citep{Marin:2022aa}.
 To understand how pangene performs given more diverse strains,
-we downloaded the genomes 50 \emph{E. coli} strains with complete assemblies~\citep{Shaw:2021aa}.
+we collected 50 \emph{E. coli} genomes with complete assemblies~\citep{Shaw:2021aa}.
 We did not run Prokka on this dataset but instead used the gene annotation provided by NCBI.
 
 We followed the same procedure to run pangenome tools.
@@ -686,7 +681,7 @@ When constructing the great ape graph, we tried to merge human and great ape pro
 In the resultant graph, we observed thousands of alignments in the intergenic or intronic regions of GRCh38
 which degraded the overall quality of the graph.
 The issue will become more prominent when we take diverse genomes without high-quality gene annotation as input.
-Nevertheless, we note that cross-species whole-genome alignment is also challenging and is perhaps doing no better than pangene.
+Nevertheless, we note that cross-species whole-genome alignment is also challenging and is perhaps no better than pangene.
 We still believe with improvements, pangene can construct a cross-species graph that helps to reveal evolution in longer term.
 
 On the theoretical side, this article presented a rigorous definition of ``bubble'' in a bidirected graph
@@ -702,12 +697,20 @@ may be another interesting research topic.
 
 We are grateful to Pouria Salehi and Luke O'Connor for the helpful discussions about the definition of variants in a sequence graph.
 
+\section*{Author contributions}
+
+H.L. conceived the project, implemented the algorithms, analyzed the data and drafted the manuscript.
+M.M. and M.R.F. compiled the bacteria datasets and contributed to data validation and interpretation.
+
 \section*{Conflict of interest}
 
 None declared.
 
 \section*{Funding}
-This work is supported by NHGRI R01HG010040 and Chan-Zuckerberg Initiative (to H.L.).
+
+This work is supported by National Institute of Health grant R01HG010040 and U01HG010961 (to H.L.),
+T15LM007092 (to M.M.) and R01AI155765 (to M.R.F.),
+and by Chan-Zuckerberg Initiative (to H.L.).
 
 \section*{Data availability}
 
