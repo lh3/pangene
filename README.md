@@ -1,5 +1,7 @@
 ## <a name="started"></a>Getting Started
 ```sh
+# Check prebuilt graphs at http://pangene.liheng.org
+
 # Install pangene
 git clone https://github.com/lh3/pangene
 cd pangene && make
