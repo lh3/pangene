@@ -1,6 +1,6 @@
 ## <a name="started"></a>Getting Started
 ```sh
-# Check prebuilt graphs at http://pangene.liheng.org
+# Check prebuilt graphs at https://pangene.bioinweb.org
 
 # Install pangene
 git clone https://github.com/lh3/pangene
@@ -157,4 +157,4 @@ names and visualize a local subgraph around the desired genes.
 [panaroo]: https://github.com/gtonkinhill/panaroo
 [asub]: https://github.com/lh3/asub
 [zenodo]: https://doi.org/10.5281/zenodo.8118576
-[server]: http://pangene.liheng.org
+[server]: https://pangene.bioinweb.org
