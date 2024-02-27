@@ -1,13 +1,12 @@
 \documentclass[webpdf,contemporary,large,namedate]{oup-authoring-template}%
 
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{url}
-\usepackage{tabularx}
-\usepackage{amsmath}
-\renewcommand{\ttdefault}{cmtt}
+%\PassOptionsToPackage{hyphens}{url}
+%\PassOptionsToPackage{colorlinks,linkcolor=blue,urlcolor=blue,citecolor=blue,anchorcolor=blue}{hyperref}
 
 \DeclareMathOperator*{\argmax}{argmax}
+
+\usepackage{lmodern}
+\renewcommand{\ttdefault}{cmtt}
 
 \begin{document}
 \journaltitle{TBD}
@@ -33,6 +32,7 @@
 %\accepted{Date}{0}{Year}
 
 \abstract{
+\sffamily\footnotesize
 \textbf{Motivation:}
 The gene content regulates the biology of an organism.
 It varies between species and between individuals of the same species.
@@ -50,15 +50,14 @@ and reveals complex haplotypes that are not well studied before.
 Pangene also works with high-quality bacterial pangenome and reports similar numbers of core and accessory genes
 in comparison to existing tools.\vspace{0.5em}\\
 \textbf{Availability and implementation:}
-Source code at \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene};
-pre-built pangene graphs can be downloaded from \href{https://zenodo.org/records/8118576}{https://zenodo.org/records/8118576}
-and visualized at \href{http://pangene.liheng.org}{http://pangene.liheng.org}.
+Source code at \url{https://github.com/lh3/pangene};
+pre-built pangene graphs can be downloaded from \url{https://zenodo.org/records/8118576}
+and visualized at \url{http://pangene.liheng.org}.
 }
 
 \maketitle
 
 \section{Introduction}
-
 A human genome contains about 20,000 protein-coding genes.
 A small number of them have frequent copy-number or gene order changes in the human population~\citep{Sudmant:2010aa,Handsaker:2015ur}.
 These genes are under fast evolution
@@ -715,12 +714,12 @@ and by Chan-Zuckerberg Initiative (to H.L.).
 
 \section*{Data availability}
 
-Pangene source code available at \href{https://github.com/lh3/pangene}{https://github.com/lh3/pangene};
-pre-built pangene graphs can be downloaded from \href{https://zenodo.org/records/8118576}{https://zenodo.org/records/8118576}
-and visualized at \href{http://pangene.liheng.org}{http://pangene.liheng.org}.
+Pangene source code available at \url{https://github.com/lh3/pangene};
+pre-built pangene graphs can be downloaded from \url{https://zenodo.org/records/8118576}
+and visualized at \url{http://pangene.liheng.org}.
 
-%\bibliographystyle{abbrvnat}
 \bibliographystyle{apalike}
-\bibliography{pangene}
+{\sffamily\small
+\bibliography{pangene}}
 
 \end{document}
