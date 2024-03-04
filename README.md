@@ -43,6 +43,7 @@ man ./pangene.1
   - [Constructing a pangene graph](#build-graph)
   - [Analyzing a graph](#analyze)
 - [Graph Visualization](#visual)
+- [Citation](#cite)
 - [Limitations](#limit)
 
 ## <a name="intro"></a>Introduction
@@ -54,7 +55,7 @@ alignment between a protein set and multiple genomes and produces a graph in
 the GFA format. It attempts to reduce the redundancy in the input proteins and
 filter spurious alignments while preserving close but non-identical paralogs.
 The output graph can be visualized in generic GFA viewers such as
-[BandageNG][bandage] or via a [web interface](@visual). Users can explore local
+[BandageNG][bandage] or via a [web interface](#visual). Users can explore local
 human subgraphs at a [public server][server]. Prebuilt pangene graphs can be
 found at [DOI:10.5281/zenodo.8118576][zenodo].
 
@@ -143,6 +144,13 @@ bin_arm64-mac/gfa-server -d html data/*.gfa.gz 2> server.log # for Mac
 ```
 Then you can open link `http://127.0.0.1:8000/` in your browser, type gene
 names and visualize a local subgraph around the desired genes.
+
+## <a name="cite"></a>Citation
+
+If you use pangene in your work, please consider to cite:
+
+> H Li, M Marin, MR Farhat (2024) Exploring gene content with pangenome gene graphs,
+> arXiv:2402.16185
 
 ## <a name="limit"></a>Limitations
 
