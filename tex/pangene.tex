@@ -44,7 +44,7 @@ and gene copy-number changes in a collection of genomes.
 Pangene aligns a set of input protein sequences to the genomes,
 resolves redundancies between protein sequences
 and constructs a gene graph with each genome represented as a walk in the graph.
-It additionally finds subgraphs that encodes gene content changes.
+It additionally finds subgraphs, which we call bibubbles, that capture gene content changes.
 Applied to the human pangenome, pangene identifies known gene-level variations
 and reveals complex haplotypes that are not well studied before.
 Pangene also works with high-quality bacterial pangenome and reports similar numbers of core and accessory genes
@@ -70,13 +70,15 @@ Thanks to the recent advances in sequencing technologies \citep{Wenger_2019} and
 we can routinely achieve haplotype-resolved assembly over genes under copy-number or order changes.
 We have also developed algorithms to construct pangenome sequence graphs that encode variations between genomes.
 However, how to identify these gene-level variations is not straightforward.
-Among the three pangenome construction tools used by the Human Pangenome Reference Consortium (HPRC),
+Among the three whole-genome pangenome construction tools used by the Human Pangenome Reference Consortium (HPRC),
 minigraph~\citep{Li:2020aa} and minigraph-cactus~\citep{Hickey:2023aa} are
 unable to align through complex genomic regions and may miss genes in long segmental duplications;
 PGGB~\citep{Garrison2023.04.05.535718} collapses paralogous genes which makes it difficult to study individual paralogs.
 In addition, all three tools do not directly reveal how genomic variations affect genes.
 To study gene-level variations, HPRC
 had to manually annotate genes on each haplotype~\citep{Liao:2023aa} which is a time-consuming process.
+PGR-TK~\citep{Chin:2023aa} reconstructs local haplotype structures from genomic sequences
+but it is does not directly model genes and is not intended for whole-genome data.
 The current human pangenome tooling is not designed for studying gene variations.
 
 In contrast, research on bacterial pangenome
@@ -133,8 +135,11 @@ Given perfect gene annotation and orthology assignment between the genes, the pa
 it takes an orthologous group as a vertex and adds an edge between two groups
 if on an input genome, a gene in one group is adjacent to a gene in the other group (Fig.~\ref{fig:ex1}).
 The practical difficulty is to obtain accurate annotation in the presence of redundant sequences, paralogous genes and errors in assembly or alignment.
-On the theoretical side, bubble finding is an unsolved problem on its own
-and will also be a major topic of this article.
+
+An important use of pangenome graphs is to identify genomic variations represented as ``bubbles''.
+While bubbles have been extensively studied in directed graphs~\citep{DBLP:conf/wabi/OnoderaSS13},
+they have not been rigorously defined on bidirected graphs that assemblers and pangenome constructors output.
+How to define and to find ``bubbles'' in bidirected graphs will also be a major topic of this article.
 
 \begin{figure}[b!]
 \centering
@@ -158,7 +163,8 @@ graph.}\label{fig:ex1}
 {\bf (e)} Directed graph.
 {\bf (f)} Net graph, which loses information.
 {\bf (g)} A depth-first traversal of the net graph with ``0'' representing a super node
-not in the original net graph.}\label{fig:exa1}
+not in the original net graph.
+(a) through (e) are equivalent representations.}\label{fig:exa1}
 \end{figure}
 
 Let $V$ be the set of genes
@@ -172,7 +178,7 @@ and use $x$, $y$ or $z$ to denote an oriented gene (Table~\ref{tab:sym}).
 
 Let $T$ be the set of input contigs.
 They harbor oriented genes in $X$.
-2-tuple $(x,y)\in X\times X$ is said to be supported by contig $t\in T$
+2-tuple $(x,y)\in X\times X$ is said to be \emph{supported} by contig $t\in T$
 if $y$ immediately follows $x$ on $t$ or, due to the strand symmetry of DNA, $\overline{x}$ immediately follows $\overline{y}$.
 
 A pangene graph is usually visualized as Fig.~\ref{fig:exa1}a~\citep{Wick:2015qf}
@@ -200,7 +206,7 @@ $v{\rm >>}u{\rm ><}w$ is a path, which can also be expressed as a path in $G_D$:
 %Biedged graph~\citep{Paten:2018aa} is a third way to formulate a pangene graph (Fig.~\ref{fig:exa1}d).
 %We will come back to this formulation when we describe the bubble finding algorithm.
 
-As pangene constructs the graph from protein-to-genome alignment,
+As pangene constructs the graph from protein-to-genome alignment~\citep{Li:2023ac},
 it also attaches alignment scores to edges.
 Let $T_{x\to y}\subset T$ be the set of contigs that support $x\to y$
 and $S(x|y,t)$, $t\in T_{x\to y}$, be the alignment score of $x$ when $x\to y$ is supported by contig $t$.
@@ -261,7 +267,7 @@ The second haplotype should have \emph{CYP2D7} only but because \emph{CYP2D6} is
 }\label{fig:resolve}
 \end{figure}
 
-\subsection{Adjusting pangene graphs}
+\subsection{Adjusting pangene graphs}\label{sec:adj}
 
 Pangene constructs an initial graph using genes selected from the last section.
 It applies additional heuristics to improve gene annotations based on the graph topology and alignment scoring
@@ -275,14 +281,14 @@ However, because a phased male human assembly does not have chromosome X,
 the gene will be mapped to the autosome (Fig.~\ref{fig:resolve}a).
 This false hit will lead to spurious edges in the initial graph (Fig.~\ref{fig:resolve}b).
 To solve this problem, pangene marks $x\to y$ as a false edge
-if there exists $x\to z$ such that $y$ and $z$ are on different contigs in every input genome and $S(x|y)<S(x|z)\cdot 95\%$.
+if there exists $x\to z$ such that $y$ and $z$ are on different contigs in every input genome and $S(x|y)<S(x|z)\cdot r_1$ ($r_1$ defaults to 95\%).
 Pangene then filters out all alignment of $x$ that are incident to a false edge $x\to y$ (Fig.~\ref{fig:resolve}c).
 
 Second, similar to the first case, if the best position of a gene is missing due to a real deletion in evolution,
 this gene may interfere with the alignment of paralogous genes (Fig.~\ref{fig:resolve}d)
-and leads to an undesired graph (Fig.~\ref{fig:resolve}e).
+and leads to a graph (Fig.~\ref{fig:resolve}e) inconsistent with manuscript annotation~\citep{Liao:2023aa}.
 To improve this case, pangene marks $x\to y$ to be low priority
-if there exists $x\to z$ such that $y$ and $z$ are on the same contig in an input genome and $S(x,y)<S(x,z)\cdot 98\%$.
+if there exists $x\to z$ such that $y$ and $z$ are on the same contig in an input genome and $S(x|y)<S(x|z)\cdot r_2$ ($r_2$ defaults to 98\%).
 Pangene then marks all $x$ alignment that are incident to a low-priority edge $x\to y$ to have low priority as well
 and prefers a gene without the low-priority mark.
 In Fig.~\ref{fig:resolve}e, $x={\rm <}$\emph{CYP2D6}, $y={\rm <}$\emph{TCF20} and $z={\rm <}$\emph{CYP2D7}.
@@ -292,7 +298,7 @@ This results in a graph in Fig.~\ref{fig:resolve}f that is more consistent with 
 Both cases may also be caused by processed pseudogenes.
 When a protein-coding gene has a recent pseudogene that has a near identical sequence,
 the two heuristics may not work due to the score ratio threshold.
-By default, pangene filters out an alignment without splicing if the protein has a spliced alignment in other samples.
+By default, pangene filters out an alignment without splicing as a potential pseudogene alignment if the protein has a spliced alignment in other samples.
 Pangene also has an option to drop a protein if it does not have spliced alignment in any sample.
 For human samples, these strategies can reduce false connections between chromosomes.
 
@@ -487,12 +493,44 @@ It is faster in theory,
 but pangene still uses the first algorithm by default
 as the placement of $p_0$ is heuristic which caused one false negative in a human pangene graph.
 
+\begin{figure*}[b!]
+\centering
+\includegraphics[width=\textwidth]{MAPT}
+\caption{Human and great ape haplotypes around \emph{LRRC37A*} genes.
+A red vertical bar indicates the two genes on each side are not adjacent on the genome.
+In the plot, each genome contains two blocks of genes.
+The genomic distance between the two blocks is 17.3 Mb in human, 61.3 Mb in bonobo,
+17.6 Mb in gorilla or 2.8 Mb in orangutan.
+GRCh38 has \emph{LRRC37A} and \emph{LRRC37A2} in 17q21.31 and \emph{LRRC37A3} in 17q24.1.
+HG00741 has a known inversion around \emph{MAPT}.
+All great apes have only one \emph{LRRC37A*} gene.
+Chimpanzee and bonobo have the same gene haplotype.
+The two orangutan subspecies also have the same haplotype.
+The \emph{LRRC37A3} alignment in gorilla has two in-frame stop codons.
+It is challenging to distinguish \emph{LRRC37A*} paralogs
+as they are similar in sequence and lack synteny with nearby genes.
+}\label{fig:17inv}
+\end{figure*}
+
 \section{Results}
+
+We applied pangene to HPRC samples and manually inspected subgraphs around \emph{CYP2D6}, \emph{RHD}, \emph{C4}, \emph{HLA-DRB1} and KIR genes
+which have been curated for these samples~\citep{Liao:2023aa,Zhou2024.01.20.576452}.
+We also looked at many other genes that are known to have gene-level variations~\citep{Sudmant:2010aa,Boettger:2012aa,Handsaker:2015ur}.
+While these genes have not been manually annotated for HPRC samples,
+we could check whether pangene captured known events such as
+the \emph{MAPT} inversion and the \emph{ORM1} copy-number changes.
+
+Due to the lack of genome-wide ground truth in human data,
+we could only manually evaluate pangene in individual subgraphs.
+To get a better sense of overall statistics,
+we additionally applied pangene to two bacterial datasets
+and compared the results to existing bacterial pangenome tools.
 
 \subsection{Structural variants between two human genomes}
 
 We downloaded GenCode comprehensive human annotation v45,
-retained the protein-coding transcripts tagged with ``Ensembl\_canonical'' and filtered out readthrough transcripts and mitochondrial genes.
+retained the protein-coding transcripts tagged with ``Ensembl\_canonical'' and filtered out readthrough transcripts (a transcript that joins two adjacent genes) and mitochondrial genes.
 Only one transcript was selected per gene.
 Because GenCode does not include HLA-DRB3, HLA-DRB4 and several KIR genes,
 we manually added 20 {\it HLA-DRB} genes and alleles from the IPD-IMGT/HLA database and
@@ -513,16 +551,6 @@ would not be easily captured by whole-genome alignment as they are not represent
 
 \subsection{Analyzing 100 human haplotypes}
 
-\begin{figure}[t!]
-\centering
-\includegraphics[width=.5\textwidth]{fig6}
-\caption{Human and great ape haplotypes around \emph{LRRC37A*} genes.
-GRCh38 has \emph{LRRC37A} and \emph{LRRC37A2} in 17q21.31 and \emph{LRRC37A3} in 17q24.1.
-All great apes have only one \emph{LRRC37A*} gene.
-A dashed line links two genes that are close but not immediately adjacent to each other.
-}\label{fig:17inv}
-\end{figure}
-
 We obtained the assembly of CN1~\citep{Yang:2023aa}, YAO~\citep{He:2023aa} and 47 samples released by the Human Reference Pangenome Consortium~\citep{Liao:2023aa}.
 Together with GRCh38 and T2T-CHM13, this gave us 100 human haplotypes.
 We aligned the same set of proteins to the 100 haplotypes.
@@ -531,8 +559,30 @@ and less than one second to identify 266 generalized bibubbles in the graph.
 Many of the bibubbles were supported by one contig only.
 Pruning edges supported by one contig resulted in a graph containing 209 generalized bibubbles.
 Further dropping about 2,000 single-coding-exon genes led to a graph containing 163 bibubbles.
-These included manually confirmed gene-level variations around {\it CYP2D6}/{\it CYP2D7}, {\it C4A}/{\it C4B} and
-{\it RHD}/{\it RHCE}~\citep{Liao:2023aa}.
+These included manually confirmed gene-level variations around {\it CYP2D6}, {\it C4} and
+{\it RHD}~\citep{Liao:2023aa} and around {\it HLA-DBR1}~\citep{Zhou2024.01.20.576452}.
+
+Pangene effectively annotates each input genome.
+For a sanity check, we compared the pangene gene annotation to the GENCODE annotation.
+Out of 19,043 protein coding genes in both annotations,
+only four gene locations are different.
+In one example, pangene assigned \emph{NUDT4B} to \emph{NUDT4}.
+Pangene misses \emph{NUDT4B} because it is a single-exon gene,
+and pangene puts \emph{NUDT4B} at the \emph{NUDT4} locus
+because the protein sequence of \emph{NUDT4} is a strict substring of \emph{NUDT4B}.
+
+We also compared the pangene annotation to the T2T-CHM13 annotation generated by Ensembl.
+There are 41 differences out 18,676 genes present in both annotations.
+These include four genes \emph{CSAG2}, \emph{CSAG3}, \emph{MAGEA6} and \emph{MAGEA3} that are close to each other.
+Pangene gives better protein-to-genome alignment for the four genes.
+We speculate that Ensembl may be annotating these genes based on synteny with GRCh38,
+but synteny here might be broken due to an apparent inversion around the genes.
+For another example, in the RCCX gene cluster~\citep{Carrozza:2021aa}, pangene annotates \emph{CYP21A2} ahead of \emph{TNXB}
+but Ensembl puts \emph{CYP21A2} inside an intron of \emph{TNXB}, which seems to be an error.
+Ensembl also misses \emph{C4A}, another gene in RCCX.
+We believe pangene is doing better in these cases.
+Most other genes among the 41 differences come from huge complex gene clusters.
+We cannot tell what the correct annotation is.
 
 We next investigated genes with presence/absence variants (PAVs).
 Out of 16,996 multi-exon genes in the graph,
@@ -551,6 +601,11 @@ The flanking region around \emph{NOTCH2NLR} looked complex and was poorly assemb
 This may explain the low occurrence rate of this gene.
 Overall, almost all human genes or their close paralogs are present in the majority of human haplotypes.
 It is rare to see a protein-coding gene with sequences completely missing without paralogs as backups.
+
+Our analysis is insensitive to thresholds $r_1$ and $r_2$ in Section~\ref{sec:adj}.
+Reducing $r_1$ from 95\% to 90\% and $r_2$ from 98\% to 96\% only affects 9 out of 266 bibubbles.
+
+\subsection{Incorporating 10 great ape haplotypes}
 
 We also constructed a graph including ten haplotype assemblies of great apes, including chimpanzee, bonobo, gorilla
 and two orangutan subspecies~\citep{Makova2023.11.30.569198}.
@@ -575,15 +630,15 @@ and broke the 17q21.31 bibubble in the human-only graph.
 Involving outgroup species may hurt the finding of localized bibubbles.
 
 \begin{table}[!tb]
-\caption{Bacterial pangenome analysis\label{tab:bac}}
+\caption{Number of detected genes in bacterial pangenomes\label{tab:bac}}
 \begin{tabular*}{\columnwidth}{@{\extracolsep\fill}lrrr@{\extracolsep\fill}}
 \toprule
-& Panaroo & pangene & PPanGGOLiN\\
+& Panaroo & pangene & PPanGGOLiN \\
 \midrule
 Mtb: \#total genes   & 4,207  & 4,216  & 4,744  \\
 Mtb: \#core genes    & 3,769  & 3,774  & 3,660  \\
-Ecoli: \#total genes & 13,723 & 13,009 & 14,630 \\
-Ecoli: \#core genes  & 2,893  & 3,081  & 2,966  \\
+Ecoli: \#total genes & 14,342 & 13,902 & 14,291 \\
+Ecoli: \#core genes  & 3,065  & 3,118  & 3,038  \\
 \botrule
 \end{tabular*}
 \begin{tablenotes}
@@ -610,11 +665,11 @@ We finally ran pangene with ``{\tt -p.001}''
 to keep all genes regardless of their frequency in the pangenome.
 
 Pangene constructed a graph consisting of 4,216 genes,
-3,652 of which were present in all 152 genomes (Table~\ref{tab:bac}).
+3,652 of which were present in all 152 genomes (Table~\ref{tab:bac}; Fig.~\ref{fig:bac-venn}).
 To check if pangene captured the gene content in these strains,
-we compared the pangene result to Panaroo v1.3.4 in the strict mode.
+we compared the pangene result to Panaroo v1.3.4.
 We aligned the Panaroo proteins to the pangene proteins with MMseqs2~\citep{Steinegger:2017aa} v13.45111
-and identified 46 Panaroo proteins do not hit to pangene proteins.
+and identified 46 Panaroo proteins do not hit to pangene proteins at the default E-value threshold of $10^{-3}$.
 We mapped the 46 proteins to H37Rv with miniprot
 and found 43 of them can be aligned
 and 76\% of the aligned regions overlap with annotated CDS in RefSeq.
@@ -622,34 +677,49 @@ Manually investigating the overlaps revealed that most of the 43 proteins
 were aligned to the opposite strand of some RefSeq genes or in different reading frames.
 Identifying homology based on the genomic locations of input proteins,
 pangene did not include them into the final graph.
-According to the RefSeq annotation,
-only 0.2\% of coding regions in H37Rv are present in more than one genes --
-overlapping genes are rare in \emph{M. tuberculosis}.
+%According to the RefSeq annotation,
+%only 0.2\% of coding regions in H37Rv are present in more than one genes --
+%overlapping genes are rare in \emph{M. tuberculosis}.
+Conversely, 40 pangene proteins do not hit to Panaroo proteins.
 
 We additionally ran PPanGGOLiN~\citep{Gautreau:2020aa} v1.2.105 with the Prokka annotation as the input.
 PPanGGOLiN collected 4,744 genes in the pangenome with 3,463 present in all.
 277 genes did not hit to genes selected by pangene.
 274 of these genes could be aligned to H37Rv by miniprot
 and 90\% of the aligned regions overlap with annotated CDS in RefSeq.
-PPanGGOLiN tends to select more overlapping genes in different reading frames,
-confirming the observation by~\citet{Tonkin-Hill:2020aa}.
+We note that although overlapping genes in different open reading frames are rare in H37Rv (0.2\% of coding regions),
+these genes may occur in other strains and may have functional implications~\citep{Vargas:2023aa,Snobre:2024aa}.
+PPanGGOLiN's preference to count such genes in the pangenome is not necessarily a weakness.
 
 \subsection{Analyzing 50 \textit{E. coli} strains}
 
 \emph{M. tuberculosis} has low diversity with each strain similar to each other~\citep{Marin:2022aa}.
 To understand how pangene performs given more diverse strains,
 we collected 50 \emph{E. coli} genomes with complete assemblies~\citep{Shaw:2021aa}.
-We did not run Prokka on this dataset but instead used the gene annotation provided by NCBI.
 
 We followed the same procedure to run pangenome tools.
 To get clean graph, pangene by default filters out genes that had $>$10 edges or connected $>$3 distant loci in the graph.
 This filter only removed six genes in \emph{M. tuberculosis} dataset but
 it filtered out 627 genes in \emph{E. coli}.
-We added option ``{\tt -p.001 -g50 -r10}'' to retain more genes.
+We added option ``{\tt -p.001 -g50 -r10}'' to retain more high-copy genes and genes connecting multiple loci.
 Although pangene collected fewer genes (Table~\ref{tab:bac}),
-only 98 Panaroo genes do not hit to genes collected by pangene.
+only 72 Panaroo genes do not hit to genes collected by pangene
+and the pangene pangenome size after clustering is not noticeably smaller than the Panaroo and the PPanGGOLiN pangenomes (Fig.~\ref{fig:bac-venn}).
 The differences between the tools might be determined by subtle thresholds on how to resolve homology
 and may not reflect the capability of each algorithm.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=.49\textwidth]{fig7}
+\caption{Comparing three bacterial pangenome construction tools.
+In each venn diagram, pangene, Panaroo and PPanGGOLiN proteins are merged and
+clustered with MMseqs2 ({\tt easy-cluster -c 0.9 --min-seq-id 0.5}).
+The diagram shows the number of clusters in each intersection.
+MMseqs2 merges paralogous genes, so the number of clusters for each tool
+is smaller than the number of genes in Table~\ref{tab:bac}.
+Venn diagrams were generated with BioVenn~\citep{Hulsen:2008aa}.
+}\label{fig:bac-venn}
+\end{figure}
 
 \section{Discussions}
 
@@ -660,20 +730,29 @@ for identifying core and accessory genes~\citep{Tonkin-Hill:2023aa}.
 Pangene is unique in that it also works for eukaryotic genomes
 and captures localized gene-level variants.
 Pangene complements whole-genome alignment based pangenome tools
-and gives a more concise high-level view of gene content changes,
-though it ignores small variants and non-allelic gene conversions~\citep{Vollger:2023aa}.
+and gives a more concise high-level view of gene content changes.
+
+Constructing a pangene graph is challenging because the biologically correct graph is unknown.
+We tend to think a ``correct'' graph should model the evolution history in principle.
+However, evolution is complex in the presence of convergent/divergent evolution in the long time scale
+and non-homologous recombinations and non-allelic gene conversions~\citep{Vollger:2023aa} in the short time scale.
+We do not know the evolution history of most complex loci except several well-studied cases.
+Furthermore, we take each gene as an atomic unit but biologically,
+a gene may be subjected to structural changes such as losing/gaining exons or fusing with another gene.
+These events are difficult to model even if we had the exact annotation in all input genomes.
 
 The pangene graph construction algorithm is \emph{ad hoc}.
 We have manually tuned various heuristics to correctly encode known gene-level variants in human,
 but may have overlooked other cases that pangene may fail to represent.
 Ideally, we would prefer to model graph construction to a global optimization problem.
 We have not been able to find such a formulation that can reliably encode known variations.
+This limitation is not specific to pangene; it is also applied to other pangenome construction tools.
 
 As protein-to-genome alignment can identify orthology within mammals or even vertebrates~\citep{Li:2023ac},
 we could in principle apply pangene to more distantly related species.
 We did construct a gene graph from the human and mouse reference genomes.
 The graph revealed synteny blocks visible from the human-mouse whole-genome alignment,
-but the topology looked complex due to frequent large-scale rearrangements over long evolutionary distance.
+but the topology of the whole graph looked complex due to frequent large-scale rearrangements over long evolutionary distance.
 Many generalized bibubbles identified from this graph were due to real orthologous alignments missed by miniprot.
 We will need another way at higher level to investigate such a graph.
 Another practical challenge in building a cross-species graph is to select the set of input proteins.
