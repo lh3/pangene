@@ -17,7 +17,7 @@
 \appnotes{Preprint}
 \firstpage{1}
 
-\title[Pangene graphs]{Exploring gene content with pangenome gene graphs}
+\title[Pangene graphs]{Exploring gene content with pangene graphs}
 \author[1,2,3,$\ast$]{Heng Li\ORCID{0000-0003-4874-2874}}
 \author[2]{Maximillian Marin\ORCID{0000-0002-9108-3328}}
 \author[2,4]{Maha Reda Farhat\ORCID{0000-0002-3871-5760}}
@@ -138,7 +138,7 @@ The practical difficulty is to obtain accurate annotation in the presence of red
 
 An important use of pangenome graphs is to identify genomic variations represented as ``bubbles''.
 While bubbles have been extensively studied in directed graphs~\citep{DBLP:conf/wabi/OnoderaSS13},
-they have not been rigorously defined on bidirected graphs that assemblers and pangenome constructors output.
+they have not been rigorously defined on bidirected graphs outputted assemblers and pangenome constructors.
 How to define and to find ``bubbles'' in bidirected graphs will also be a major topic of this article.
 
 \begin{figure}[b!]
@@ -495,7 +495,7 @@ as the placement of $p_0$ is heuristic which caused one false negative in a huma
 
 \begin{figure*}[b!]
 \centering
-\includegraphics[width=\textwidth]{MAPT}
+\includegraphics[width=\textwidth]{fig6}
 \caption{Human and great ape haplotypes around \emph{LRRC37A*} genes.
 A red vertical bar indicates the two genes on each side are not adjacent on the genome.
 In the plot, each genome contains two blocks of genes.
@@ -700,7 +700,7 @@ we collected 50 \emph{E. coli} genomes with complete assemblies~\citep{Shaw:2021
 We followed the same procedure to run pangenome tools.
 To get clean graph, pangene by default filters out genes that had $>$10 edges or connected $>$3 distant loci in the graph.
 This filter only removed six genes in \emph{M. tuberculosis} dataset but
-it filtered out 627 genes in \emph{E. coli}.
+it filtered out 848 genes in \emph{E. coli}.
 We added option ``{\tt -p.001 -g50 -r10}'' to retain more high-copy genes and genes connecting multiple loci.
 Although pangene collected fewer genes (Table~\ref{tab:bac}),
 only 72 Panaroo genes do not hit to genes collected by pangene
