@@ -138,8 +138,9 @@ The practical difficulty is to obtain accurate annotation in the presence of red
 
 An important use of pangenome graphs is to identify genomic variations represented as ``bubbles''.
 While bubbles have been extensively studied in directed graphs~\citep{DBLP:conf/wabi/OnoderaSS13},
-they have not been rigorously defined on bidirected graphs outputted assemblers and pangenome constructors.
-How to define and to find ``bubbles'' in bidirected graphs will also be a major topic of this article.
+they have not been rigorously defined on bidirected graphs graphs that are the necessary outputs of assemblers and pangenome constructors.
+If the field is to move towards the more generalized bidirected graph as a representation of genomic variation developing the concept of bubbles in this context will be necessary.
+Hence, how to define and to find ``bubbles'' in bidirected graphs will be a major topic of this article.
 
 \begin{figure}[b!]
 \centering
@@ -321,10 +322,10 @@ which will be the basis of our algorithm.
 
 Weak superbubble is defined on directed graphs, not on bidirected graphs.
 If we apply the previous algorithms to directed graph $G_D$,
-we will find most superbubbles twice on separate strands.
-Superbubble cannot capture the visual intuition in the presence of inversions, either.
-For example, Fig.~\ref{fig:inv}a seems to have a bubble visually
-but the corresponding directed graph (Fig.~\ref{fig:inv}f) does not have a superbubble.
+we will find most superbubbles twice on opposite strands.
+More importantly, superbubble cannot capture the visual intuition in the presence of inversions.
+For example, in Fig.~\ref{fig:inv}a, {\tt >A} and {\tt <C} enclose a subgraph that looks like a bubble,
+but the equivalent directed graph (Fig.~\ref{fig:inv}f) does not have a superbubble when {\tt >A} and {\tt <A} are taken as different vertices.
 \citet{Dabbaghie:2022aa} implemented the algorithm by \citet{DBLP:conf/wabi/OnoderaSS13} for sequence graphs,
 but how the issues above are handled is not apparent.
 The closest concept to weak superbubble in bidirected graphs is snarl~\citep{Paten:2018aa},
