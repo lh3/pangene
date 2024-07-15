@@ -78,7 +78,7 @@ In addition, all three tools do not directly reveal how genomic variations affec
 To study gene-level variations, HPRC
 had to manually annotate genes on each haplotype~\citep{Liao:2023aa} which is a time-consuming process.
 PGR-TK~\citep{Chin:2023aa} reconstructs local haplotype structures from genomic sequences
-but it is does not directly model genes and is not intended for whole-genome data.
+but it does not directly model genes and is not intended for whole-genome data.
 The current human pangenome tooling is not designed for studying gene variations.
 
 In contrast, research on bacterial pangenome
@@ -138,7 +138,7 @@ The practical difficulty is to obtain accurate annotation in the presence of red
 
 An important use of pangenome graphs is to identify genomic variations represented as ``bubbles''.
 While bubbles have been extensively studied in directed graphs~\citep{DBLP:conf/wabi/OnoderaSS13},
-they have not been rigorously defined on bidirected graphs graphs that are the necessary outputs of assemblers and pangenome constructors.
+they have not been rigorously defined on bidirected graphs that are the necessary outputs of assemblers and pangenome constructors.
 If the field is to move towards the more generalized bidirected graph as a representation of genomic variation developing the concept of bubbles in this context will be necessary.
 Hence, how to define and to find ``bubbles'' in bidirected graphs will be a major topic of this article.
 
@@ -530,10 +530,10 @@ and compared the results to existing bacterial pangenome tools.
 
 \subsection{Structural variants between two human genomes}
 
-We downloaded GenCode comprehensive human annotation v45,
+We downloaded GENCODE comprehensive human annotation v45,
 retained the protein-coding transcripts tagged with ``Ensembl\_canonical'' and filtered out readthrough transcripts (a transcript that joins two adjacent genes) and mitochondrial genes.
 Only one transcript was selected per gene.
-Because GenCode does not include HLA-DRB3, HLA-DRB4 and several KIR genes,
+Because GENCODE does not include HLA-DRB3, HLA-DRB4 and several KIR genes,
 we manually added 20 {\it HLA-DRB} genes and alleles from the IPD-IMGT/HLA database and
 15 KIR genes from the IPD-KIR database.
 In the end, we constructed a protein set with 19,421 sequences.
