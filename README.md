@@ -49,7 +49,7 @@ man ./pangene.1
 ## <a name="intro"></a>Introduction
 
 Pangene is a command-line tool to construct a pangenome gene graph. In this
-graph, a node repsents a marker gene and an edge between two genes indicates
+graph, a node represents a marker gene and an edge between two genes indicates
 their genomic adjaceny on input genomes. Pangene takes the [miniprot][mp]
 alignment between a protein set and multiple genomes and produces a graph in 
 the GFA format. It attempts to reduce the redundancy in the input proteins and
