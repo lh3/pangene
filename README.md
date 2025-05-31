@@ -145,12 +145,14 @@ bin_arm64-mac/gfa-server -d html data/*.gfa.gz 2> server.log # for Mac
 Then you can open link `http://127.0.0.1:8000/` in your browser, type gene
 names and visualize a local subgraph around the desired genes.
 
+A filled in coloured block represents a protein that is mapped to the genome by miniprot and scores above the set threshold. Empty blocks showing only the coloured frame may indicate stop codons in the reading frame (see Fig 6 in the arXiv preprint). Sensitivity to insertions into the genome is limited, so they may or may not disrupt the visualization. Genomic deletions are more clearly visible.
+
 ## <a name="cite"></a>Citation
 
 If you use pangene in your work, please consider to cite:
 
 > H Li, M Marin, MR Farhat (2024) Exploring gene content with pangenome gene graphs,
-> arXiv:2402.16185
+> arXiv:2402.16185 [link](https://arxiv.org/pdf/2402.16185)
 
 ## <a name="limit"></a>Limitations
 
