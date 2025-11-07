@@ -1070,10 +1070,11 @@ function pg_cmd_getaa(args) {
 	}
 	const re = /([^\s"]+) "([^\s"]+)"/g;
 	let h = {};
+	let gene_type_dict = {};
 	for (const line of k8_readline(args[0])) { // read symbols
 		if (line[0] == '#') continue;
 		let m, t = line.split("\t");
-		if (t[2] !== "CDS") continue;
+		if (t[2] !== "CDS" && t[2] !== "gene") continue;
 		if (t[0] === "MT" || t[0] === "chrM" || t[0] === "chrMT") continue;
 		let gid = null, gname = null, pid = null, pver = null, ttype = null, gtype = null, thru = false, canon = false;
 		while ((m = re.exec(t[8])) != null) {
@@ -1095,7 +1096,13 @@ function pg_cmd_getaa(args) {
 				canon = true;
 			}
 		}
-		if (gtype !== "protein_coding") continue;
+		if (t[2] === "gene") {
+			if (gid != null && gtype != null) {
+				gene_type_dict[gid] = gtype;
+			}
+			continue;
+		}
+		if ((gtype != null && gtype !== "protein_coding") || (gid != null && gene_type_dict[gid] !== "protein_coding")) continue;
 		if (canon_only && !canon) continue;
 		if (excl_decay && ttype !== "protein_coding") continue;
 		if (!keep_thru && thru) continue;
