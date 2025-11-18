@@ -15,6 +15,7 @@
 #define PG_F_ORI_FOR_BRANCH     0x80
 #define PG_F_CHECK_STRAND       0x100
 #define PG_F_DROP_SGL_EXON      0x200
+#define PG_F_USE_PANSN          0x400
 
 typedef struct {
 	uint64_t x, y;
@@ -138,6 +139,6 @@ void pg_graph_destroy(pg_graph_t *g);
 
 void pg_write_bed(const pg_data_t *d, int32_t is_walk);
 void pg_write_graph(const pg_graph_t *g);
-void pg_write_walk(pg_graph_t *g);
+void pg_write_walk(pg_graph_t *g, int32_t use_panSN);
 
 #endif

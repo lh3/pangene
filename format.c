@@ -156,6 +156,111 @@ void pg_write_graph(const pg_graph_t *g)
 	pg_write_arc(g);
 }
 
+// parse "sample#hap#name" with optional ":start-end"
+static int pg_parse_panSN(const char *name, kstring_t *sample, kstring_t *hap_str, kstring_t *seq_name, kstring_t *start_str, kstring_t *end_str)
+{
+	const char *p, *q, *colon = NULL;
+	int32_t i;
+	sample->l = 0;
+	hap_str->l = 0;
+	seq_name->l = 0;
+	start_str->l = 0;
+	end_str->l = 0;
+
+	// First find if there's a colon with range
+	for (p = name; *p; ++p) {
+		if (*p == ':') {
+			colon = p;
+			break;
+		}
+	}
+
+	// Parse sample#hap#name part (up to colon or end)
+	for (p = q = name, i = 0;; ++p) {
+		if (*p == 0 || *p == '#' || (colon && p == colon)) {
+			if (i == 0) {
+				if (p - q > 0) {
+					str_copy(sample, q, p);
+				} else {
+					str_copy(sample, "-1", &"-1"[2]);
+				}
+				sample->s[sample->l] = 0;
+			} else if (i == 1) {
+				if (p - q > 0) {
+					str_copy(hap_str, q, p);
+				} else {
+					str_copy(hap_str, "-1", &"-1"[2]);
+				}
+				hap_str->s[hap_str->l] = 0;
+				if (colon && p == colon) break;
+			} else if (i == 2) {
+				if (p - q > 0) {
+					str_copy(seq_name, q, p);
+				} else {
+					str_copy(seq_name, "-1", &"-1"[2]);
+				}
+				seq_name->s[seq_name->l] = 0;
+				if (colon && p == colon) break;
+			}
+			q = p + 1, ++i;
+			if (*p == 0) break;
+		}
+	}
+
+	// Set defaults if fields weren't filled
+	if (hap_str->l == 0) {
+		str_copy(hap_str, "-1", &"-1"[2]);
+		hap_str->s[hap_str->l] = 0;
+	}
+	if (seq_name->l == 0) {
+		str_copy(seq_name, "-1", &"-1"[2]);
+		seq_name->s[seq_name->l] = 0;
+	}
+
+	// Parse :start-end if present
+	if (colon) {
+		const char *dash = strchr(colon + 1, '-');
+		if (dash) {
+			const char *end_ptr = dash + 1;
+			while (*end_ptr) ++end_ptr;
+			if (dash > colon + 1)
+				str_copy(start_str, colon + 1, dash);
+			else
+				str_copy(start_str, "*", &"*"[1]);
+			start_str->s[start_str->l] = 0;
+			if (end_ptr > dash + 1)
+				str_copy(end_str, dash + 1, end_ptr);
+			else
+				str_copy(end_str, "*", &"*"[1]);
+			end_str->s[end_str->l] = 0;
+		} else {
+			// colon present but no dash; treat entire remainder as start, end = '*'
+			const char *end_ptr = colon + 1;
+			while (*end_ptr) ++end_ptr;
+			if (end_ptr > colon + 1)
+				str_copy(start_str, colon + 1, end_ptr);
+			else
+				str_copy(start_str, "*", &"*"[1]);
+			start_str->s[start_str->l] = 0;
+			str_copy(end_str, "*", &"*"[1]);
+			end_str->s[end_str->l] = 0;
+		}
+	} else {
+		// Range absent, return "*"
+		str_copy(start_str, "*", &"*"[1]);
+		start_str->s[start_str->l] = 0;
+		str_copy(end_str, "*", &"*"[1]);
+		end_str->s[end_str->l] = 0;
+	}
+
+	// Return success if sample, hap_str, and seq_name could be parsed
+	if (sample->l > 0 && !(sample->l == 2 && sample->s[0] == '-' && sample->s[1] == '1')
+		&& seq_name->l > 0 && !(seq_name->l == 2 && seq_name->s[0] == '-' && seq_name->s[1] == '1')) {
+		return 1;
+	}
+	return 0;
+}
+
 static int32_t pg_parse_sample(kstring_t *buf, const char *name) // parse "sample#hap#name"
 {
 	const char *p, *q;
@@ -180,10 +285,10 @@ static int32_t pg_parse_sample(kstring_t *buf, const char *name) // parse "sampl
 	return i == 3? hap : -1;
 }
 
-void pg_write_walk(pg_graph_t *q)
+void pg_write_walk(pg_graph_t *q, int32_t use_panSN)
 {
 	int32_t i, i0, j;
-	kstring_t out = {0,0,0}, buf = {0,0,0};
+	kstring_t out = {0,0,0}, buf = {0,0,0}, sample = {0,0,0}, hap_str = {0,0,0}, seq_name = {0,0,0}, start_str = {0,0,0}, end_str = {0,0,0};
 	pg_data_t *d = q->d;
 	for (j = 0; j < d->n_genome; ++j) {
 		pg_genome_t *g = &d->genome[j];
@@ -191,15 +296,28 @@ void pg_write_walk(pg_graph_t *q)
 		for (i0 = 0, i = 1; i <= g->n_hit; ++i) {
 			if (i == g->n_hit || g->hit[i].cid != g->hit[i0].cid) {
 				int32_t k, n, hap, cid = g->hit[i0].cid;
-				hap = pg_parse_sample(&buf, g->ctg[cid].name);
-				out.l = 0;
-				if (hap >= 0)
-					pg_sprintf_lite(&out, "W\t%s\t%d", buf.s, hap);
-				else if (g->label)
-					pg_sprintf_lite(&out, "W\t%s\t0", g->label);
-				else
-					pg_sprintf_lite(&out, "W\t%d\t0", j);
-				pg_sprintf_lite(&out, "\t%s\t*\t*\t", g->ctg[cid].name);
+				{
+					int pan_ok = 0;
+					if (use_panSN) {
+						pan_ok = pg_parse_panSN(g->ctg[cid].name, &sample, &hap_str, &seq_name, &start_str, &end_str);
+					}
+					out.l = 0;
+					if (use_panSN && pan_ok) {
+						pg_sprintf_lite(&out, "W\t%s\t%s\t%s\t%s\t%s\t", sample.s, hap_str.s, seq_name.s, start_str.s, end_str.s);
+					} else {
+						//fallback to original behaviour
+						buf.l = 0;
+						hap = pg_parse_sample(&buf, g->ctg[cid].name);
+						out.l = 0;
+						if (hap >= 0)
+							pg_sprintf_lite(&out, "W\t%s\t%d", buf.s, hap);
+						else if (g->label)
+							pg_sprintf_lite(&out, "W\t%s\t0", g->label);
+						else
+							pg_sprintf_lite(&out, "W\t%d\t0", j);
+						pg_sprintf_lite(&out, "\t%s\t*\t*\t", g->ctg[cid].name);
+					}
+				}
 				for (k = i0, n = 0; k < i; ++k) {
 					const pg_hit_t *a = &g->hit[k];
 					if (a->flt) continue;
@@ -222,4 +340,9 @@ void pg_write_walk(pg_graph_t *q)
 	}
 	free(buf.s);
 	free(out.s);
+	free(sample.s);
+	free(hap_str.s);
+	free(seq_name.s);
+	free(start_str.s);
+	free(end_str.s);
 }

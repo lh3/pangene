@@ -37,6 +37,7 @@ static int32_t pg_usage(FILE *fp, const pg_opt_t *opt)
 	fprintf(fp, "    -a INT        prune an arc if it is supported by <INT genomes [%d]\n", opt->min_arc_cnt);
 	fprintf(fp, "  Output:\n");
 	fprintf(fp, "    -w            Suppress walk lines (W-lines)\n");
+	fprintf(fp, "    -N            use panSN naming rather than filename for walks\n");
 	fprintf(fp, "    --bed[=STR]   output 12-column BED where STR is walk, raw or flag [walk]\n");
 	fprintf(fp, "    --version     print version number\n");
 	return fp == stdout? 0 : 1;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
 	pg_data_t *d;
 
 	pg_opt_init(&opt);
-	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GD:C:T:X:I:P:m:JOSE", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "d:e:l:f:g:p:b:B:y:Fr:c:a:wv:GND:C:T:X:I:P:m:JOSE", long_options)) >= 0) {
 		// input options
 		if (c == 'd') opt.gene_delim = *o.arg;
 		else if (c == 'X') opt.excl = pg_read_list_dict(o.arg);
@@ -96,6 +97,7 @@ int main(int argc, char *argv[])
 		// output options
 		else if (c == 'w') opt.flag |= PG_F_WRITE_NO_WALK;
 		else if (c == 'G') opt.flag |= PG_F_WRITE_VTX_SEL;
+		else if (c == 'N') opt.flag |= PG_F_USE_PANSN;
 		else if (c == 'v') pg_verbose = atoi(o.arg);
 		else if (c == 301) { // --bed
 			if (o.arg == 0 || strcmp(o.arg, "walk") == 0) opt.flag |= PG_F_WRITE_BED_WALK;
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
 		} else {
 			pg_write_graph(g);
 			if (!(opt.flag & PG_F_WRITE_NO_WALK))
-				pg_write_walk(g);
+				pg_write_walk(g, (opt.flag & PG_F_USE_PANSN) != 0);
 		}
 		pg_graph_destroy(g);
 	}
